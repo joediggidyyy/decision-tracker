@@ -1,5 +1,13 @@
 # Local operations and recovery
 
+[Documentation](README.md) · [Home](../README.md)
+
+Run command examples from the repository root after activating its environment:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
 ## Storage and credentials
 
 Use local nonsynchronized storage, separate from source and OneDrive. The managed deployment lives under `%LOCALAPPDATA%/DecisionTracker/`. Configuration contains principal scopes and file paths; auth.sqlite holds password/token verifiers. secrets.bin uses current-user DPAPI for the launcher key and explicitly stored agent tokens. These files are not project exports or transferable ledger backups. OS account ownership remains the local trust boundary.
@@ -74,3 +82,7 @@ For explicit foreground operation use `service serve --config PATH_TO_DEPLOYMENT
 Legacy credential migration is explicit: `auth migrate --config OLD_CONFIG --deployment NEW_DESCRIPTOR` in a private owner terminal. Stop the old server first. Agent credentials must be present privately in their configured environment variables. Validation precedes publication; a protected config backup and receipt are retained. Legacy operator tokens are not imported. Partial setup files are preserved for inspection, never silently overwritten. Do not roll back to code that re-enables old operator tokens. Source-project ledger migrations remain separate.
 
 Before real data adoption, create and verify a project-bound backup, download it to a new owner-controlled file and perform a restore check. Keep catalog and authentication recovery material separately. Synthetic proof does not establish a production backup schedule.
+
+---
+
+<p align="center">Maintained by Polymath Global</p>

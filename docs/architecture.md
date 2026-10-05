@@ -1,5 +1,7 @@
 # Architecture
 
+[Documentation](README.md) · [Home](../README.md)
+
 Decision Tracker is an independently served, loopback-only application with a Polymath-congruent browser shell. It is usable by any project; organization-specific lifecycle policy is not embedded in its domain logic.
 
 The central SQLite catalog maps explicit project IDs to contained ledgers and expected UUIDs. Each project ledger stores decisions, alternatives, references, directed relations, immutable transactions/snapshots, artifact metadata and import receipts. Browser/API/CLI operations converge on one shared service and state transition engine.
@@ -15,3 +17,7 @@ Native export/import retains history exactly. Backup and restore checks operate 
 The detailed approved business execution contract remains in Polymath planning custody. This implementation record describes actual technical boundaries. The portable agent-access skill is included; MCP remains a follow-up. Both agent and browser use the shared API.
 
 Managed Windows deployments use an open-only URI handler, nonce/HMAC readiness, owner-local administration, DPAPI and a separate auth.sqlite. Human password sessions and agent bearer credentials have independent lifecycles. Idle admission and draft leases share a mutex; polling and notifications cannot keep a managed service alive. Foreground operation remains available with idle shutdown disabled.
+
+---
+
+<p align="center">Maintained by Polymath Global</p>

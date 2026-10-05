@@ -1,0 +1,33 @@
+# Documentation
+
+[Home](../README.md) · [Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md) · [Changelog](../CHANGELOG.md)
+
+Use this map to find the guide for your task. These documents describe the shipped internal alpha; approved business plans and project migration plans remain in Polymath custody.
+
+## Use and operate
+
+| Guide | Purpose |
+|---|---|
+| [Interfaces](interfaces.md) | CLI and API commands, authentication, project binding and change envelopes. |
+| [Operations](operations.md) | Start and stop the service, manage credentials, back up data and recover safely. |
+| [Live updates](live-updates.md) | Freshness colors, explicit refresh, draft preservation and panel behavior. |
+| [Agent-access skill](../skills/decision-tracker/SKILL.md) | Portable instructions for agents using the CLI or API. |
+| [Configuration example](config.example.json) | Example configuration fields; not a credential store. |
+
+## Develop and review
+
+| Guide | Purpose |
+|---|---|
+| [Contributing](../CONTRIBUTING.md) | Local environment, native validation and review workflow. |
+| [Architecture](architecture.md) | Catalog, ledgers, shared service and application boundaries. |
+| [Calamum workflow](calamum.md) | Native definitions, retained runs and proof correspondence. |
+| [Verification](verification.md) | Actual evidence, operator acceptance and deferred checks. |
+| [Tracking boundaries](tracking-boundaries.md) | What belongs in Git, what stays local and pre-push review. |
+| [Repository contract](repository-contract.json) | Machine-readable ownership, scope and publication authority. |
+| [Agent instructions](../AGENTS.md) | Repository-specific working rules. |
+
+The Polymath mark in the repository README reuses the application's existing approved [logo asset](../src/decision_tracker/static/logo.png). No separate project mark or new brand asset is introduced.
+
+---
+
+<p align="center">Maintained by Polymath Global</p>

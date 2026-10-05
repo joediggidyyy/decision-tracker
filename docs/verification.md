@@ -1,5 +1,7 @@
 # Verification state
 
+[Documentation](README.md) · [Home](../README.md)
+
 Internal alpha for local use. On 2026-10-05 the operator confirmed successful password setup, testing in the system browser and launch through the Polymath home card. This is operator-reported acceptance, separate from agent-observed and automated proof. No real source project has been migrated.
 
 ## Retained evidence
@@ -24,3 +26,7 @@ Existing integration covers decision rules, revisions/history, HTTP/CLI binding,
 Actual 200% zoom and screen-reader checks remain explicitly deferred by the operator for local use. Cross-platform qualification, public distribution, MCP and the two source-project migrations are separate. Current-user Windows tests do not establish protection from a compromised OS account or exhaustive cross-user/OS failure coverage. LC/AC planning matrices are not blanket security certification.
 
 The historical home-layout proof needs retained `.local/home-integration` artifacts, deliberately excluded from Git because the business home page is private. A new clone needs an authorized sanitized local fixture before that empirical/history check; do not copy the private page or secrets into the repository to make the suite self-contained.
+
+---
+
+<p align="center">Maintained by Polymath Global</p>

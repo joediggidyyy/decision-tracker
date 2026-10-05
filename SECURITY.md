@@ -1,6 +1,20 @@
 # Security
 
-Decision Tracker is an internal alpha local application. It is not a production-supported or publicly hosted release. Report concerns privately to the repository owner through an existing trusted channel. Do not include credentials or private records in public issues.
+[Home](README.md) · [Operations](docs/operations.md) · [Verification](docs/verification.md)
+
+## Report a concern privately
+
+Email [Joe Waller](mailto:joe.waller@polymath-global.com) at **joe.waller@polymath-global.com**. Use a subject containing the exact words **Security Alert**, followed by the project name and a brief description:
+
+```text
+Security Alert — Decision Tracker — brief description
+```
+
+A correctly titled email sends Joe an alert. Describe the affected version, observed behavior, impact and safe reproduction steps. Exclude passwords, tokens and private decision records. Do not use GitHub issues, pull requests, comments or other repository messages to report vulnerabilities.
+
+After emailing, an optional call or text to **948.888.2336** is encouraged for urgent concerns. It does not replace the email.
+
+Decision Tracker is an internal alpha for local use. No production support window or response-time commitment is declared.
 
 ## Implemented boundaries
 
@@ -22,4 +36,8 @@ No credential belongs in a URL, command argument, tracked file or report. Runtim
 
 Checksums prove byte correspondence, not signer identity. Calamum signing and monitoring are not represented as active trust. No monitor/capture activation, remote permission change or public deployment is included.
 
-See docs/verification.md for actual proof coverage and docs/operations.md for recovery. Passing synthetic tests does not establish owner acceptance or production qualification.
+See [verification](docs/verification.md) for actual proof coverage and [operations](docs/operations.md) for recovery. Passing synthetic tests does not establish owner acceptance or production qualification.
+
+---
+
+<p align="center">Maintained by Polymath Global</p>

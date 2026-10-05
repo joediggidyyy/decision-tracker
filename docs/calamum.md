@@ -1,5 +1,7 @@
 # Calamum workflow
 
+[Documentation](README.md) · [Home](../README.md)
+
 Calamum is the testing substrate, not just a wrapper for one runner.
 The CLI and Python facade calamum.api provide project context, catalog discovery,
 execution, retained runs and job/project/domain aggregates.
@@ -50,3 +52,7 @@ literal selector, producing no matched runs. The failed attempt is retained;
 the stable-ID command is the verified route. No upstream source was modified.
 
 Credential and lifecycle verification uses `dt-auth-focus`; actual account interface observation uses `dt-account-browser`. `dt-integration` is the final combined checkpoint. Operator-reported system-browser acceptance is recorded separately from native run results.
+
+---
+
+<p align="center">Maintained by Polymath Global</p>

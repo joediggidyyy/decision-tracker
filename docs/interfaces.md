@@ -1,5 +1,13 @@
 # API and CLI contract
 
+[Documentation](README.md) · [Home](../README.md)
+
+Run command examples from the repository root after activating its environment:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
 The application service is the sole ledger writer. Default origin is http://127.0.0.1:8765. API clients authenticate with a separate agent bearer credential supplied externally or selected from the protected deployment bundle. Browser sessions use HttpOnly, SameSite=Strict cookies and same-origin CSRF tokens. Authorization derives from the configured principal; client attribution never grants rights.
 
 ## Discover and bind
@@ -102,3 +110,7 @@ Human routes: GET/POST `/api/v1/session/setup`, POST `/api/v1/session`, GET `/ap
 Draft routes: POST `/api/v1/service/draft-leases`, PUT/DELETE `/api/v1/service/draft-leases/{uuid}`; browser session and project identity required. GET `/api/v1/service/lifecycle` and POST `/api/v1/service/stop` require deployment-wide maintain scope. Safe stop returns 202 or busy409. Managed readiness is an unauthenticated nonce/HMAC challenge with no data access.
 
 Local credential operations are an OS-owner administrative exception, not ledger access. See Operations for private terminal prompts. Select `--deployment FILE` when using a nondefault deployment. `--credential-principal NAME` and `--token-env NAME` are mutually exclusive. Start explicitly with `service ensure-running`; data commands do not silently launch or replay writes.
+
+---
+
+<p align="center">Maintained by Polymath Global</p>
