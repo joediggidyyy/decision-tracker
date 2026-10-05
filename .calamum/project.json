@@ -1,0 +1,36 @@
+{
+  "aliases": [
+    "decision-tracker"
+  ],
+  "application": "decision-tracker",
+  "calamum": {
+    "catalog_root": "catalog",
+    "default_lanes": [
+      "pytest",
+      "sandbox_test",
+      "empirical_test"
+    ],
+    "path_aliases": {},
+    "reports_root": ".calamum/generated/reports",
+    "required_markers": [
+      "pyproject.toml"
+    ],
+    "required_paths": [
+      "src",
+      "tests",
+      "catalog"
+    ],
+    "runs_root": ".calamum/generated/runs",
+    "runtime": {},
+    "trusted_requesters": [],
+    "working_dir": "."
+  },
+  "domain": "tooling",
+  "name": "Decision Tracker",
+  "project_id": "decision-tracker",
+  "root": ".",
+  "schema_version": "calamum-project-v1",
+  "shape": {
+    "kind": "python"
+  }
+}

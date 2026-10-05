@@ -1,0 +1,84 @@
+{
+  "schema_version": "calamum-test-catalog-v2",
+  "definitions": [
+    {
+      "id": "dt-bootstrap",
+      "title": "Decision Tracker repository bootstrap",
+      "summary": "Validate package/environment/portable descriptor and timeout cleanup; no application behavior claimed.",
+      "status": "active",
+      "category": "bootstrap",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest",
+        "sandbox_test"
+      ],
+      "metadata": {
+        "scope": "repository-bootstrap"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "bootstrap-assertions",
+            "title": "Package, descriptor and proof supervision",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_bootstrap.py",
+              "tests/test_proof.py",
+              "-q"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [
+          {
+            "id": "environment-workflow",
+            "title": "Isolated environment and SQLite capability",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "tools/bootstrap_smoke.py"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "empirical_test": []
+      }
+    }
+  ]
+}

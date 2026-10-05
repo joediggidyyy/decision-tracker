@@ -1,0 +1,22 @@
+# Local state and trust material
+.local/
+.venv/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.calamum/generated/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+data/
+backups/
+exports/
