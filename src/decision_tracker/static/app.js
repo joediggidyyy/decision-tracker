@@ -64,18 +64,22 @@ async function detail(key){
  const approval=d.latest_resolution_approval;
  if(approval){box.append(node('h3','Approval','section-title'),node('p',approval.mode==='authenticated_now'?'Approved in this application by '+approval.recorded_by:approval.mode==='reported'?'Approved by (reported): '+approval.reported_approver:'Approval recorded from legacy references; approver and date are unknown.'));box.append(node('p','Decision date: '+(approval.occurred_at||approval.occurred_date||'Unknown')),node('p','Recorded by '+approval.recorded_by+' at '+approval.recorded_at));}
  const controls=$('context');controls.replaceChildren();
- controls.append(node('h3','Record'));const actions=node('div',undefined,'control-grid');controls.append(actions);
- controls.append(node('h3','Supporting information'));const supporting=node('div',undefined,'control-grid');controls.append(supporting);
+ const primary=node('div',undefined,'control-grid control-primary'),actions=node('div',undefined,'control-grid control-secondary'),supporting=node('div',undefined,'control-grid control-supporting');controls.append(primary,actions,supporting);
+ const helpLines=[],help=button('\u24d8',()=>{const opening=help.getAttribute('aria-expanded')!=='true';if(opening)showHelp();else tip.hidden=true;help.setAttribute('aria-expanded',String(opening));},controls);help.className='panel-info';help.setAttribute('aria-label','About these controls');help.setAttribute('aria-expanded','false');
+ const tip=node('span',undefined,'control-tooltip');tip.id='panel-control-help';tip.setAttribute('role','tooltip');tip.hidden=true;controls.append(tip);help.setAttribute('aria-describedby',tip.id);help.setAttribute('aria-controls',tip.id);
+ const showHelp=()=>{const rect=help.getBoundingClientRect();tip.style.left=Math.max(18,Math.min(rect.left,innerWidth-298))+'px';tip.style.top=Math.min(rect.bottom+6,innerHeight-300)+'px';tip.textContent=helpLines.join('\n');tip.hidden=false;},hideHelp=()=>{tip.hidden=true;help.setAttribute('aria-expanded','false');};
+ help.addEventListener('pointerenter',showHelp);help.addEventListener('pointerleave',()=>{if(document.activeElement!==help)hideHelp();});help.addEventListener('focus',showHelp);help.addEventListener('blur',hideHelp);help.addEventListener('keydown',e=>{if(e.key==='Escape'){hideHelp();e.stopPropagation();}});
+ function control(label,full,description,op,parent,disabled=false){const cell=node('div',undefined,'compact-control'),action=button(label,()=>{hideHelp();edit(op);},cell,disabled);action.setAttribute('aria-label',full);parent.append(cell);helpLines.push(label+' = '+full+': '+description);}
  const writable=state.caps.includes('write')&&!d.locked&&d.status!=='deprecated',decide=state.caps.includes('decide');
- if(writable)button('Edit',()=>edit('decision.edit'),actions);
- else if(d.status==='closed'&&!d.locked&&decide)button('Edit',()=>edit('decision.edit-resolution'),actions);
- if(writable){button('Add option',()=>edit('option.add'),supporting);button('Add reference',()=>edit('reference.add'),supporting);button('Add relationship',()=>edit('link.add'),supporting);}
- if(!supporting.children.length){supporting.previousSibling.remove();supporting.remove();}
+ if(writable)control('Edit','Edit','Change this record.','decision.edit',primary);
+ else if(d.status==='closed'&&!d.locked&&decide)control('Edit','Edit','Change the recorded decision.','decision.edit-resolution',primary);
+ if(writable){control('opt','Add option','Propose a solution.','option.add',supporting);control('ref','Add reference','Attach a source.','reference.add',supporting);control('rel','Add relationship','Link another decision.','link.add',supporting);}
  const closure=node('div',undefined,'closure-slot');question.append(closure);
- if(d.status==='open'&&writable){button('Close',()=>edit('decision.close'),closure,!decide).className='primary';button('Status',()=>edit('decision.set-work'),actions,d.work_tag==='deferred');button(d.work_tag==='deferred'?'Resume':'Defer',()=>edit(d.work_tag==='deferred'?'decision.resume':'decision.defer'),actions);if(['deferred','under-investigation'].includes(d.work_tag))button(d.contested?'Resolve challenge':'Challenge',()=>edit(d.contested?'decision.resolve-challenge':'decision.challenge'),actions);}
- if(d.status==='closed'){button('Reopen',()=>edit('decision.reopen'),closure,d.locked||!decide).className='primary';if(d.locked)closure.append(node('small','Amend the protected baseline to make changes.'));if(!d.locked&&decide)button('Protect baseline',()=>edit('decision.lock'),actions);}
- if(d.locked&&decide)button('Amend baseline',()=>edit('decision.amend'),actions);
- if(d.status!=='deprecated'&&decide)button('Deprecate',()=>edit('decision.deprecate'),actions);
+ if(d.status==='open'&&writable){button('Close',()=>edit('decision.close'),closure,!decide).className='primary';control('Status','Status',d.work_tag==='deferred'?'Resume work before changing status.':'Change the work status.','decision.set-work',primary,d.work_tag==='deferred');control(d.work_tag==='deferred'?'res':'def',d.work_tag==='deferred'?'Resume':'Defer',d.work_tag==='deferred'?'Restart work on this question.':'Pause work until a stated condition is met.',d.work_tag==='deferred'?'decision.resume':'decision.defer',actions);control(d.contested?'resolve':'chal',d.contested?'Resolve challenge':'Challenge',d.contested?'Record how the disagreement was settled.':'Flag a disagreement.',d.contested?'decision.resolve-challenge':'decision.challenge',actions,!['deferred','under-investigation'].includes(d.work_tag));}
+ if(d.status==='closed'){button('Reopen',()=>edit('decision.reopen'),closure,d.locked||!decide).className='primary';if(d.locked)closure.append(node('small','Amend the protected baseline to make changes.'));if(!d.locked&&decide)control('protect','Protect baseline','Require an amendment for future changes.','decision.lock',actions);}
+ if(d.locked&&decide)control('amend','Amend baseline','Create a linked amendment.','decision.amend',actions);
+ if(d.status!=='deprecated'&&decide)control('dep','Deprecate','End use of this decision; keep its history.','decision.deprecate',actions);
+ for(const row of [primary,actions,supporting])if(!row.children.length)row.remove();
  for(const [family,label] of [['alternatives','Options'],['references','References'],['links','Relationships']]){
   box.append(node('h3',label,'section-title'));const children=await all(d.collections[family].url);if(generation!==detailGeneration)return;d[family]=children;
   if(!children.length)box.append(node('p','None recorded.','muted'));
@@ -95,7 +99,7 @@ async function detail(key){
   for(const h of history){const row=node('section');row.append(node('p','Ledger '+h.ledger_revision+' · '+h.principal_id+' · '+h.reason));const content=node('div');let open=false,serial=0;
    const toggle=button('View snapshot',async()=>{open=!open;const ticket=++serial;toggle.setAttribute('aria-expanded',String(open));content.replaceChildren();if(!open)return;content.append(node('p','Loading snapshot…'));try{const snapshot=(await api(base()+'/decisions/'+key+'/as-of?revision='+h.ledger_revision)).data;if(open&&ticket===serial&&historyOpen&&request===historyRequest&&generation===detailGeneration)content.replaceChildren(node('pre',JSON.stringify(snapshot,null,2)));}catch(e){if(open&&ticket===serial&&content.isConnected)content.replaceChildren(node('p',e.message,'error'));}},row);toggle.setAttribute('aria-expanded','false');row.append(content);historyBox.append(row);}
   }catch(e){if(historyOpen&&request===historyRequest&&generation===detailGeneration)historyBox.replaceChildren(node('p',e.message,'error'));}
- },actions);historyButton.setAttribute('aria-expanded','false');
+ },box);box.append(historyBox);historyButton.setAttribute('aria-expanded','false');
  const context=(await api(base()+'/decisions/'+key+'/context')).data;if(generation!==detailGeneration)return;state.contextFingerprint=context.context_fingerprint;
  $('decision-columns').classList.add('show-detail');
  box.dataset.loaded='true';syncFocus();live.start(state.project,key);
