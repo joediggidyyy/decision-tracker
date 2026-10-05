@@ -1,6 +1,6 @@
 # API and CLI contract
 
-The foreground service is the sole writer. Default origin is http://127.0.0.1:8765. API clients authenticate with a bearer credential read from an environment variable. Browser sessions use HttpOnly, SameSite=Strict cookies and same-origin CSRF tokens. Authorization derives from the configured principal; client attribution never grants rights.
+The application service is the sole ledger writer. Default origin is http://127.0.0.1:8765. API clients authenticate with a separate agent bearer credential supplied externally or selected from the protected deployment bundle. Browser sessions use HttpOnly, SameSite=Strict cookies and same-origin CSRF tokens. Authorization derives from the configured principal; client attribution never grants rights.
 
 ## Discover and bind
 
@@ -44,7 +44,8 @@ Retry an uncertain write with the identical body and request ID. A committed mat
 
 | Family | Actions |
 |---|---|
-| service | serve, status, catalog-backup |
+| service | serve, status, catalog-backup, ensure-running, open, install-launcher, uninstall-launcher, configure-credentials, stop |
+| auth | setup-code, recover, reset-password, migrate; token create, rotate, revoke, list |
 | project | list, show, create, register, disable, enable |
 | decision | list, get, create, edit, edit-resolution, close, reopen, lock, amend, deprecate, defer, resume, challenge, resolve-challenge, set-work, history, as-of, field |
 | option | list, add, edit, retire |
@@ -93,3 +94,11 @@ Mutation body1MiB; native import/export10MiB; artifact download20MiB. Stored his
 ## Revision notifications
 
 GET `/api/v1/projects/{id}/events?decision_key=D000001` streams SSE latest-state messages with existing authentication and mandatory `X-Ledger-UUID`. Omit decision_key for project-only awareness. This route uses `text/event-stream` rather than the JSON envelope after connection; pre-stream failures retain JSON errors. Consumers must reconcile the initial snapshot after every reconnect; event IDs do not promise durable replay. See [live-updates.md](live-updates.md) for bounds and browser behavior.
+
+## Password and local administration interfaces
+
+Human routes: GET/POST `/api/v1/session/setup`, POST `/api/v1/session`, GET `/api/v1/account`, POST `/api/v1/account/password`, POST `/api/v1/account/sessions/revoke-others`. Setup/login require preauthentication cookie and CSRF; account mutations require a human session, same-origin CSRF and current password. Setup/change return 204. No HTTP recovery route exists. Agent tokens cannot create human sessions.
+
+Draft routes: POST `/api/v1/service/draft-leases`, PUT/DELETE `/api/v1/service/draft-leases/{uuid}`; browser session and project identity required. GET `/api/v1/service/lifecycle` and POST `/api/v1/service/stop` require deployment-wide maintain scope. Safe stop returns 202 or busy409. Managed readiness is an unauthenticated nonce/HMAC challenge with no data access.
+
+Local credential operations are an OS-owner administrative exception, not ledger access. See Operations for private terminal prompts. Select `--deployment FILE` when using a nondefault deployment. `--credential-principal NAME` and `--token-env NAME` are mutually exclusive. Start explicitly with `service ensure-running`; data commands do not silently launch or replay writes.

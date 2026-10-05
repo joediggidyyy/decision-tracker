@@ -31,6 +31,7 @@ export class LiveMonitor{
      if(new TextEncoder().encode(frame).length>8192)throw Error('Live event limit');
      heartbeat();let type='message',data=[];
      for(const line of frame.split(/\r?\n/)){if(line.startsWith('event:'))type=line.slice(6).trim();if(line.startsWith('data:'))data.push(line.slice(5).trimStart());}
+     if(type==='service-stopping'){terminal=true;this.label='Service stopped';throw Error('Service stopped');}
      if(type==='unavailable'){terminal=true;this.label='Unavailable';throw Error('Live access changed');}
      if(type!=='state')continue;
      const state=JSON.parse(data.join('\n'));

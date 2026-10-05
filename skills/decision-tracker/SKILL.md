@@ -5,7 +5,17 @@ description: Read, propose, and apply project decisions through the Decision Tra
 
 # Decision Tracker access
 
-Use the running service as the sole writer. The installed `decision-tracker` CLI and HTTP API enforce the same rules. This skill does not grant authority to change decisions, project registrations, credentials, or data custody. Continue within the user's existing authorization; read and prepare a concrete proposal when mutation authority is missing.
+Use the application service as the sole ledger writer. The installed `decision-tracker` CLI and HTTP API enforce the same rules. This skill does not grant authority to change decisions, project registrations, credentials, or data custody. Continue within the user's existing authorization; read and prepare a concrete proposal when mutation authority is missing.
+
+## Start or reuse the local service
+
+For an installed Windows deployment, run `decision-tracker service ensure-running --json` before data access. It starts or reuses the service without opening a browser. Pass `--deployment FILE` for a nondefault deployment. Do not install a startup task or keep it alive with polling; useful requests and bounded draft leases manage the 90-minute idle policy.
+
+Use `--credential-principal NAME` only for an explicitly provisioned stored agent credential. It verifies the deployment before transmitting the token. Alternatively use `--token-env NAME` for the authorized external credential. Never fall back to operator/password access. A missing credential is an owner provisioning input, not permission to create or expand access.
+
+On connection loss, allow at most one ensure-running attempt and one retry within a 60-second recovery budget, preserving exact payload, request ID and principal. If unavailable or uncertain, retain the request and report its state. Do not repeat a human password change automatically.
+
+Account recovery and token administration require an explicit human request for that operation. Human passwords and one-time codes are entered in the owner's private terminal/browser, never read into agent context. Recovery issuance and completion are CLI-only; agents do not use the browser to reset credentials.
 
 ## Connect and identify
 

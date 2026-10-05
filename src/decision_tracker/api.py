@@ -39,7 +39,14 @@ class InstanceLock:
         if self.file is not None:self.file.close();self.file=None
 
 def create_app(config:Config,environment=None):
-    auth=Auth(config,environment)
+    from .lifecycle import Lifecycle
+    from .credentials import Credentials
+    from .password_auth import PasswordAuth
+    # Legacy authentication is available only when a test injects an explicit environment.
+    legacy=environment is not None and not config.auth_store
+    require(legacy or config.auth_store,'SETUP_REQUIRED','Configure the credential store through local setup.',503)
+    auth=Auth(config,environment) if legacy else PasswordAuth(config,Credentials(Path(config.auth_store)))
+    life=Lifecycle(config.idle_timeout_minutes,config.managed_idle)
     root=config.root;root.mkdir(parents=True,exist_ok=True)
     lock=InstanceLock(contained(root,".service.lock"))
     service=Service(root)
@@ -59,15 +66,42 @@ def create_app(config:Config,environment=None):
                         from .store import metadata
                         metadata(ledger,row["ledger_uuid"])
                         ledger.execute("UPDATE artifacts SET state='failed',error_code='INTERRUPTED' WHERE state='pending'")
-            yield
+            life.start()
+            import asyncio
+            async def idle_watch():
+                while True:
+                    await asyncio.sleep(1)
+                    def valid(lease):
+                        try:
+                            p=auth.session(lease['sid'],touch=False)['principal']
+                            service.event_snapshot(lease['project'],lease['uuid'],p,None)
+                            return True
+                        except Fault:return False
+                    with life.lock:leases=list(life.leases.values())
+                    snapshot_ids={id(lease) for lease in leases}
+                    valid_ids={id(lease) for lease in leases if valid(lease)}
+                    if life.stop(valid=lambda lease:id(lease) not in snapshot_ids or id(lease) in valid_ids) or life.state=='DRAINING':
+                        await hub.close(stopping=True)
+                        callback=getattr(app.state,'shutdown',None)
+                        if callback:callback()
+                        break
+            watcher=asyncio.create_task(idle_watch())
+            try:yield
+            finally:
+                watcher.cancel()
+                try:await watcher
+                except asyncio.CancelledError:pass
         finally:
             await hub.close()
+            life.state="STOPPED"
             lock.release()
 
     app=FastAPI(title="Decision Tracker",version="1.0.0",docs_url=None,redoc_url=None,openapi_url=None,lifespan=lifespan)
     app.state.service=service
     app.state.auth=auth
     app.state.config=config
+    app.state.lifecycle=life
+    app.state.legacy_auth=legacy
 
     def error(exc,request):
         return JSONResponse({"ok":False,"request_id":getattr(request.state,"request_id",str(uuid4())),
@@ -105,6 +139,7 @@ def create_app(config:Config,environment=None):
                 require(request.headers.get("content-type","").split(";")[0].lower()=="application/json",
                         "VALIDATION_ERROR","Use application/json.",422)
                 cap=10*1024*1024 if request.url.path in ("/api/v1/imports/new","/api/v1/imports/validate") else 1024*1024
+                if request.url.path.startswith(("/api/v1/session","/api/v1/account","/api/v1/service")):cap=16384
                 body=bytearray()
                 async for chunk in request.stream():
                     require(len(body)+len(chunk)<=cap,"LIMIT_EXCEEDED","Request body exceeds the documented limit.",413)
@@ -115,12 +150,14 @@ def create_app(config:Config,environment=None):
         except Exception:
             response=error(Fault("INTERNAL_ERROR","The request could not be completed.",500,
                                 recovery="Inspect the local diagnostic reference; do not assume the write failed."),request)
+        if getattr(request.state,'admitted',False):life.leave()
+        if response.status_code in (429,503):response.headers['Retry-After']='60' if response.status_code==429 else '5'
         response.headers.update({"Content-Security-Policy":"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
             "X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer","Cache-Control":"no-store",
             "X-Request-ID":request.state.request_id})
         return response
 
-    def principal(request, touch=True):
+    def authenticate(request, touch=True):
         header=request.headers.get("authorization")
         cookie=request.cookies.get("dt_session")
         require(not (header and cookie),"FORBIDDEN","Use one authentication method per request.",403)
@@ -133,6 +170,19 @@ def create_app(config:Config,environment=None):
             require(request.headers.get("origin")==origin and hmac.compare_digest(request.headers.get("x-csrf-token",""),session["csrf"]),
                     "FORBIDDEN","Session write requires same-origin CSRF protection.",403)
         return session["principal"]
+
+    def principal(request,touch=True):
+        # Credential mutation and admission are ordered by the same store lock.
+        guard_lock=auth.lock if legacy else auth.store.lock
+        with guard_lock:
+            path=request.url.path
+            excluded=(path in ('/api/v1/status','/api/v1/session') and request.method=='GET' or path.endswith('/events') or path.startswith('/api/v1/service/'))
+            p=authenticate(request,touch=touch and not excluded)
+            if path.startswith('/api/v1/projects/'):
+                p.project(path.split('/')[4])
+            if not excluded and not getattr(request.state,'admitted',False):
+                life.enter();request.state.admitted=True
+            return p
 
     def identity(request):
         value=request.headers.get("x-ledger-uuid")
@@ -160,15 +210,16 @@ def create_app(config:Config,environment=None):
     def status(request:Request):
         return output(request,{"ok":True,"data":{"service":"Decision Tracker","version":"0.1.0.dev0","ready":True}})
 
-    @app.post("/api/v1/session")
-    def login(request:Request,data:Login):
-        require(request.headers.get("origin")==origin,"FORBIDDEN","Sign in from the application origin.",403)
-        require(not request.headers.get("authorization"),"FORBIDDEN","Use the sign-in form without bearer authentication.",403)
-        sid,session=auth.login(data.token)
-        response=JSONResponse({"ok":True,"data":{"principal":session["principal"].id,"csrf_token":session["csrf"],
-                     "capabilities":sorted(session["principal"].capabilities)}})
-        response.set_cookie("dt_session",sid,httponly=True,samesite="strict",max_age=28800,path="/")
-        return response
+    if legacy:
+        @app.post("/api/v1/session")
+        def login(request:Request,data:Login):
+            require(request.headers.get("origin")==origin,"FORBIDDEN","Sign in from the application origin.",403)
+            require(not request.headers.get("authorization"),"FORBIDDEN","Use the sign-in form without bearer authentication.",403)
+            sid,session=auth.login(data.token)
+            response=JSONResponse({"ok":True,"data":{"principal":session["principal"].id,"csrf_token":session["csrf"],
+                         "capabilities":sorted(session["principal"].capabilities)}})
+            response.set_cookie("dt_session",sid,httponly=True,samesite="strict",max_age=28800,path="/")
+            return response
 
     @app.get("/api/v1/session")
     def session(request:Request):
@@ -260,6 +311,9 @@ def create_app(config:Config,environment=None):
     app.state.principal=principal
     app.state.identity=identity
     app.state.output=output
+    if not legacy:
+        from .account_api import mount as mount_account
+        mount_account(app,origin,error)
     from .artifacts import mount
     from fastapi.staticfiles import StaticFiles
     mount(app)

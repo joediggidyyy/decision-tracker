@@ -73,3 +73,9 @@
  .local-shell .local-sidebar,.local-shell.focus-view .local-sidebar{display:flex;flex-direction:column}
  .workspace-heading,.sidebar-context{padding-right:0}
 }
+
+/* Account entry uses the existing panel footprint, not the page heading. */
+.local-sidebar{position:relative;padding-bottom:44px}.account-footer{position:absolute;bottom:0;right:8px;height:44px}
+.account-watermark{width:44px;height:44px;border:0;background:transparent;color:var(--muted,#94a3b8);padding:10px;min-width:44px}
+.account-watermark span,.account-watermark svg{display:inline-block;font-size:18px;line-height:18px;opacity:.6}.account-watermark:hover span,.account-watermark:focus-visible span,.account-watermark:hover svg,.account-watermark:focus-visible svg{opacity:1}
+.account-watermark:focus-visible{outline:2px solid #65d6a6;outline-offset:-3px}#account-dialog{max-width:520px}#draft-protection:empty{display:none}

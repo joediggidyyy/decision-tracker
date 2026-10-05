@@ -12,4 +12,6 @@ Transactions retain canonical intent and its hash alongside committed outcomes. 
 
 Native export/import retains history exactly. Backup and restore checks operate on bounded contained candidates; no maintenance endpoint overwrites an active ledger. Request scope, expected identity and versions remain mandatory.
 
-The detailed approved business execution contract remains in Polymath planning custody. This implementation record describes actual technical boundaries. MCP and a GPT agent-access skill are follow-ups; neither is required for direct CLI/API operation.
+The detailed approved business execution contract remains in Polymath planning custody. This implementation record describes actual technical boundaries. The portable agent-access skill is included; MCP remains a follow-up. Both agent and browser use the shared API.
+
+Managed Windows deployments use an open-only URI handler, nonce/HMAC readiness, owner-local administration, DPAPI and a separate auth.sqlite. Human password sessions and agent bearer credentials have independent lifecycles. Idle admission and draft leases share a mutex; polling and notifications cannot keep a managed service alive. Foreground operation remains available with idle shutdown disabled.

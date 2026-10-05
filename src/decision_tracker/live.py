@@ -81,6 +81,8 @@ class Hub:
                 except TimeoutError:
                     client['authorize']()
                     yield ': heartbeat\n\n';continue
+                if value.get('stopping'):
+                    yield 'event: service-stopping\ndata: {}\n\n';return
                 if value.get('terminal'):
                     yield 'event: unavailable\ndata: {}\n\n';return
                 client['authorize']()
@@ -91,6 +93,8 @@ class Hub:
             yield 'event: unavailable\ndata: {}\n\n'
         finally:await self.remove(project,client)
 
-    async def close(self):
+    async def close(self,stopping=False):
         for project,group in list(self.groups.items()):
-            for client in list(group['clients']):await self.remove(project,client)
+            for client in list(group['clients']):
+                if stopping:self.offer(client,{'stopping':True})
+                await self.remove(project,client)

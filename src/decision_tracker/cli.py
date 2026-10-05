@@ -17,7 +17,7 @@ DECISIONS=["list","get","create","edit","edit-resolution","close","reopen","lock
 def common(parser,suppress=True):
     default=argparse.SUPPRESS if suppress else None
     for name in ["base-url","config","project","ledger-uuid","token-env","input","request-id","reason",
-                 "expected-decision-revisions","binding"]:
+                 "expected-decision-revisions","binding","deployment","credential-principal","principal","token-id"]:
         parser.add_argument("--"+name,default=default)
     for name in ["expected-revision","expected-catalog-revision","record-revision"]:
         parser.add_argument("--"+name,type=int,default=default)
@@ -28,6 +28,8 @@ def common(parser,suppress=True):
                  "work-tag","resume-trigger","kind","replacement-key","target-key","type","impact","baseline-disposition",
                  "selected-option","cursor","q","status","work","owner","artifact-id","output","bind"]:
         parser.add_argument("--"+name,default=default)
+    parser.add_argument("--prompt-code",action="store_true",default=argparse.SUPPRESS if suppress else False)
+    parser.add_argument("--store-local",action="store_true",default=argparse.SUPPRESS if suppress else False)
     parser.add_argument("--limit",type=int,default=argparse.SUPPRESS if suppress else 50)
     parser.add_argument("--port",type=int,default=default)
     parser.add_argument("--data-root",default=default)
@@ -37,11 +39,12 @@ def common(parser,suppress=True):
 
 def parser():
     root=argparse.ArgumentParser(prog="decision-tracker",description=__doc__,
-        epilog="Use --input FILE (or - for stdin) for structured fields. Mutations require explicit revision, request ID and reason. Credentials come from environment only.")
+        epilog="Use --input FILE (or - for stdin) for structured fields. Mutations require explicit revision, request ID and reason. Agent credentials use an explicit environment variable or protected local principal.")
     common(root,False)
     groups=root.add_subparsers(dest="group",required=True)
     definitions={
-        "service":["serve","status","catalog-backup"],
+        "service":["serve","status","catalog-backup","ensure-running","open","install-launcher","uninstall-launcher","configure-credentials","stop"],
+        "auth":["setup-code","recover","reset-password","migrate","token"],
         "project":["list","show","create","register","disable","enable"],
         "decision":DECISIONS,
         "option":["add","list","edit","retire"],
@@ -56,6 +59,9 @@ def parser():
         for verb in verbs:
             child=children.add_parser(verb,description=f"{group} {verb}; use the shared versioned API.")
             common(child)
+            if group=='auth' and verb=='token':
+                token_actions=child.add_subparsers(dest='token_action',required=True)
+                for action in ('create','rotate','revoke','list'):common(token_actions.add_parser(action))
     return root
 
 def read_input(path):
@@ -103,6 +109,9 @@ class Client:
 def execute(args):
     is_change=args.group=="change" or (args.group in ("decision","option","reference","link") and args.action not in ("list","get","history","as-of","field"))
     require(not args.dry_run or is_change,"VALIDATION_ERROR","Dry-run is supported only for decision change operations.")
+    if args.group=='auth' or args.group=='service' and args.action in ('ensure-running','open','install-launcher','uninstall-launcher','configure-credentials','stop'):
+        from .local_cli import execute as local_execute
+        return local_execute(args)
     cfg=load_config(args.config) if args.config else None
     if args.group=="service" and args.action=="serve":
         require(cfg is not None,"VALIDATION_ERROR","service serve requires --config.")
@@ -110,11 +119,24 @@ def execute(args):
         if args.data_root is not None:cfg.data_root=args.data_root
         from .api import create_app
         import uvicorn
+        cfg.managed_idle=False
         app=create_app(cfg)
-        uvicorn.run(app,host="127.0.0.1",port=cfg.port,workers=1,access_log=False,proxy_headers=False,timeout_graceful_shutdown=5)
+        server=uvicorn.Server(uvicorn.Config(app,host="127.0.0.1",port=cfg.port,workers=1,access_log=False,proxy_headers=False,timeout_graceful_shutdown=5))
+        app.state.shutdown=lambda:setattr(server,"should_exit",True)
+        server.run()
         return {"ok":True,"data":{"service":"stopped"}}
     token_name=args.token_env or "DT_OPERATOR_TOKEN"
+    require(not (args.credential_principal and args.token_env),'VALIDATION_ERROR','Choose token environment or stored principal, not both.')
     token=os.environ.get(token_name,"")
+    if args.credential_principal:
+        from .deployment import load,default_path,probe
+        from .windows_local import read_bundle
+        deployment,dcfg=load(args.deployment or default_path());bundle=read_bundle(Path(deployment['bundle']))
+        require(args.credential_principal!='operator','FORBIDDEN','Select an agent principal.',403)
+        require(args.credential_principal in {p.id for p in dcfg.principals},'FORBIDDEN','Unknown agent principal.',403)
+        require(not args.base_url or args.base_url.rstrip('/')==f'http://127.0.0.1:{dcfg.port}','FORBIDDEN','Stored credentials are bound to this deployment.',403)
+        require(probe(deployment,dcfg,bundle['control_key']) is not None,'SERVICE_UNAVAILABLE','Start the service before accessing it.',503)
+        token=bundle.get('tokens',{}).get(args.credential_principal,'');cfg=dcfg
     require(bool(token),"UNAUTHORIZED","Inject the configured client credential.",401,variable=token_name)
     base=args.base_url or f"http://127.0.0.1:{cfg.port if cfg else 8765}"
     client=Client(base,token);g,a=args.group,args.action
@@ -194,9 +216,9 @@ def execute(args):
 def exit_code(value):
     if value.get("ok"):return 0
     code=value.get("error",{}).get("code")
-    if code in ("UNAUTHORIZED","FORBIDDEN"):return 4
-    if code in ("SERVICE_UNAVAILABLE","RETRY_LATER","DATABASE_UNAVAILABLE"):return 5
-    if code in ("STALE_REVISION","LEDGER_IDENTITY_MISMATCH","REQUEST_ID_REUSED","CURSOR_STALE","RELATION_CYCLE","DUPLICATE_LEDGER","PROJECT_DISABLED","LOCKED_BASELINE"):return 3
+    if code in ("UNAUTHORIZED","FORBIDDEN","SETUP_REQUIRED"):return 4
+    if code in ("SERVICE_UNAVAILABLE","RETRY_LATER","DATABASE_UNAVAILABLE","SERVICE_STOPPING","PORT_CONFLICT"):return 5
+    if code in ("STALE_REVISION","LEDGER_IDENTITY_MISMATCH","REQUEST_ID_REUSED","CURSOR_STALE","RELATION_CYCLE","DUPLICATE_LEDGER","PROJECT_DISABLED","LOCKED_BASELINE","SERVICE_BUSY","AUTH_STATE_CONFLICT"):return 3
     return 1 if code=="INTERNAL_ERROR" else 2
 
 def main(argv=None):

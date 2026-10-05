@@ -2,11 +2,29 @@
 
 ## Storage and credentials
 
-Use a local nonsynchronized data root, separate from source and OneDrive. Configuration names environment variables, never values. The service rejects known network/OneDrive/linked paths and requires explicit local-custody confirmation. Local filesystem ownership remains the security boundary; this is not OS multi-tenancy.
+Use local nonsynchronized storage, separate from source and OneDrive. The managed deployment lives under `%LOCALAPPDATA%/DecisionTracker/`. Configuration contains principal scopes and file paths; auth.sqlite holds password/token verifiers. secrets.bin uses current-user DPAPI for the launcher key and explicitly stored agent tokens. These files are not project exports or transferable ledger backups. OS account ownership remains the local trust boundary.
 
-Configure a separate agent principal with explicit project IDs and only needed capabilities. `read` permits retrieval/export; `write` permits ordinary changes; `decide` permits lifecycle authority; `maintain` permits backup/verify/import/restore checks; `registry` permits project catalog changes. `propose` supports noncommitting ordinary validation. Capabilities do not imply one another. Restart the service to load changed configuration or credentials; in-memory browser sessions expire on restart.
+The browser's small footer key opens Account & access. Changing the password requires the current password, rotates this session and revokes other human sessions. Agent tokens remain active. Passwords require 15–128 characters; spaces and password managers are supported. Browser sessions expire after 30 minutes idle or 8 hours absolute. No password is needed to start the service.
 
-Browser idle expiry30min, absolute expiry8h. Sign out revokes its session. Failed sign-ins are rate limited. Credentials are not retained in browser storage.
+Recovery is entirely CLI-only, in a private interactive owner terminal:
+
+```text
+decision-tracker auth recover
+decision-tracker auth reset-password
+```
+
+The first command confirms human-session revocation and prints a 15-minute recovery code once. The second privately prompts for that code, new password and confirmation. Recovery leaves agents active. No browser recovery endpoint exists. Neither codes nor passwords are accepted as command arguments or JSON output.
+
+Configure a separate agent principal with explicit project IDs and needed capabilities in the deployment config. `read`, `propose`, `write`, `decide`, `maintain` and `registry` do not imply one another. Restart to apply scope/configuration changes. Then, in the private owner terminal:
+
+```text
+decision-tracker auth token create --principal agent --store-local
+decision-tracker auth token list --json
+decision-tracker auth token rotate --token-id TOKEN_ID --store-local
+decision-tracker auth token revoke --token-id TOKEN_ID
+```
+
+Creation/rotation prints the generated token once; `--store-local` additionally saves it through DPAPI for `--credential-principal agent`. List returns metadata only. No agent principal is created or granted access automatically. Revocation is checked on each request. The OS-owner named pipe is used for live administration; stopped-service administration holds coordinator and instance locks. Data commands still use HTTP only.
 
 ## Backup and restore
 
@@ -32,7 +50,7 @@ A second process on the same data root is refused by an instance lock. Do not re
 
 ## Home integration and rollback
 
-Polymath's home page remains a separate file. Tools appears above Workspace; Sites stays below it. The Decision Tracker card opens http://127.0.0.1:8765/ in a new tab. The Ledger placeholder is preserved.
+Polymath's home page remains a separate file. Tools appears above Workspace; Sites stays below it. The Decision Tracker card invokes decision-tracker://open, which starts or reuses the service and opens its URL through the default browser. The Ledger placeholder is preserved.
 
 The scoped home receipt records the prior Sites and tools section, inserted Tools section, replacement section and before/after hashes. Roll back only when the current file matches the recorded post-change hash: remove the inserted section and restore the prior section. This preserves unrelated links without retaining a copy of the private folder index or credential-bearing launch URLs.
 
@@ -43,27 +61,14 @@ Run software verification through native Calamum using tools/prove.py. Proof cop
 This first delivery targets the actual Windows/Python3.14 host. POSIX portability is designed, not qualified. Owner acceptance, source-project migrations, production-data onboarding and MCP remain separate work. The portable agent-access skill is included under skills/decision-tracker.
 
 
-## Normal foreground startup on Windows
+## Managed and foreground lifecycle
 
-From the repository, create `.local/config.json` from `docs/config.example.json` if no local configuration exists. Inspect it before changing anything. The default data root is `%LOCALAPPDATA%/DecisionTracking`; confirm that this is local nonsynchronized storage before setting `local_storage_confirmed` to true. The example intentionally starts unconfirmed. Keep the preview's synthetic credential and disposable data separate from normal operation.
+`service ensure-running --json` starts or reuses the configured deployment without a browser. `service open` also opens the browser. `service stop` asks for a safe stop and refuses while operations or protected drafts are active. Readiness verifies a fresh nonce, deployment/configuration identity and HMAC before stored agent credentials are transmitted. An unrelated port occupant is never killed.
 
-Provide an owner-managed high-entropy secret through a hidden prompt in the terminal that will run the foreground service. This example temporarily sets only that process's environment and removes the value when the service exits. Do not run it while another service owns the port or data root.
+The managed idle default is 90 minutes; configuration permits 30–240. Status checks, SSE and draft heartbeats do not count as useful work. Unsaved drafts use 180-second leases renewed every 60 seconds, bounded to eight per session and 32 total. Loss or expiry of a lease starts a fresh idle period. Suspended browsers cannot hold a lease indefinitely. Session expiry remains independent.
 
-```powershell
-$trackerSecret = Read-Host 'Decision Tracker operator credential' -AsSecureString
-$trackerPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($trackerSecret)
-try {
-    $env:DT_OPERATOR_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($trackerPointer)
-    .venv/Scripts/decision-tracker.exe service serve --config .local/config.json
-} finally {
-    Remove-Item Env:DT_OPERATOR_TOKEN -ErrorAction SilentlyContinue
-    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($trackerPointer)
-    $trackerSecret.Dispose()
-}
-```
+For explicit foreground operation use `service serve --config PATH_TO_DEPLOYMENT_CONFIG`. Idle shutdown is disabled; Ctrl+C stops it. The same password store is used. A second writer is refused. `service uninstall-launcher` removes only an unchanged owned protocol registration and preserves data. No Windows startup task is created.
 
-The service necessarily holds authentication material in process memory. This prompt avoids command-line and history disclosure; it does not provide a secret vault. Sign in through the browser with the same owner-managed secret. Ctrl+C stops the service. No startup task or daemon is installed.
+Legacy credential migration is explicit: `auth migrate --config OLD_CONFIG --deployment NEW_DESCRIPTOR` in a private owner terminal. Stop the old server first. Agent credentials must be present privately in their configured environment variables. Validation precedes publication; a protected config backup and receipt are retained. Legacy operator tokens are not imported. Partial setup files are preserved for inspection, never silently overwritten. Do not roll back to code that re-enables old operator tokens. Source-project ledger migrations remain separate.
 
-For agent access, add a separate principal with a distinct token environment-variable name, explicit project IDs and the needed capabilities. Inject that secret in the service process and authorized agent runtime using the owner's secret mechanism. Do not grant `registry`, `maintain` or `decide` merely to enable reading. Restart to apply configuration. A skill supplies instructions, not credentials or capability grants.
-
-Before real data adoption, create a project-bound backup, download the verified artifact to a new file in owner-controlled local custody, and perform `data restore-check` against that artifact. Keep the catalog backup separately. Actual adoption and recovery activation remain explicit operations; the synthetic proof does not establish a production backup schedule.
+Before real data adoption, create and verify a project-bound backup, download it to a new owner-controlled file and perform a restore check. Keep catalog and authentication recovery material separately. Synthetic proof does not establish a production backup schedule.

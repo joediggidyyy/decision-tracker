@@ -1,4 +1,5 @@
 import {LiveMonitor} from './live.js';
+import {installAccount} from './account.js';
 const $=id=>document.getElementById(id);
 const state={csrf:null,caps:[],projects:[],project:null,revision:0,record:null,cursor:null,edit:null,listRevision:null,contextFingerprint:null};
 let listGeneration=0,detailGeneration=0,searchTimer=null;
@@ -14,7 +15,7 @@ async function api(path,body,method=body===undefined?'GET':'POST'){
  if(body!==undefined)headers['Content-Type']='application/json';
  if(state.csrf)headers['X-CSRF-Token']=state.csrf;
  const r=await fetch(path,{method,headers,credentials:'same-origin',body:body===undefined?undefined:JSON.stringify(body)});
- const value=await r.json();if(binding&&(!state.project||state.project.project_id!==binding.id||state.project.ledger_uuid!==binding.uuid))throw new Error('Project changed. Discarding the previous response.');if(!r.ok){const e=new Error(value.error?.message||'Request failed');e.code=value.error?.code;e.details=value.error?.details;throw e;}return value;
+ const value=r.status===204?{ok:true,data:{}}:await r.json();if(binding&&(!state.project||state.project.project_id!==binding.id||state.project.ledger_uuid!==binding.uuid))throw new Error('Project changed. Discarding the previous response.');if(!r.ok){const e=new Error(value.error?.message||'Request failed');e.code=value.error?.code;e.details=value.error?.details;throw e;}return value;
 }
 const base=()=>'/api/v1/projects/'+encodeURIComponent(state.project.project_id);
 function button(label,fn,parent,disabled=false){const b=node('button',label);b.type='button';b.disabled=disabled;b.onclick=()=>Promise.resolve().then(fn).catch(failure);parent.append(b);return b;}
@@ -213,7 +214,8 @@ $('close-live-review').onclick=()=>$('live-review').close();
 $('freshness').onclick=async()=>{
  const content=$('live-review-content');content.replaceChildren();$('live-review').showModal();
  content.append(node('p',$('freshness').getAttribute('aria-label')));
- if(!live.connected){button('Sign in again',()=>{const form=node('form'),label=node('label','Credential'),input=node('input');input.type='password';input.autocomplete='off';input.required=true;input.maxLength=4096;label.append(input);form.append(label);const submit=node('button','Sign in');submit.type='submit';form.append(submit);content.append(form);form.onsubmit=async event=>{event.preventDefault();const token=input.value;input.value='';try{const result=(await api('/api/v1/session',{token})).data;state.csrf=result.csrf_token;state.caps=result.capabilities;live.start(state.project,state.record?.key||null);$('live-review').close();}catch(error){content.append(node('p',error.message));}};},content);button('Retry connection',()=>{live.start(state.project,state.record?.key||null);$('live-review').close();},content);return;}
+ if(!live.connected&&live.label==='Service stopped'){const launch=node('a','Start service');launch.href='decision-tracker://open';content.append(launch);return;}
+ if(!live.connected){button('Sign in again',()=>{const form=node('form'),label=node('label','Password'),input=node('input');input.type='password';input.autocomplete='current-password';input.required=true;input.maxLength=128;label.append(input);form.append(label);const submit=node('button','Sign in');submit.type='submit';form.append(submit);content.append(form);form.onsubmit=async event=>{event.preventDefault();const token=input.value;input.value='';try{const result=await account.authenticate(token);state.csrf=result.csrf_token;state.caps=result.capabilities;live.start(state.project,state.record?.key||null);$('live-review').close();}catch(error){content.append(node('p',error.message));}};},content);button('Retry connection',()=>{live.start(state.project,state.record?.key||null);$('live-review').close();},content);return;}
  button('Refresh results',async()=>{const scroll=$('results').scrollTop;await listing();$('results').scrollTop=scroll;live.update();$('live-review').close();},content);
  if(!state.record)return;
  button('Refresh context',async()=>{const r=await api(base()+'/decisions/'+state.record.key+'/context');state.contextFingerprint=r.data.context_fingerprint;$('context').replaceChildren(node('h2',state.record.key),node('p',state.project.name));for(const neighbor of r.data.neighbors)button(neighbor.key+' · '+neighbor.title,()=>detail(neighbor.key),$('context'));live.update();$('live-review').close();},content);
@@ -231,3 +233,5 @@ $('freshness').onclick=async()=>{
 };
 
 button('Review workspace updates',()=>$('freshness').click(),$('edit-form'));
+
+const account=installAccount({$,state,api,signedIn,show,message,dirty,live});

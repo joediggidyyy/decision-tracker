@@ -8,18 +8,23 @@ Portable, project-aware decision tracking for local use. Each project has its ow
 
 Use Python 3.14 and the project-local environment described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-1. Copy `docs/config.example.json` to an ignored local configuration file.
-2. Choose a local, nonsynchronized data directory. Set `local_storage_confirmed` to true after checking its location. Relative paths resolve from the configuration file's directory; omitting `data_root` uses the user's local application-data directory.
-3. Inject a high-entropy credential through `DT_OPERATOR_TOKEN`. Use an owner-managed secret mechanism or a hidden terminal prompt. Never put the credential in a URL, command argument, committed file or chat.
-4. Run the foreground service:
+On Windows, install the current-user launcher once:
 
 ```powershell
-.venv/Scripts/decision-tracker.exe service serve --config .local/config.json
+.venv/Scripts/decision-tracker.exe service install-launcher --json
 ```
 
-Open [Decision Tracker](http://127.0.0.1:8765/) or its card in the Polymath home page. The card opens a new tab and requires the service to be running. Sign in using the injected credential, then create a project. The browser supports record mutation, lifecycle transitions, child records and maintenance actions.
+In a **private local terminal**, create your one-time setup code:
 
-Stop the foreground service with Ctrl+C. No daemon or automatic startup is installed. An occupied port fails; the service never silently changes its port. A configured alternate port requires changing the deployment's home link.
+```powershell
+.venv/Scripts/decision-tracker.exe auth setup-code
+```
+
+The code expires after 15 minutes. Open the Polymath Decision Tracker card, or run `decision-tracker service open`. Enter the setup code and choose your private password in the browser. Setup does not sign you in automatically. Do not send the code or password to an agent or paste it into a command argument.
+
+The card starts or reuses the loopback service and opens the application through the default browser. Agent sessions start it without opening a browser using `service ensure-running --json`. The managed service stops after 90 minutes without useful activity, provided no operation or protected draft is active. No Windows startup task is installed.
+
+The deployment descriptor is `%LOCALAPPDATA%/DecisionTracker/deployment/deployment.json`. It contains paths and identity, not secrets. Password verifiers are separate from project ledgers; explicitly stored agent tokens use current-user DPAPI. See [Operations](docs/operations.md) for credentials, recovery and foreground operation.
 
 ## Interfaces
 

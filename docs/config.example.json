@@ -18,5 +18,8 @@
         "registry"
       ]
     }
-  ]
+  ],
+  "auth_store": "auth.sqlite",
+  "managed_idle": true,
+  "idle_timeout_minutes": 90
 }

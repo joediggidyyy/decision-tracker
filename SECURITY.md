@@ -5,7 +5,10 @@ Decision Tracker is an internal alpha local application. It is not a production-
 ## Implemented boundaries
 
 - Fixed loopback binding, exact Host/Origin checks, no proxy trust or permissive CORS.
-- Injected credential names in configuration; constant-time digest comparison.
+- Durable salted scrypt human password verifiers; separate individually revocable agent-token digests.
+- Purpose-bound expiring setup/recovery codes, persistent rate bounds and atomic session epoch revocation.
+- CLI-only recovery over an owner-restricted local named pipe; current-user DPAPI for retained agent secrets.
+- Nonce/HMAC deployment identity before stored agent credential transmission.
 - Explicit per-principal project/capability scopes; no client-supplied authority escalation.
 - HttpOnly SameSite=Strict browser sessions, idle/absolute expiry and same-origin CSRF checks.
 - Explicit ledger identity, revision conflicts and durable request retries.

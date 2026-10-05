@@ -31,6 +31,9 @@ class PrincipalConfig(Model):
 class Config(Model):
     schema_version: Literal[1] = 1
     data_root: str = Field(default_factory=lambda: str(Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local/share")) / "DecisionTracking"))
+    auth_store: str | None = None
+    managed_idle: bool = False
+    idle_timeout_minutes: int = Field(default=90, ge=30, le=240)
     local_storage_confirmed: bool = False
     port: int = Field(default=8765, ge=1024, le=65535)
     principals: list[PrincipalConfig] = Field(default_factory=lambda: [
@@ -52,4 +55,5 @@ def load_config(path):
     cfg = Config.model_validate_json(path.read_text(encoding="utf-8"))
     if not Path(cfg.data_root).is_absolute():
         cfg.data_root = str(path.parent / cfg.data_root)
+    if cfg.auth_store and not Path(cfg.auth_store).is_absolute():cfg.auth_store=str(path.parent/cfg.auth_store)
     return cfg

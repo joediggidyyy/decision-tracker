@@ -25,3 +25,12 @@ Native integration run `20261005T081958Z-dt-integration` passed 64 tests with so
 Browser evidence includes red/yellow/green/gray states, unchanged observer focus/content/scroll on notification, retained drafts, explicit comparison/rebase followed by a separate save, desktop resizing and compact stacking. These are partial observations, not a full empirical-lane pass. The preview source was refreshed during operator review and cannot serve as immutable whole-run source proof.
 
 The skill's metadata validator checks structure only. Existing real HTTP CLI tests cover bindings, mutations, replay and conflict; they do not establish independent-agent usability. Normal-startup instructions do not claim production credential provisioning or real-data activation.
+
+
+Credential/lifecycle increment: native integration `20261005T102315Z-dt-integration` passed 78 tests with unchanged source. Focused credential run `20261005T101845Z-dt-auth-focus` passed; empirical `20261005T101935Z-dt-account-browser` passed observed login, footer placement, password-form layout, draft retention and 640px behavior. Browser proof used disposable preprovisioned credentials. Native API tests cover setup/password change; browser credential-change submission was not exercised. Retained earlier failures include named-pipe mode, response lifetime, busy reconnect and Windows connection timing.
+
+Installed local handler and normal cold start/reuse were observed separately from immutable software proof. This does not prove all LC01–LC10 or AC01–AC10 adversarial/OS cases. Actual 200% zoom, screen-reader review and owner acceptance remain unverified. Real owner password setup and agent grants are private operator actions, not completed by implementation.
+
+Final focused proof `ff15f9b34b4c43779bc715555b31350f` passed with unchanged source after adding malformed-URI rejection, unknown-listener refusal before authorization headers, and migration prevalidation checks. The official agent-skill metadata validator also passed through native Calamum; installed skill bytes match the repository copy.
+
+Latest focused run `20261005T103305Z-dt-auth-focus` passed with unchanged source, including a status-poll regression: status leaves the idle timestamp unchanged while a project read advances it. This follows the 78-test integration checkpoint; subsequent runtime changes were covered by focused proofs rather than a repeated broad suite.
