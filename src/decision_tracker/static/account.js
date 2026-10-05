@@ -78,7 +78,6 @@ export function installAccount({$,state,api,signedIn,show,message,dirty,live}){
  };
  $('confirm-stop-service').onclick=async()=>{try{await api('/api/v1/service/stop',{});live.stop('Service stopped');$('service-status').textContent='Service stopped. Use Open tracker to start it again.';$('stop-service-confirm').hidden=true;}catch(error){$('service-status').textContent=error.message;}};
  $('cancel-stop-service').onclick=()=>$('stop-service-confirm').hidden=true;
- $('projects-button').addEventListener('click',async()=>{try{const r=await api('/api/v1/service/lifecycle');$('service-controls').hidden=false;$('service-status').textContent=r.data.state+' · '+r.data.operation_count+' active operations · '+r.data.lease_count+' protected drafts';}catch{$('service-controls').hidden=true;}});
  loginView();api('/api/v1/account').then(()=>{$('account-toggle').hidden=false;}).catch(()=>{});
  return {authenticate,loginView};
 }

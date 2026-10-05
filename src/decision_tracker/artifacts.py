@@ -196,6 +196,9 @@ class Artifacts:
             db.execute("INSERT INTO import_receipts VALUES(?,?,?,?,?,?,?)",
                        (candidate_id,store.digest(value),value['format'],value["ledger_uuid"],value["ledger_revision"],now(),store.encode(result)))
         # Validated-only candidates are retained as evidence, never registered.
+        if promote:
+            from .candidates import prepare
+            prepare(self.catalog, principal, candidate_id, imported=True)
         return {"ok":True,"data":{**result,"candidate_id":candidate_id,
                 "relative_path":relative if promote else None,"registered":False,"validated_only":not promote}}
 
@@ -222,6 +225,16 @@ def mount(app):
     objects=Artifacts(app.state.service)
     app.state.artifacts=objects
     principal,identity,output=app.state.principal,app.state.identity,app.state.output
+
+    @app.get("/api/v1/candidates")
+    def candidates(request:Request,cursor:str|None=None,limit:int=Query(50,ge=1,le=200)):
+        from .candidates import listing
+        return output(request,listing(app.state.service,principal(request),cursor,limit))
+
+    @app.post("/api/v1/candidates/{candidate_id}/prepare")
+    def prepare_candidate(candidate_id:str,request:Request,data:EmptyInput):
+        from .candidates import prepare
+        return output(request,prepare(objects.catalog,principal(request),candidate_id))
 
     @app.post("/api/v1/projects/{project_id}/exports")
     def export(project_id:str,request:Request,data:EmptyInput):

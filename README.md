@@ -8,7 +8,7 @@ Decision Tracker is a portable application for people and agents. Each project h
 
 **Internal alpha · Python 3.14 · Private repository**
 
-The application supports creating and editing decisions, comparing alternatives, recording evidence and changing decision status. The operator accepted the earlier system-browser experience and launch from Polymath home. The decision-page layout and action forms are implemented and regression-tested, including isolated Chromium workflows and actual 200% browser zoom. Production data-format activation and operator reassessment remain separate. See the [verification record](docs/verification.md) for automated evidence and remaining qualification limits.
+The application supports creating and editing decisions, comparing alternatives, recording evidence and changing decision status. The operator accepted the earlier system-browser experience and launch from Polymath home. The decision-page layout and action forms are implemented and regression-tested, including isolated Chromium workflows and actual 200% browser zoom. The installed migration project is active on data format 2. Projects & data is implemented and verified; operator reassessment remains separate. See the [verification record](docs/verification.md) for automated evidence and remaining qualification limits.
 
 ## Site map
 
@@ -62,7 +62,7 @@ The managed service stops after 90 minutes without useful activity when no opera
 
 | Interface | What it provides |
 |---|---|
-| Browser | Project selection, search, record creation and editing, alternatives, lifecycle changes and history. A resizable right panel groups record and supporting-information controls above results. Drafts survive validation errors and conflicts. |
+| Browser | Project selection, search, record creation and editing, alternatives, lifecycle changes and history. A resizable right panel places compact decision controls above results; administration replaces those controls with a decorative logo. Drafts survive validation errors and conflicts. |
 | CLI | Granular project, decision, option, reference, link, query, change and data commands. Structured input comes from a file or stdin. Data commands use the shared HTTP service. |
 | API | Versioned `/api/v1` routes, typed changes and durable request IDs. Authenticated `GET /api/v1/schema` exposes OpenAPI. |
 

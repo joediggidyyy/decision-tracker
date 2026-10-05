@@ -71,3 +71,11 @@ Read GET /api/v1/schema before relying on approval_events_v1. New ledgers use sc
 `decision.close` and `decision.edit-resolution` accept an approval object in their existing JSON input. Agent credentials cannot use authenticated_now. With actual authorized decision intent and decide capability, report external evidence using mode reported, approver, 1–32 sources and precision exact/date/unknown. Exact requires an offset-aware occurred_at and matching numeric utc_offset_minutes; date requires occurred_date plus offset; unknown omits occurrence/offset/timezone. Never invent dates or impersonate human approval. The server keeps recording identity/time separate from reported approval. Existing reference-only requests remain valid on schema 2.
 
 A selected proposal requires expected_option_revision and matching answer text. Read the latest proposal before applying it. Resolution cannot share a batch with another mutation of that same decision. Follow latest_resolution_approval, paginated /approvals and /approvals/{event_id} for approval evidence; follow returned text chunks. PROPOSAL_CHANGED and UPGRADE_REQUIRED require reconciliation, not blind retry. These additions do not change credential scope or capabilities.
+
+### Prepared candidate discovery
+
+`data candidates` lists prepared candidates; `data prepare-candidate --candidate-id UUID` explicitly prepares an older retained import. Both require maintain and registry. `import-new` creates a preparation receipt, while `import-validate` does not. Registered identities, including disabled registrations, do not appear. Use enable for a disabled project rather than registering it again.
+
+Register using the selected `candidate_id` and `logical_digest` as `--candidate-id` and `--expected-candidate-digest`, alongside the existing project/name/catalog-revision/request-ID fields. Preparation never approves imported decisions and registration never replaces or upgrades active data. Discovery does not authorize import or registration. No arbitrary filesystem browsing is exposed.
+
+Exact-request retries apply to catalog and decision mutations. Export and backup creation have no such replay guarantee: after a lost response inspect the file list and report uncertainty; do not automatically create a duplicate.

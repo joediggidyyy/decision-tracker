@@ -136,3 +136,15 @@ The browser retains the exact request after an uncertain response, retries it on
 ---
 
 <p align="center">Maintained by Polymath Global</p>
+
+## Prepared projects and administration
+
+Projects & data has one project table and compact New project / Add existing dialogs. Name generates an editable ID. Project selection keeps this page open; Results and Back to decisions return to decision work. Disabled selections show their state without exposing stale actions. The decision controls are replaced by a decorative logo on this page.
+
+Data actions provide a single current summary and a refreshed file table. Download applies only to complete files; Check backup validates an isolated copy and does not restore active data. A lost export/backup response is an unknown outcome, not permission for an automatic duplicate operation.
+
+`GET /api/v1/candidates` and CLI `data candidates` list prepared, unregistered imported ledgers. Both maintain and registry permissions are required. Cursor pagination defaults to 50 and permits up to 200 entries. Changed inventory/catalog state invalidates the cursor.
+
+`POST /api/v1/candidates/{candidate_id}/prepare` with `{}` and CLI `data prepare-candidate --candidate-id UUID` explicitly validate a retained candidate and atomically publish its preparation receipt. The same permissions apply. Repeated preparation of unchanged content returns the same receipt. Changed content requires preparation again. `import-new` writes a receipt after validation; `import-validate` does not. Imported copies of already registered identities remain retained but are excluded from selection, even when that registration is disabled.
+
+Registration accepts `candidate_id` and `expected_candidate_digest` together instead of `relative_path`. The service resolves the contained candidate and revalidates its receipt, history, identity and digest before catalog mutation. The legacy contained-path CLI/API contract remains supported. CLI `project register` accepts `--candidate-id` and `--expected-candidate-digest`. Existing request-ID replay and catalog revision preconditions still apply. No ledger schema migration is introduced; schema-1 projects require their separate upgrade before writing decisions.

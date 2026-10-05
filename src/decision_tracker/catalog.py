@@ -70,6 +70,10 @@ class Catalog:
     def mutate(self, principal, request, project_id=None):
         principal.need("registry")
         payload = request.model_dump(mode="json")
+        # Preserve the digest of pre-candidate registry requests on replay.
+        for field in ('candidate_id', 'expected_candidate_digest'):
+            if payload.get(field) is None:
+                payload.pop(field, None)
         payload["target"] = project_id
         digest = store.digest(payload)
         request_id = str(request.request_id)
@@ -111,8 +115,13 @@ class Catalog:
                         with store.connect(path) as ledger:
                             meta = store.metadata(ledger, claim["ledger_uuid"]); store.integrity(ledger)
                     else:
-                        require(bool(request.relative_path), "VALIDATION_ERROR", "Registration requires relative_path.")
-                        path = contained(self.root, request.relative_path)
+                        if request.candidate_id:
+                            from .candidates import prepared, paths
+                            prepared(self, request.candidate_id, request.expected_candidate_digest)
+                            path = paths(self, request.candidate_id)[2]
+                        else:
+                            require(bool(request.relative_path), "VALIDATION_ERROR", "Registration requires a prepared candidate or relative_path.")
+                            path = contained(self.root, request.relative_path)
                         require(path.suffix == ".sqlite" and path != self.path, "VALIDATION_ERROR", "Register a project SQLite ledger.")
                         with store.connect(path) as ledger:
                             meta = store.metadata(ledger)

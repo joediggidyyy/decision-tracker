@@ -49,3 +49,11 @@ Changes to the private local application are recorded here. This is a developmen
 ---
 
 <p align="center">Maintained by Polymath Global</p>
+
+## Projects & data refinement — 2026-10-05
+
+- Replace expanded administration forms with compact guided dialogs and one project table.
+- Keep project selection on administration; restore decision controls only when returning to a decision.
+- Add prepared-candidate discovery and preparation through shared API/CLI rules; retain legacy registration and request replay.
+- Replace accumulated data output with one summary and refreshed file rows; retain safe service stop.
+- Verify isolated browser recovery, responsive layouts and actual 200% zoom; activate the installed backend without changing migration decisions.

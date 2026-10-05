@@ -9,7 +9,7 @@ const fs=require('node:fs');
  const check=(name)=>{checks.push(name);console.log('PASS '+name);};
  try{
   await page.goto(url);await page.locator('#token').fill('Synthetic action form test password');await page.locator('#login-submit').click();
-  await page.locator('#create-project input[name=project_id]').fill('review');await page.locator('#create-project input[name=name]').fill('Form review');await page.locator('#create-project button').click();
+  await page.locator('#new-project').click();await page.locator('#project-fields input[name=name]').fill('Form review');await page.locator('#project-fields details').first().locator('summary').click();await page.locator('#project-fields input[name=project_id]').fill('review');await page.locator('#project-save').click();await page.locator('#project-editor').waitFor({state:'hidden'});await page.locator('#back-workspace').click();
   const dialog=page.locator('#editor'),fields=page.locator('#edit-fields');
   const fill=(name,value)=>fields.locator(`[name="${name}"]`).fill(value);
   const open=async name=>{await page.locator('#context').getByRole('button',{name,exact:true}).click();await dialog.waitFor();};

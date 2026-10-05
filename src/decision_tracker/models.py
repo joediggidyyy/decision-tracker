@@ -155,8 +155,18 @@ class ProjectChange(Model):
     project_id: str = Field(pattern=r"^[a-z][a-z0-9-]{0,47}$")
     name: str = Field(min_length=1, max_length=160)
     relative_path: str | None = None
+    candidate_id: UUID | None = None
+    expected_candidate_digest: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     expected_catalog_revision: int = Field(ge=0)
     request_id: UUID
+
+    @model_validator(mode="after")
+    def candidate_fields(self):
+        if bool(self.candidate_id) != bool(self.expected_candidate_digest):
+            raise ValueError("Supply candidate ID and digest together.")
+        if self.candidate_id and (self.relative_path or self.kind != "register"):
+            raise ValueError("Candidate registration cannot include a path or create a project.")
+        return self
 
 class ProjectState(Model):
     enabled: bool

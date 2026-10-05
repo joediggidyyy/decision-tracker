@@ -120,3 +120,22 @@ dialog fieldset{min-width:0}dialog .toolbar{gap:8px}dialog button{min-height:44p
 .control-primary .compact-control{aspect-ratio:3 / 1;min-width:100px}.local-sidebar{min-width:240px}
 
 .control-tooltip dl{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px 12px;margin:0}.control-tooltip dl+dl{border-top:1px solid #456281;margin-top:12px;padding-top:12px}.control-tooltip dt{font-weight:600;color:var(--accent-2)}.control-tooltip dd{margin:0;min-width:0}.control-tooltip dd strong,.control-tooltip dd span{display:block}.control-tooltip dd strong{font-weight:600}.control-tooltip dd span{color:var(--text)}
+/* Projects & data: compact actions, one catalog, one file collection. */
+.admin-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.admin-page>section{border-top:1px solid var(--border);margin-top:24px;padding-top:12px}
+.admin-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.admin-actions button,.admin-table button,.admin-heading>button{min-height:36px;padding:6px 12px;font-size:.88rem}
+.admin-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.9rem}
+.admin-table th{text-align:left;color:var(--muted);font-weight:500}.admin-table td,.admin-table th{padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+.admin-table td:last-child button{margin:0 6px 6px 0}.admin-table .project-name{padding:0;border:0;background:transparent;text-align:left;color:var(--text)}.project-name[aria-pressed=true]{color:var(--accent);text-decoration:underline;text-underline-offset:5px}
+#admin-watermark{height:100%;min-height:100px;display:flex;align-items:center;justify-content:center;padding:18px}#admin-watermark img{width:90px;max-height:100%;object-fit:contain;opacity:.12;pointer-events:none}
+#project-fields details{margin:12px 0}#project-fields .field-hint{font-size:.85rem;color:var(--muted)}#project-save{margin:16px 8px 0 0}.data-project{font-weight:600}
+@media(max-width:600px){.admin-table{font-size:.8rem}.admin-table td,.admin-table th{padding:8px 3px}.admin-table button{font-size:.8rem;padding:6px 4px}.admin-heading{align-items:start}#maintenance .admin-table th:nth-child(2),#maintenance .admin-table td:nth-child(2){width:24%}}
+@media(max-width:600px){
+ .admin-table,.admin-table tbody,.admin-table tr,.admin-table td{display:block;width:100%!important}
+ .admin-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+ .admin-table tr{border-bottom:1px solid var(--border);padding:10px 0}
+ .admin-table td{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;border:0;padding:5px 0;font-size:.9rem}
+ .admin-table td::before{content:attr(data-label);color:var(--muted)}
+ .admin-table button{font-size:.88rem;padding:6px 12px;min-height:36px}
+}

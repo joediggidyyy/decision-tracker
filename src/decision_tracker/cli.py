@@ -26,7 +26,7 @@ def common(parser,suppress=True):
     parser.add_argument("--authority-ref",action="append",default=argparse.SUPPRESS if suppress else [])
     for name in ["key","id","name","relative-path","title","question","answer","rationale","owner-role","baseline",
                  "work-tag","resume-trigger","kind","replacement-key","target-key","type","impact","baseline-disposition",
-                 "selected-option","cursor","q","status","work","owner","artifact-id","output","bind"]:
+                 "selected-option","cursor","q","status","work","owner","artifact-id","output","bind","candidate-id","expected-candidate-digest"]:
         parser.add_argument("--"+name,default=default)
     parser.add_argument("--prompt-code",action="store_true",default=argparse.SUPPRESS if suppress else False)
     parser.add_argument("--store-local",action="store_true",default=argparse.SUPPRESS if suppress else False)
@@ -52,7 +52,7 @@ def parser():
         "link":["add","list","unlink"],
         "query":["search","context","impact","deprecated"],
         "change":["apply"],
-        "data":["export","import-validate","import-new","backup","verify","restore-check","artifact-list","artifact-download","upgrade-check","upgrade"]}
+        "data":["export","import-validate","import-new","candidates","prepare-candidate","backup","verify","restore-check","artifact-list","artifact-download","upgrade-check","upgrade"]}
     for group,verbs in definitions.items():
         parent=groups.add_parser(group,help=group+" operations")
         children=parent.add_subparsers(dest="action",required=True)
@@ -150,6 +150,13 @@ def execute(args):
     if g=="data" and a in ("import-validate","import-new"):
         return client.request("POST","/api/v1/imports/"+("new" if a=="import-new" else "validate"),data)
     if g=="project" and a=="list":return client.request("GET","/api/v1/projects")
+    if g=="data" and a=="candidates":
+        return client.request("GET","/api/v1/candidates?"+urlencode({k:v for k,v in {'cursor':args.cursor,'limit':args.limit}.items() if v is not None}))
+    if g=="data" and a=="prepare-candidate":
+        from uuid import UUID
+        try: candidate=str(UUID(args.candidate_id or data.get('candidate_id','')))
+        except (ValueError,TypeError):raise Fault('VALIDATION_ERROR','Supply a valid --candidate-id.') from None
+        return client.request("POST","/api/v1/candidates/"+candidate+"/prepare",{})
     require(args.project is not None,"VALIDATION_ERROR","Supply --project.")
     import re
     require(re.fullmatch(r"[a-z][a-z0-9-]{0,47}",args.project) is not None,"VALIDATION_ERROR","Invalid project ID.")
@@ -166,6 +173,8 @@ def execute(args):
                    "expected_catalog_revision":args.expected_catalog_revision if args.expected_catalog_revision is not None else data.get("expected_catalog_revision"),
                    "request_id":args.request_id or data.get("request_id")}
             if args.relative_path:value["relative_path"]=args.relative_path
+            if args.candidate_id:value['candidate_id']=args.candidate_id
+            if args.expected_candidate_digest:value['expected_candidate_digest']=args.expected_candidate_digest
             return client.request("POST","/api/v1/projects",ProjectChange.model_validate(value).model_dump(mode="json"))
         require(uuid,"VALIDATION_ERROR","Supply --ledger-uuid or a matching --binding.")
         value=ProjectState(enabled=a=="enable",expected_catalog_revision=args.expected_catalog_revision,request_id=args.request_id)

@@ -64,3 +64,7 @@ Credential and lifecycle verification uses `dt-auth-focus`; actual account inter
 Provide Playwright through `NODE_PATH`, with browser executable overrides `PROOF_BROWSER_EXECUTABLE` and `PROOF_FULL_BROWSER`. Alternatively, keep these machine-local paths in ignored `.local/browser-runtime.json`, using keys `node_modules`, `headless_executable` and `browser_executable`. The proof supervisor validates and loads that file. No browser runtime path belongs in portable source. The full Chromium executable supports a disposable test extension that sets and reads actual browser zoom; CSS scaling is not used as a substitute.
 
 Browser screenshots and `observations.json` are retained under each proof copy's `.local/action-browser`. Test profiles, credentials and extension files are isolated there and remain untracked.
+
+## Projects & data proof
+
+`tools/prove.py --definition dt-projects-data --budget-seconds 240` runs candidate service/API checks and isolated Chromium administration workflows through native Calamum. It retains screenshots at wide/320-pixel layouts and actual 200% browser zoom, plus named observations. The integrated catalog includes these tests. No production registry or decision mutations are used by this proof.

@@ -92,7 +92,7 @@ def supervise(command, cwd, env, output, seconds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form", "dt-action-forms"])
+    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form", "dt-action-forms","dt-projects-data"])
     parser.add_argument("--budget-seconds", type=int, default=60)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]

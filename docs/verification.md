@@ -61,3 +61,13 @@ Operator-directed sizing: preserve each row's proportions while shrinking to a f
 ## Panel help formatting and centering
 
 The single panel tooltip uses aligned abbreviation/description columns, full action names where needed, and subtle dividers in button order. The bounded control group is centered horizontally within wider panels. Native focused proof `.local/proofs/b9117ac241f34588a71f96a2b9b93798` passed four tests with unchanged source, including tooltip ordering and measured centering. The rendered tooltip screenshot was inspected.
+
+## Projects & data — 2026-10-05
+
+A1–A10 are implemented. Native integration run `20261005T170007Z-dt-integration` passed **112 tests** in 154.33 seconds, with source unchanged during the run. Proof: `.local/proofs/4681648700fc47efb6c405b966c86854/proof-manifest.json`. Application, test, catalog, tool and portable-skill hashes were compared again before publishing the canonical checkpoint.
+
+The new isolated Chromium workflow records 13 checks: compact administration, name-generated IDs, protected catalog drafts, Results navigation, stable project scope, data/file refresh, exact-request replay, disabled selection, prepared-candidate registration, reauthentication, delayed responses, separate Stop confirmation, 320-pixel layout and actual 200% zoom. Wide, narrow and zoom screenshots were inspected. Candidate API/service tests cover preparation, changed content, receipt validity, pagination, permission and registration contracts. Existing decision-page tests passed in the same integrated run.
+
+Earlier attempts are retained: text encoding was corrected; navigation assertions were made to wait for completed responses; a delayed-response test released its browser route in the wrong order and was repaired. The final integrated run has no failures. Full screen-reader qualification and operator acceptance are not asserted.
+
+The installed service was safely stopped and restarted as instance `53216545-f8f3-42bf-89ec-7c380d2b4a8b`. Read-only live checks verified the candidate endpoint and byte-for-byte matching index, app, projects and stylesheet assets. The migration project remains schema 2, revision 1, with seven unchanged open decisions. No production registration, import, decision write or schema upgrade occurred. Activation receipt: `.local/projects-data-activation/activation.json`. This is installed-service verification; mutation workflows were tested using isolated data.
