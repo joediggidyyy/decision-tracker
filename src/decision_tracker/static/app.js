@@ -79,7 +79,7 @@ async function detail(key){
  if(generation!==detailGeneration)return;state.contextFingerprint=context.context_fingerprint;
  $('context').replaceChildren(node('h2',d.key),node('p',state.project.name),node('p','Ledger revision '+state.revision),node('p','Owner: '+(d.owner_role||'Unassigned')),node('p',d.contested?'Challenge recorded':'No active challenge'));
  for(const neighbor of context.neighbors)button(neighbor.key+' · '+neighbor.title,()=>detail(neighbor.key),$('context'));
- $('decision-columns').classList.add('show-detail');if(window.matchMedia('(max-width:980px)').matches){document.querySelector('.local-shell').classList.remove('panel-open');$('panel-toggle').setAttribute('aria-expanded','false');}
+ $('decision-columns').classList.add('show-detail');
  syncFocus();live.start(state.project,key);
 }
 function field(name,label,value='',options=null,required=false){const wrap=node('label',label);let input;if(options){input=node('select');for(const value of options)input.add(new Option(value,value));}else input=node(['title','owner_role','baseline','target_key','replacement_key','label','locator','version','sha256'].includes(name)?'input':'textarea');input.name=name;input.value=value??'';input.required=required;if(name==='title')input.maxLength=160;wrap.append(input);$('edit-fields').append(wrap);return input;}
@@ -196,9 +196,6 @@ for(const type of ['pointerup','pointercancel'])workspaceDivider.addEventListene
 workspaceDivider.addEventListener('keydown',event=>{const step=event.shiftKey?50:15;const values={ArrowLeft:sidebarWidth+step,ArrowRight:sidebarWidth-step,Home:230,End:640};if(event.key in values){event.preventDefault();resizeWorkspace(values[event.key],true);}});
 new ResizeObserver(()=>resizeWorkspace(sidebarWidth)).observe(shell);
 
-const panelToggle=$('panel-toggle');
-panelToggle.addEventListener('click',()=>{const open=shell.classList.toggle('panel-open');panelToggle.setAttribute('aria-expanded',String(open));if(open)$('decision-sidebar').focus();});
-
 const live=new LiveMonitor(()=>({key:state.record?.key||null,decisionRevision:state.record?.revision,listRevision:state.listRevision,contextFingerprint:state.contextFingerprint}), (color,label)=>{
  const control=$('freshness'),text=color==='green'?'':color==='yellow'?'Updates available':color==='red'?'Out of sync':label||'Disconnected';
  const accessible=color==='green'?'Connected and current':text;
@@ -206,12 +203,11 @@ const live=new LiveMonitor(()=>({key:state.record?.key||null,decisionRevision:st
  if($('freshness-announcement').textContent!==accessible)$('freshness-announcement').textContent=accessible;
 });
 function syncFocus(){
- const compact=matchMedia('(max-width:980px)').matches,visible=compact?shell.classList.contains('panel-open'):!shell.classList.contains('focus-view');
+ const compact=matchMedia('(max-width:980px)').matches,visible=compact||!shell.classList.contains('focus-view');
  $('focus-toggle').setAttribute('aria-pressed',String(!visible));$('focus-toggle').title=visible?'Focus decision':'Show context and results';$('focus-toggle').setAttribute('aria-label',$('focus-toggle').title);
- $('panel-toggle').setAttribute('aria-expanded',String(visible));
 }
-$('focus-toggle').onclick=()=>{if(matchMedia('(max-width:980px)').matches)shell.classList.toggle('panel-open');else shell.classList.toggle('focus-view');syncFocus();};
-$('panel-toggle').addEventListener('click',syncFocus);new MutationObserver(syncFocus).observe(shell,{attributes:true,attributeFilter:['class']});matchMedia('(max-width:980px)').addEventListener('change',syncFocus);syncFocus();
+$('focus-toggle').onclick=()=>{if(!matchMedia('(max-width:980px)').matches)shell.classList.toggle('focus-view');syncFocus();};
+new MutationObserver(syncFocus).observe(shell,{attributes:true,attributeFilter:['class']});matchMedia('(max-width:980px)').addEventListener('change',syncFocus);syncFocus();
 window.addEventListener('pagehide',()=>live.stop());
 $('close-live-review').onclick=()=>$('live-review').close();
 $('freshness').onclick=async()=>{

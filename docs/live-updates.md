@@ -4,7 +4,7 @@ The authenticated project event stream reports committed revisions. The browser 
 
 The header dot is green when displayed data is current, yellow when results/context are stale, red when the selected record is stale, and gray when freshness cannot be established. Notification receipt never replaces displayed content, reorders results, moves focus or changes editor preconditions. Refresh results/context and Review changes are explicit actions. Review compares displayed, saved and draft values; rebase preserves fields and requires a separate Save. Identity changes never silently rebind a tab.
 
-The rounded half-shaded focus square remains fixed below the header, toggling the context/results panel. The former main-detail Results and Focus buttons are removed. Keyboard controls, tooltip and pressed state express the same action. The compact disclosure stays synchronized.
+The rounded half-shaded focus square remains fixed below the header, toggling the context/results panel. The former main-detail Results and Focus buttons are removed. Keyboard controls, tooltip and pressed state express the same action. The icon is18px at60% resting opacity within a44px target and returns to full emphasis on hover/focus. At980px or narrower it disappears; the stacked panel stays visible and has no collapse toggle.
 
 ## Evidence and limits
 

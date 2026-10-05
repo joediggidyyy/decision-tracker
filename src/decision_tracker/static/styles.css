@@ -64,3 +64,12 @@
 #live-review{max-width:900px}#live-review pre{white-space:pre-wrap;overflow-wrap:anywhere}
 
 .comparison-cells{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}.comparison-cells>div{min-width:0}
+
+/* Operator refinement: subtle desktop control, always-visible stacked panel. */
+.focus-toggle{padding:13px}.focus-toggle span{width:18px;height:18px;border-radius:5px;opacity:.6}
+.focus-toggle:hover span,.focus-toggle:focus-visible span{opacity:1}
+@media(max-width:980px){
+ .focus-toggle{display:none}
+ .local-shell .local-sidebar,.local-shell.focus-view .local-sidebar{display:flex;flex-direction:column}
+ .workspace-heading,.sidebar-context{padding-right:0}
+}
