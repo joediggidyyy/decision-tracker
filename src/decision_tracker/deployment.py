@@ -64,7 +64,7 @@ def probe(value,cfg,key):
         require(payload.get('nonce')==nonce and payload.get('deployment_id')==value['deployment_id'] and payload.get('configuration')==fingerprint(value,cfg) and payload.get('version')==1 and hmac.compare_digest(signature(key,payload),mac),'PORT_CONFLICT','The local listener does not match this deployment.',503)
         return payload
     except ConnectionRefusedError:return None
-    except (TimeoutError,ConnectionResetError,http.client.HTTPException):raise Fault('SERVICE_UNAVAILABLE','The local listener is not ready.',503) from None
+    except (TimeoutError,ConnectionResetError,ConnectionAbortedError,http.client.HTTPException):raise Fault('SERVICE_UNAVAILABLE','The local listener is not ready.',503) from None
     finally:conn.close()
 
 @contextmanager

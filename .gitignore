@@ -20,3 +20,16 @@ dist/
 data/
 backups/
 exports/
+
+# Deployment credentials and reproducible local caches
+deployment/
+deployment.json
+secrets.bin
+token-journal*.json
+protocol-registration.json
+legacy-config-backup.json
+*.pfx
+*.p12
+*.log
+.coverage
+htmlcov/

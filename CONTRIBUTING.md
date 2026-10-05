@@ -42,3 +42,7 @@ capabilities. Preserve failed evidence and investigate failures before rerunning
 Use explicit staging and review diffs. Never commit credentials, real project
 data, environment folders or generated evidence. Do not push or publish without
 owner authorization. Dependency changes must retain exact versions and evidence.
+
+## Tracking and closeout
+
+See [tracking boundaries](docs/tracking-boundaries.md) before staging. Keep historical home proof inputs under ignored `.local/home-integration`; they are a local test prerequisite, not public source. Before a push, inspect the staged diff, all newly transmitted history, remote identity and final native evidence. Obtain the operator's explicit push authorization when requested. Do not force-push or prune retained evidence during routine cleanup.

@@ -48,3 +48,5 @@ For project aggregates use the registered ID decision-tracker. In the inspected
 Calamum0.3.1 build, --project . resolved context but filtered aggregates by the
 literal selector, producing no matched runs. The failed attempt is retained;
 the stable-ID command is the verified route. No upstream source was modified.
+
+Credential and lifecycle verification uses `dt-auth-focus`; actual account interface observation uses `dt-account-browser`. `dt-integration` is the final combined checkpoint. Operator-reported system-browser acceptance is recorded separately from native run results.

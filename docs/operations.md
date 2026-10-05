@@ -4,7 +4,7 @@
 
 Use local nonsynchronized storage, separate from source and OneDrive. The managed deployment lives under `%LOCALAPPDATA%/DecisionTracker/`. Configuration contains principal scopes and file paths; auth.sqlite holds password/token verifiers. secrets.bin uses current-user DPAPI for the launcher key and explicitly stored agent tokens. These files are not project exports or transferable ledger backups. OS account ownership remains the local trust boundary.
 
-The browser's small footer key opens Account & access. Changing the password requires the current password, rotates this session and revokes other human sessions. Agent tokens remain active. Passwords require 15–128 characters; spaces and password managers are supported. Browser sessions expire after 30 minutes idle or 8 hours absolute. No password is needed to start the service.
+The browser's small footer key opens Account & access. Changing the password requires the current password, rotates this session and revokes other human sessions. Agent tokens remain active. Passwords require 15â€“128 characters; spaces and password managers are supported. Browser sessions expire after 30 minutes idle or 8 hours absolute. No password is needed to start the service.
 
 Recovery is entirely CLI-only, in a private interactive owner terminal:
 
@@ -58,14 +58,16 @@ The scoped home receipt records the prior Sites and tools section, inserted Tool
 
 Run software verification through native Calamum using tools/prove.py. Proof copies use synthetic data, bounded process supervision and source hashes. Actual browser observations are separate empirical evidence; a verifier cannot invent them. Retain failed attempts.
 
-This first delivery targets the actual Windows/Python3.14 host. POSIX portability is designed, not qualified. Owner acceptance, source-project migrations, production-data onboarding and MCP remain separate work. The portable agent-access skill is included under skills/decision-tracker.
+This first delivery targets the actual Windows/Python3.14 host. POSIX portability is designed, not qualified. The operator accepted the exercised browser and home-card workflows on 2026-10-05. Source-project migrations, real-data onboarding and MCP remain separate work. The portable agent-access skill is included under skills/decision-tracker.
 
 
 ## Managed and foreground lifecycle
 
+`service status` reports public health only; use an authenticated project request to verify agent access or revocation.
+
 `service ensure-running --json` starts or reuses the configured deployment without a browser. `service open` also opens the browser. `service stop` asks for a safe stop and refuses while operations or protected drafts are active. Readiness verifies a fresh nonce, deployment/configuration identity and HMAC before stored agent credentials are transmitted. An unrelated port occupant is never killed.
 
-The managed idle default is 90 minutes; configuration permits 30–240. Status checks, SSE and draft heartbeats do not count as useful work. Unsaved drafts use 180-second leases renewed every 60 seconds, bounded to eight per session and 32 total. Loss or expiry of a lease starts a fresh idle period. Suspended browsers cannot hold a lease indefinitely. Session expiry remains independent.
+The managed idle default is 90 minutes; configuration permits 30â€“240. Status checks, SSE and draft heartbeats do not count as useful work. Unsaved drafts use 180-second leases renewed every 60 seconds, bounded to eight per session and 32 total. Loss or expiry of a lease starts a fresh idle period. Suspended browsers cannot hold a lease indefinitely. Session expiry remains independent.
 
 For explicit foreground operation use `service serve --config PATH_TO_DEPLOYMENT_CONFIG`. Idle shutdown is disabled; Ctrl+C stops it. The same password store is used. A second writer is refused. `service uninstall-launcher` removes only an unchanged owned protocol registration and preserves data. No Windows startup task is created.
 

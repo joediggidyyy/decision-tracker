@@ -39,7 +39,11 @@ def test_managed_cold_start_reuse_stop(tmp_path):
     initialize(path,python=sys.executable,source_root=Path(__file__).resolve().parents[1]/'src',data_root=tmp_path/'data',port=port)
     first=None
     try:
-        first=ensure(path);assert first['started'] and first['ready']
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(3) as pool:starts=list(pool.map(lambda _:ensure(path),range(3)))
+        assert sum(x['started'] for x in starts)==1
+        assert len({x['instance_id'] for x in starts})==1
+        first=starts[0];assert first['ready']
         second=ensure(path);assert not second['started'] and second['instance_id']==first['instance_id']
         code=local_admin(path,'setup-code')['code'];assert code
         assert local_admin(path,'status')['state']=='RUNNING'
@@ -47,7 +51,10 @@ def test_managed_cold_start_reuse_stop(tmp_path):
         value,cfg=load(path);bundle=read_bundle(Path(value['bundle']))
         deadline=time.monotonic()+10
         while time.monotonic()<deadline:
-            if probe(value,cfg,bundle['control_key']) is None:break
+            try:
+                if probe(value,cfg,bundle['control_key']) is None:break
+            except Fault as exc:
+                assert exc.code=='SERVICE_UNAVAILABLE'
             time.sleep(.1)
         else:raise AssertionError('Managed process did not stop')
     finally:
@@ -157,3 +164,63 @@ def test_status_poll_does_not_extend_idle_timer(tmp_path):
         assert app.state.lifecycle.last==0
         assert client.get('/api/v1/projects',headers={'Authorization':'Bearer '+raw}).status_code==200
         assert app.state.lifecycle.last==1000
+
+
+def test_managed_agent_cli_and_online_offline_recovery(tmp_path):
+    import os,sys,socket,subprocess
+    import pytest
+    if os.name!='nt':pytest.skip('Windows adapter')
+    from decision_tracker.deployment import initialize,load,atomic_json,ensure,local_admin,probe
+    from decision_tracker.windows_local import read_bundle
+    from decision_tracker.config import PrincipalConfig
+    sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
+    path=tmp_path/'deployment'/'deployment.json';initialize(path,python=sys.executable,source_root=Path(__file__).resolve().parents[1]/'src',data_root=tmp_path/'data',port=port)
+    value,cfg=load(path);cfg.principals.append(PrincipalConfig(id='agent',token_env='DT_AGENT_TOKEN',projects=['alpha'],capabilities=['read','write','propose']))
+    atomic_json(Path(value['config']),cfg.model_dump(mode='json'))
+    store=Credentials(Path(cfg.auth_store));code=local_admin(path,'setup-code')['code'];store.redeem('bootstrap',code,OLD,OLD)
+    token=local_admin(path,'token-create',principal='agent',store_local=True)
+    def cli(*args):
+        result=subprocess.run([sys.executable,'-m','decision_tracker.cli',*args,'--deployment',str(path),'--credential-principal','agent','--json'],capture_output=True,text=True,timeout=15)
+        return result.returncode,json.loads(result.stdout)
+    try:
+        ensure(path)
+        status,result=cli('service','status');assert status==0 and result['ok']
+        status,result=cli('project','list');assert status==0 and result['data']==[]
+        status,result=cli('project','show','--project','other');assert status==2 and result['error']['code']=='NOT_FOUND'
+        reset=local_admin(path,'recover')['code'];assert store.state()['state']=='recovery_pending'
+        assert cli('project','list')[0]==0
+        local_admin(path,'reset-password',code=reset,password=NEW,confirmation=NEW)
+        assert store.check_password(NEW)>1
+        replacement=local_admin(path,'token-rotate',token_id=token['token_id'],store_local=True)
+        with pytest.raises(Fault):store.token_principal(token['token'])
+        assert cli('project','list')[0]==0
+        local_admin(path,'token-revoke',token_id=replacement['token_id']);assert cli('project','list')[0]==4
+    finally:
+        local_admin(path,'stop')
+        deadline=time.monotonic()+10;bundle=read_bundle(Path(value['bundle']))
+        while time.monotonic()<deadline:
+            try:
+                if probe(value,cfg,bundle['control_key']) is None:break
+            except Fault as exc:
+                assert exc.code=='SERVICE_UNAVAILABLE'
+            time.sleep(.05)
+        else:raise AssertionError('Managed service did not stop')
+    reset=local_admin(path,'recover')['code']
+    local_admin(path,'reset-password',code=reset,password=OLD,confirmation=OLD)
+    assert store.check_password(OLD)>1
+
+
+def test_two_sessions_revoke_and_recovery_keep_agent_independent(tmp_path):
+    from decision_tracker.password_auth import PasswordAuth
+    from decision_tracker.config import PrincipalConfig
+    import pytest
+    store=Credentials(tmp_path/'auth.sqlite',initialize=True);code=store.issue('bootstrap');store.redeem('bootstrap',code,OLD,OLD)
+    cfg=Config();cfg.principals.append(PrincipalConfig(id='agent',token_env='DT_AGENT_TOKEN',projects=['alpha'],capabilities=['read']))
+    auth=PasswordAuth(cfg,store);one,_=auth.login(OLD);two,_=auth.login(OLD);_,raw=store.token_create('agent')
+    epoch=auth.session(one)['epoch'];new_epoch=store.revoke_sessions(OLD,epoch);fresh,_=auth.new_session(new_epoch)
+    for sid in [one,two]:
+        with pytest.raises(Fault):auth.session(sid)
+    assert auth.session(fresh) and auth.bearer(raw).id=='agent'
+    store.issue('recovery')
+    with pytest.raises(Fault):auth.session(fresh)
+    assert auth.bearer(raw).id=='agent'

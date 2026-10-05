@@ -14,3 +14,6 @@
 - Add on-demand Windows launch/reuse, safe 90-minute idle shutdown and bounded draft leases.
 - Add password setup/change, session revocation, CLI-only recovery and separate durable agent tokens.
 - Add a subtle footer account icon, owner-local administration and protected deployment storage.
+
+- Closeout: verify concurrent launch, scoped stored-agent access, online/offline recovery and session/token revocation; handle Windows shutdown connection aborts.
+- Reconcile local-use acceptance and repository tracking boundaries; retain migration work for the next session.

@@ -95,3 +95,44 @@ def test_clock_rollback_invalidates_code_and_missing_store_fails(tmp_path):
     with pytest.raises(Fault):store.redeem('bootstrap',code,OLD,OLD)
     tick[0]=1001
     with pytest.raises(Fault):store.redeem('bootstrap',code,OLD,OLD)
+
+
+def test_stop_admission_race_never_stops_active_work():
+    for _ in range(20):
+        life=Lifecycle(enabled=True);life.start();barrier=threading.Barrier(2)
+        def admit():
+            barrier.wait()
+            try:life.enter();return True
+            except Fault:return False
+        def stop():
+            barrier.wait()
+            try:return life.stop(explicit=True)
+            except Fault:return False
+        with ThreadPoolExecutor(2) as pool:
+            a=pool.submit(admit);b=pool.submit(stop);entered,stopped=a.result(),b.result()
+        assert entered!=stopped
+        if entered:assert life.state=='RUNNING' and life.active==1;life.leave()
+        else:assert life.state=='DRAINING' and life.active==0
+
+
+def test_interrupted_token_publication_keeps_previous_active(tmp_path):
+    import os
+    if os.name!='nt':pytest.skip('Windows adapter')
+    from decision_tracker.deployment import initialize,load,atomic_json
+    from decision_tracker.administration import recover_token_journal
+    from decision_tracker.credentials import digest
+    path=tmp_path/'deployment'/'deployment.json';initialize(path,data_root=tmp_path/'data');value,cfg=load(path)
+    store=Credentials(__import__('pathlib').Path(cfg.auth_store));old,raw=store.token_create('agent');new,pending=store.token_create('agent',state='pending')
+    atomic_json(path.parent/'token-journal.json',{'new_id':new,'old_id':old,'principal':'agent','digest':digest(pending)})
+    recover_token_journal(value,store)
+    assert store.token_principal(raw)=='agent'
+    with pytest.raises(Fault):store.token_principal(pending)
+
+
+def test_corrupt_protected_bundle_refused(tmp_path):
+    import os
+    if os.name!='nt':pytest.skip('Windows adapter')
+    from decision_tracker.windows_local import read_bundle
+    path=tmp_path/'secrets.bin';path.write_bytes(b'Not a DPAPI credential bundle')
+    with pytest.raises(Fault) as caught:read_bundle(path)
+    assert caught.value.code=='SETUP_REQUIRED'

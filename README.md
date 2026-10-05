@@ -2,7 +2,7 @@
 
 Portable, project-aware decision tracking for local use. Each project has its own SQLite ledger; a central catalog provides explicit project selection. The browser, CLI and API share the same transition rules, revision checks and audit history.
 
-**State:** internal alpha implementation. Windows verification and owner acceptance are separate. Current evidence is recorded in docs/verification.md. No public release, migration or production qualification is implied.
+**State:** internal alpha for local use. The operator confirmed password setup, system-browser testing and launch through the Polymath home card on 2026-10-05. Current evidence is recorded in docs/verification.md. No public release, migration or production qualification is implied.
 
 ## Start the application
 

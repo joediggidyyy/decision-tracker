@@ -1,36 +1,26 @@
 # Verification state
 
-Implementation: internal alpha. Owner acceptance: pending. Production qualification: not claimed.
+Internal alpha for local use. On 2026-10-05 the operator confirmed successful password setup, testing in the system browser and launch through the Polymath home card. This is operator-reported acceptance, separate from agent-observed and automated proof. No real source project has been migrated.
 
-All tests run through native Calamum. Generated run logs, proof manifests and screenshots are retained locally and excluded from Git. The final handoff receipt supplies exact run IDs and source hashes.
+## Retained evidence
 
-| Area | Evidence route |
+| Checkpoint | Result |
 |---|---|
-| State, history, retries, pagination, UTF-8 | dt-focus / dt-integration pytest lane |
-| API, sessions, scope, Host/Origin/CSRF, paths | dt-integration pytest lane |
-| Concurrency, interrupted write, busy bound, restart | dt-integration pytest lane |
-| Real CLI HTTP and mutation command coverage | dt-integration pytest lane |
-| Export/import, backup, restore, tamper detection | dt-integration pytest lane |
-| Actual browser, responsive shell, home launch | dt-browser empirical lane |
-| Environment/package and bounded process cleanup | dt-bootstrap / dt-integration |
+| 20261005T102315Z-dt-integration | 78 tests passed; source unchanged |
+| 20261005T103305Z-dt-auth-focus | 15 focused tests passed; source unchanged |
+| 20261005T101935Z-dt-account-browser | Observed password sign-in, footer account placement, form layout, draft retention and narrow layout passed |
+| 20261005T105347Z-dt-auth-focus | 20 focused tests passed; source unchanged; concurrent launch, stored-agent CLI, online/offline recovery, revocation, interrupted token publication and shutdown admission |
+| 20261005T105612Z-dt-integration | Final pre-push checkpoint: 87 tests passed; source unchanged |
+| Agent skill metadata | Official validator passed through native Calamum; installed skill matches repository source |
 
-Retained failures include the initial Windows backup-handle defect and browser label-encoding defect. Corrections require subsequent passing evidence; failed observations are not erased.
+Native software evidence is retained under ignored `.calamum/generated/runs` and `.local/proofs`. Proof copies bind imports to copied source and use bounded Windows process supervision. Tests use disposable credentials; no owner password or real project database is a fixture. History contains earlier checkpoints; later source correspondence is checked explicitly rather than inferred from older runs.
 
-Two source-project migrations remain excluded. No real project database has been registered by proof. The browser service uses isolated synthetic data and is stopped after review.
+Failed runs remain retained. Closeout failures included two incorrect test expectations (scoped project nondisclosure and public health versus authenticated access), then an actual Windows connection-abort edge during shutdown. The corrected test follows the existing authorization contract; the runtime now returns a controlled unavailable error for the abort. It must still stop within the original deadline.
 
-Current responsive behavior supersedes the earlier compact-collapse experiment: at 980 CSS pixels or narrower the panel is always visible in document flow and the focus icon is hidden. Desktop focus glyph is 18px at 60% opacity inside a 44px target. Actual 390px observations show no horizontal overflow, including entry from desktop focus mode. Full browser qualification, actual 200% zoom and assistive-technology review remain pending.
+Existing integration covers decision rules, revisions/history, HTTP/CLI binding, retries, scope, Host/Origin/CSRF, bounded input, paths, notifications, artifacts and candidate-only recovery. Final combined evidence and native project aggregate are retained in the local closeout audit.
 
-Native integration run `20261005T081958Z-dt-integration` passed 64 tests with source correspondence. Run `20261005T082504Z-dt-integration` passed 64 test assertions but its wrapper failed source correspondence because files changed during execution; it is not a whole-source pass. Focused run `20261005T082844Z-dt-live-focus` passed 10 tests with source correspondence, covering the notification/transport/parser increment. Subsequent changes were UI refinements and handoff artifacts. The next stable integration receipt is retained separately rather than written into its own tested source snapshot.
+## Limits
 
-Browser evidence includes red/yellow/green/gray states, unchanged observer focus/content/scroll on notification, retained drafts, explicit comparison/rebase followed by a separate save, desktop resizing and compact stacking. These are partial observations, not a full empirical-lane pass. The preview source was refreshed during operator review and cannot serve as immutable whole-run source proof.
+Actual 200% zoom and screen-reader checks remain explicitly deferred by the operator for local use. Cross-platform qualification, public distribution, MCP and the two source-project migrations are separate. Current-user Windows tests do not establish protection from a compromised OS account or exhaustive cross-user/OS failure coverage. LC/AC planning matrices are not blanket security certification.
 
-The skill's metadata validator checks structure only. Existing real HTTP CLI tests cover bindings, mutations, replay and conflict; they do not establish independent-agent usability. Normal-startup instructions do not claim production credential provisioning or real-data activation.
-
-
-Credential/lifecycle increment: native integration `20261005T102315Z-dt-integration` passed 78 tests with unchanged source. Focused credential run `20261005T101845Z-dt-auth-focus` passed; empirical `20261005T101935Z-dt-account-browser` passed observed login, footer placement, password-form layout, draft retention and 640px behavior. Browser proof used disposable preprovisioned credentials. Native API tests cover setup/password change; browser credential-change submission was not exercised. Retained earlier failures include named-pipe mode, response lifetime, busy reconnect and Windows connection timing.
-
-Installed local handler and normal cold start/reuse were observed separately from immutable software proof. This does not prove all LC01–LC10 or AC01–AC10 adversarial/OS cases. Actual 200% zoom, screen-reader review and owner acceptance remain unverified. Real owner password setup and agent grants are private operator actions, not completed by implementation.
-
-Final focused proof `ff15f9b34b4c43779bc715555b31350f` passed with unchanged source after adding malformed-URI rejection, unknown-listener refusal before authorization headers, and migration prevalidation checks. The official agent-skill metadata validator also passed through native Calamum; installed skill bytes match the repository copy.
-
-Latest focused run `20261005T103305Z-dt-auth-focus` passed with unchanged source, including a status-poll regression: status leaves the idle timestamp unchanged while a project read advances it. This follows the 78-test integration checkpoint; subsequent runtime changes were covered by focused proofs rather than a repeated broad suite.
+The historical home-layout proof needs retained `.local/home-integration` artifacts, deliberately excluded from Git because the business home page is private. A new clone needs an authorized sanitized local fixture before that empirical/history check; do not copy the private page or secrets into the repository to make the suite self-contained.
