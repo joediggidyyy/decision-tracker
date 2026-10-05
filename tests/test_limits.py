@@ -23,12 +23,13 @@ def test_resolution_selection_and_reopen_impact_are_audited(ledger):
  change(s,p,u,[{"op":"decision.close","key":"D000001","data":{"answer":"One","rationale":"Reason","selected_option":first}}],2,{"D000001":2},authority_refs=["synthetic"])
  with pytest.raises(Fault):
   change(s,p,u,[{"op":"option.edit","key":"D000001","id":second,"data":{"disposition":"selected"}}],3,{"D000001":3},authority_refs=["synthetic"])
- change(s,p,u,[{"op":"decision.edit-resolution","key":"D000001","data":{"answer":"Two","selected_option":second}}],3,{"D000001":3},authority_refs=["synthetic"])
+ change(s,p,u,[{"op":"decision.reopen","key":"D000001","data":{"impact":"Reconsider selection"}}],3,{"D000001":3},authority_refs=["synthetic"])
+ change(s,p,u,[{"op":"decision.close","key":"D000001","data":{"answer":"Two","selected_option":second}}],4,{"D000001":4},authority_refs=["synthetic"])
  selected=[x for x in s.children("alpha",u,p,"D000001","alternatives")["data"] if x["disposition"]=="selected"]
  assert selected[0]["id"]==second
- change(s,p,u,[{"op":"decision.reopen","key":"D000001","data":{"impact":"Reevaluate compatibility"}}],4,{"D000001":4},authority_refs=["synthetic"])
+ change(s,p,u,[{"op":"decision.reopen","key":"D000001","data":{"impact":"Reevaluate compatibility"}}],5,{"D000001":5},authority_refs=["synthetic"])
  from decision_tracker import store
  with s.catalog.project("alpha",u,p) as (db,_):
-  tx=store.unpack(db.execute("SELECT * FROM transactions WHERE ledger_revision=5").fetchone())
+  tx=store.unpack(db.execute("SELECT * FROM transactions WHERE ledger_revision=6").fetchone())
   assert tx["request_json"]["operations"][0]["data"]["impact"]=="Reevaluate compatibility"
- assert Artifacts(s).verify("alpha",u,p)["revision"]==5
+ assert Artifacts(s).verify("alpha",u,p)["revision"]==6

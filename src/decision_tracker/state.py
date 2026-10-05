@@ -7,6 +7,39 @@ from .errors import require, stale
 DECIDE = {"decision.close", "decision.reopen", "decision.lock", "decision.amend",
           "decision.deprecate", "decision.edit-resolution"}
 CREATE_FIELDS = {"title","question","answer","rationale","owner_role","work_tag","defer_reason","resume_trigger","occurred_at","evidence_state"}
+ORDINARY = {"decision.edit", "decision.edit-resolution", "decision.set-work", "decision.defer",
+            "decision.resume", "decision.challenge", "decision.resolve-challenge",
+            "option.add", "option.edit", "option.retire", "reference.add", "reference.edit",
+            "reference.retire", "link.add", "link.unlink"}
+
+def check_new_request(db, request):
+    """Check current revisions and closed-at-start boundaries after receipt replay."""
+    affected = {}
+    for operation in request.operations:
+        keys = [operation.key] if operation.key else []
+        if operation.op == "link.add": keys.append(operation.data.get("target_key"))
+        if operation.op == "link.unlink": keys.append(store.get(db, "links", str(operation.id))["target_key"])
+        if operation.op == "decision.deprecate": keys.append(operation.data.get("replacement_key"))
+        for key in keys:
+            if not key: continue
+            require(isinstance(key, str), "VALIDATION_ERROR", "Decision keys must be text.")
+            if key.startswith("@"): continue
+            obj = store.get(db, "decisions", key)
+            expected = request.expected_decision_revisions.get(key)
+            require(expected is not None, "VALIDATION_ERROR", "Supply every affected decision revision.", key=key)
+            if expected != obj["revision"]: stale(obj["revision"])
+            affected.setdefault(key, []).append(operation.op)
+    require(not any(op.op == "decision.edit-resolution" for op in request.operations),
+            "INVALID_TRANSITION", "Resolution correction is withdrawn. Reopen, edit the open decision, then Close.")
+    for key, operations in affected.items():
+        obj = store.get(db, "decisions", key)
+        if any(op in ORDINARY for op in operations):
+            require(not obj["locked"], "LOCKED_BASELINE", "Amend the protected baseline instead.", 409)
+        if obj["status"] == "closed":
+            require(not any(op in ORDINARY for op in operations), "INVALID_TRANSITION",
+                    "Reopen this decision before changing its content.", key=key)
+            require(not ("decision.reopen" in operations and len(operations) > 1), "INVALID_TRANSITION",
+                    "Reopening must commit before another change to this decision.", key=key)
 
 def fields(data, allowed):
     require(not (set(data)-set(allowed)), "VALIDATION_ERROR", "Unknown operation fields.",
@@ -77,6 +110,8 @@ class Mutator:
             return
         obj = self.touch(operation.key, protected=op in {"decision.amend","decision.deprecate"})
         key = obj["key"]
+        if op in ORDINARY:
+            require(obj["status"] == "open", "INVALID_TRANSITION", "Reopen this decision before changing its content.", key=key)
         if op.startswith("decision."):
             action = op.split(".")[1]
             if action in ("edit","edit-resolution"):
@@ -168,7 +203,7 @@ class Mutator:
             permitted=set(model.model_fields)-{"id","decision_key","revision"}
             fields(data,permitted)
             if family=="option":
-                require(data.get("disposition")!="selected","INVALID_TRANSITION","Select an option through close or edit-resolution.")
+                require(data.get("disposition")!="selected","INVALID_TRANSITION","Select an option through Close.")
             if action=="add":
                 child=model(id=uuid4(),decision_key=key,**data).model_dump(mode="json")
             else:
@@ -178,7 +213,7 @@ class Mutator:
                 if child.get("disposition")=="selected" or data.get("disposition") in ("selected","rejected"):
                     self.authority()
                 if child.get("disposition")=="selected":
-                    require(not data or set(data)<= {"position"},"INVALID_TRANSITION","Edit resolution before modifying the selected option.")
+                    require(not data or set(data)<= {"position"},"INVALID_TRANSITION","Reopen before modifying the selected option.")
                 child.update(data);child["revision"]+=1
                 if action=="retire":
                     require(not data,"VALIDATION_ERROR","Retire accepts no fields.")
@@ -190,6 +225,7 @@ class Mutator:
         elif op=="link.add":
             fields(data, {"target_key","type"})
             target=self.touch(self.key(data.get("target_key")))
+            require(target["status"] == "open", "INVALID_TRANSITION", "Reopen the linked decision before changing its content.")
             kind=data.get("type")
             require(kind in ("relates_to","depends_on"),"INVALID_TRANSITION","Amendment and supersession links require lifecycle transitions.")
             source,dest=key,target["key"]
@@ -200,7 +236,9 @@ class Mutator:
             link=store.get(self.db,"links",operation.id)
             require(key==link["source_key"] and link["active"],"INVALID_TRANSITION","Select an active outbound relationship.")
             require(link["type"] in ("relates_to","depends_on"),"INVALID_TRANSITION","Lifecycle relationships cannot be unlinked.")
-            self.touch(link["target_key"]);link["active"]=False;link["revision"]+=1;store.save(self.db,"links",link)
+            target=self.touch(link["target_key"])
+            require(target["status"] == "open", "INVALID_TRANSITION", "Reopen the linked decision before changing its content.")
+            link["active"]=False;link["revision"]+=1;store.save(self.db,"links",link)
 
     def validate(self):
         for key in self.original:

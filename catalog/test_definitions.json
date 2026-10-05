@@ -781,6 +781,71 @@
         "sandbox_test": [],
         "empirical_test": []
       }
+    },
+    {
+      "id": "dt-closed-records",
+      "title": "Closed-record shared policy and compatibility",
+      "summary": "Closed-record shared policy and compatibility",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "integrated-application"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "dt-closed-records-assertions",
+            "title": "Approval events and schema recovery",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_closed_records.py",
+              "tests/test_approvals.py",
+              "tests/test_limits.py",
+              "tests/test_cli.py",
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
     }
   ]
 }

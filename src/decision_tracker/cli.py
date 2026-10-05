@@ -57,7 +57,8 @@ def parser():
         parent=groups.add_parser(group,help=group+" operations")
         children=parent.add_subparsers(dest="action",required=True)
         for verb in verbs:
-            child=children.add_parser(verb,description=f"{group} {verb}; use the shared versioned API.")
+            description = "Withdrawn for new writes. Reopen, edit the open decision, then Close. Historical receipts still replay." if group=="decision" and verb=="edit-resolution" else f"{group} {verb}; use the shared versioned API. Closed records require reopening before ordinary edits. Reopening must commit separately."
+            child=children.add_parser(verb,description=description)
             common(child)
             if group=='auth' and verb=='token':
                 token_actions=child.add_subparsers(dest='token_action',required=True)

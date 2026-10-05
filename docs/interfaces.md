@@ -63,7 +63,7 @@ Retry an uncertain write with the identical body and request ID. A committed mat
 | change | apply |
 | data | export, import-validate, import-new, backup, verify, restore-check, artifact-list, artifact-download |
 
-Selecting an option belongs to `decision close` or `decision edit-resolution`, using `selected_option` in input or `--selected-option`. Selection changes require decide authority. Reopen clears selection. Rejected options need reason and authority. Protected and deprecated aggregates reject ordinary editing.
+Selecting an option belongs to `decision close`, using `selected_option` in input or `--selected-option`. Selection changes require decide authority. Reopen clears selection. Rejected options need reason and authority. Protected and deprecated aggregates reject ordinary editing.
 
 Project create/register use expected catalog revision and request ID. Register accepts a contained relative ledger path; duplicate enabled UUID/path is rejected. Disable/enable preserve history and identity. There is no remove/repoint operation.
 
@@ -115,7 +115,7 @@ Local credential operations are an OS-owner administrative exception, not ledger
 
 The **Record decision** form shows proposed solutions, then Decision and Why this choice. Selecting a proposal fills those fields and the optional change note. Editing the answer switches to a written answer; editing the explanation keeps the proposal selected. Save closes the question; it does not perform implementation work.
 
-`decision.close` and `decision.edit-resolution` accept `data.approval`. Current approval is `{"mode":"authenticated_now"}` and requires a password-authenticated human session plus decide permission. Recorder identity and UTC recording time come from the server. Agent bearer credentials and legacy token sessions cannot use this mode.
+`decision.close` accepts `data.approval`. Current approval is `{"mode":"authenticated_now"}` and requires a password-authenticated human session plus decide permission. Recorder identity and UTC recording time come from the server. Agent bearer credentials and legacy token sessions cannot use this mode.
 
 For an earlier or external approval, use:
 
@@ -129,7 +129,7 @@ Selecting a proposal on the structured path requires its `selected_option` ID an
 
 Approval events count with the decision toward the 128 KiB aggregate limit. Events are immutable and linked across resolution edits and reopen/close cycles. Detail/as-of returns `latest_resolution_approval`; GET `.../decisions/{key}/approvals` returns paginated summaries, and GET `.../approvals/{event_id}` returns the full event with revision-pinned chunks for long text. Existing project identity and read permission requirements apply. GET `/api/v1/schema` advertises `approval_events_v1` and ledger schemas 1 and 2.
 
-CLI `decision close`, `decision edit-resolution` and `change apply` forward this object through existing JSON inputs. Bearer agents must report genuine external approval evidence and possess decide permission; this feature grants no new access.
+CLI `decision close` and `change apply` forward this object through existing JSON inputs. Bearer agents must report genuine external approval evidence and possess decide permission; this feature grants no new access.
 
 The browser retains the exact request after an uncertain response, retries it once, then offers Retry original save. Each changes request is bounded at 15 seconds. Definitive rejection permits correction with a new request ID. A failed refresh after a successful save is reported as a saved decision.
 
@@ -152,3 +152,11 @@ Registration accepts `candidate_id` and `expected_candidate_digest` together ins
 ## Artifact manager pagination
 
 GET `/api/v1/projects/{project_id}/artifacts?kind=backup&order=newest&limit=25` lists one kind, ordered by creation date then ID descending. CLI `data artifact-list --kind backup --order newest --limit 25` uses the same API. Manager envelopes add `previous_cursor`, `total_count`, `page_index`, `page_count`, and `inventory_sha256`. Cursors bind project identity, ledger revision, kind, order, limit and public inventory; changed files return `CURSOR_STALE`. Response-byte limits may yield fewer rows than the selected maximum. Legacy calls without these fields retain mixed forward pagination. No database migration is required.
+
+## Closed-record mutation policy
+
+Closed records reject ordinary content and work-state changes in the browser, CLI and API, including dry runs. Reopen must commit in a separate request before editing; then Close with current approval. Both endpoints of ordinary relationship changes must be open and unlocked. Protected baselines require Amend. Reopen, Protect, Amend and Deprecate retain their existing state, authority and evidence requirements. Inspection and historical snapshots remain available.
+
+`decision edit-resolution` remains recognized for compatibility but is withdrawn for new writes (`INVALID_TRANSITION`, HTTP 422). Reopen, use `decision edit` on the open record, then Close. Exact historical committed requests still replay their original receipt after permission and payload checks; no history is rewritten. Reusing a request ID with different content still fails.
+
+A batch cannot reopen and mutate or reclose the same closed-at-start decision. Retain a stale browser draft after remote closure; review current state and obtain authorized reopening instead of automatically advancing revisions. Disabled pane controls keep the fixed grid. Outside the pane, unavailable child mutation controls are hidden; Protect/Amend is beside Approval and Close/Reopen stays beside Question.

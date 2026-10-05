@@ -40,6 +40,8 @@ class Service:
                 return result
             require(meta['schema_version']==2,'UPGRADE_REQUIRED','This project needs a data-format upgrade before changes can be saved.',409)
             if meta["ledger_revision"]!=request.expected_revision:stale(meta["ledger_revision"])
+            from .state import check_new_request
+            check_new_request(db, request)
             from . import approvals
             stamp=now()
             require(not any(k.startswith('dt_') for k in request.attribution),'VALIDATION_ERROR','Server attribution fields cannot be supplied.')

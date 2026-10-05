@@ -6,11 +6,12 @@ import {LiveMonitor} from './live.js';
 import {installAccount} from './account.js';
 const $=id=>document.getElementById(id);
 const state={csrf:null,caps:[],projects:[],project:null,revision:0,record:null,cursor:null,edit:null,listRevision:null,contextFingerprint:null,view:null};
-let listGeneration=0,detailGeneration=0,searchTimer=null,acceptedRoute=location.hash;
+let pageGeneration=0,listGeneration=0,detailGeneration=0,searchTimer=null,acceptedRoute=location.hash;
 function rememberView(key=null){if(state.project){const params=new URLSearchParams({project:state.project.project_id});if(state.view==='projects-view')params.set('view','projects');else if(key)params.set('decision',key);history.replaceState(null,'','#'+params);}else if(state.view==='projects-view')history.replaceState(null,'','#view=projects');acceptedRoute=location.hash;}
 const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
 function message(text,error=false){const e=$(error?'error':'notice');e.textContent=text;e.hidden=false;}
 function failure(e){message(e.message,true);}
+const pageFailure=(view,generation=pageGeneration)=>e=>{if(state.view===view&&pageGeneration===generation)failure(e);};
 async function api(path,body,method=body===undefined?'GET':'POST'){
  const bound=path.match(/^\/api\/v1\/projects\/([^/]+)\//);
  const binding=bound&&state.project?{id:state.project.project_id,uuid:state.project.ledger_uuid}:null;
@@ -22,7 +23,7 @@ async function api(path,body,method=body===undefined?'GET':'POST'){
  const value=r.status===204?{ok:true,data:{}}:await readResponse(r);if(binding&&(!state.project||state.project.project_id!==binding.id||state.project.ledger_uuid!==binding.uuid))throw new Error('Project changed. Discarding the previous response.');if(!r.ok){const e=new Error(value.error?.message||'Request failed');e.code=value.error?.code;e.details=value.error?.details;throw e;}return value;
 }
 const base=()=>'/api/v1/projects/'+encodeURIComponent(state.project.project_id);
-function button(label,fn,parent,disabled=false){const b=node('button',label);b.type='button';b.disabled=disabled;b.onclick=()=>Promise.resolve().then(fn).catch(failure);parent.append(b);return b;}
+function button(label,fn,parent,disabled=false){const b=node('button',label);b.type='button';b.disabled=disabled;b.onclick=()=>{const view=state.view,generation=pageGeneration;return Promise.resolve().then(fn).catch(pageFailure(view,generation));};parent.append(b);return b;}
 function emptyDecisionControls(){const box=$('context');box.replaceChildren();
  for(const [cls,labels] of [['control-primary',['Edit','Status']],['control-secondary',['def','chal','dep']],['control-supporting',['opt','ref','rel']]]){const grid=node('div',undefined,'control-grid '+cls);for(const label of labels){const cell=node('div',undefined,'compact-control');button(label,()=>{},cell,true);grid.append(cell);}box.append(grid);}
  const help=button('ⓘ',()=>{tip.hidden=!tip.hidden;help.setAttribute('aria-expanded',String(!tip.hidden));if(!tip.hidden){const r=help.getBoundingClientRect(),b=tip.getBoundingClientRect();tip.style.left=Math.max(18,Math.min(r.left,innerWidth-b.width-18))+'px';tip.style.top=Math.max(18,Math.min(r.bottom+6,innerHeight-b.height-18))+'px';}},box);help.className='panel-info';help.setAttribute('aria-label','About these controls');help.setAttribute('aria-expanded','false');
@@ -32,7 +33,7 @@ async function defaultDecision(){if(!state.project?.enabled||state.record||state
  let r=await api(base()+'/decisions?status=open&limit=1');if(!r.data.length)r=await api(base()+'/decisions?limit=1');if(project!==state.project||generation!==detailGeneration||state.record||state.view!=='workspace')return;
  if(r.data.length)await detail(r.data[0].key);else {emptyDecisionControls();$('detail').replaceChildren(node('p','No decisions yet.'));}
 }
-function show(view){state.view=view;document.body.classList.toggle('signed-out',view==='login-view');$('context').hidden=view!=='workspace';$('admin-watermark').hidden=view==='login-view';$('admin-controls').hidden=view!=='projects-view';for(const [id,target] of [['decisions-button','workspace'],['projects-button','projects-view']]){if(view===target)$(id).setAttribute('aria-current','page');else $(id).removeAttribute('aria-current');}if(view==='projects-view'){document.querySelector('.local-shell').classList.remove('focus-view');rememberView();}$('focus-toggle').hidden=view!=='workspace';for(const id of ['login-view','workspace','projects-view'])$(id).hidden=id!==view;if(view==='workspace'&&!state.record)emptyDecisionControls();}
+function show(view){if(state.view!==view){pageGeneration++;$('notice').textContent='';$('error').textContent='';$('error').hidden=true;}state.view=view;document.body.classList.toggle('signed-out',view==='login-view');$('context').hidden=view!=='workspace';$('admin-watermark').hidden=view==='login-view';$('admin-controls').hidden=view!=='projects-view';for(const [id,target] of [['decisions-button','workspace'],['projects-button','projects-view']]){if(view===target)$(id).setAttribute('aria-current','page');else $(id).removeAttribute('aria-current');}if(view==='projects-view'){document.querySelector('.local-shell').classList.remove('focus-view');rememberView();}$('focus-toggle').hidden=view!=='workspace';for(const id of ['login-view','workspace','projects-view'])$(id).hidden=id!==view;if(view==='workspace'&&!state.record)emptyDecisionControls();}
 async function projects(){
  const r=await api('/api/v1/projects');state.catalogRevision=r.catalog_revision;state.projects=r.data;
  $('project').replaceChildren(new Option('Choose project',''));
@@ -56,9 +57,9 @@ async function listing(more=false){
  if(!$('results').children.length)$('results').append(node('p','No decisions match these filters.','muted'));
  $('result-count').textContent=$('results').querySelectorAll('button').length+(state.cursor?' +':'');$('load-more').hidden=!state.cursor;live.update();if(!state.record&&state.view==='workspace')await defaultDecision();
 }
-$('filters').onsubmit=e=>{e.preventDefault();listing().catch(failure);};
-$('load-more').onclick=()=>listing(true).catch(failure);
-$('search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>listing().catch(failure),250);});
+$('filters').onsubmit=e=>{e.preventDefault();listing().catch(pageFailure(state.view));};
+$('load-more').onclick=()=>listing(true).catch(pageFailure(state.view));
+$('search').addEventListener('input',()=>{clearTimeout(searchTimer);const view=state.view;searchTimer=setTimeout(()=>{if(state.view===view)listing().catch(pageFailure(view));},250);});
 async function expand(value){if(!value||typeof value!=='object'||!value.chunks_url)return value;let result='',offset=0;do{const r=await api(value.chunks_url+'&offset='+offset);result+=r.data.text;offset=r.data.next_offset;}while(offset!==null);return result;}
 async function all(url){const values=[];let cursor=null;do{const r=await api(url+(cursor?(url.includes('?')?'&':'?')+'cursor='+encodeURIComponent(cursor):''));values.push(...r.data);cursor=r.next_cursor;}while(cursor);return values;}
 async function detail(key){
@@ -71,34 +72,42 @@ async function detail(key){
  if(state.schemaVersion<2)box.append(node('p','This project needs a verified data-format upgrade before the new decision form can be used. Existing decisions remain readable.','notice'));
  const question=node('section',undefined,'question-section'),heading=node('div',undefined,'question-heading');heading.append(node('h3','Question','section-title'));question.append(heading,node('p',d.question,'long-text'));box.append(question);
  for(const [label,k] of [['Answer','answer'],['Rationale','rationale']])box.append(node('h3',label),node('p',d[k]||'Not recorded.','long-text'));
- const approval=d.latest_resolution_approval;
- if(approval){box.append(node('h3','Approval','section-title'),node('p',approval.mode==='authenticated_now'?'Approved in this application by '+approval.recorded_by:approval.mode==='reported'?'Approved by (reported): '+approval.reported_approver:'Approval recorded from legacy references; approver and date are unknown.'));box.append(node('p','Decision date: '+(approval.occurred_at||approval.occurred_date||'Unknown')),node('p','Recorded by '+approval.recorded_by+' at '+approval.recorded_at));}
+ const approval=d.latest_resolution_approval,approvalRegion=node('section',undefined,'approval-section'),approvalHeading=node('div',undefined,'approval-heading');
+ approvalHeading.append(node('h3','Approval','section-title'));approvalRegion.append(approvalHeading);
+ if(approval){approvalRegion.append(node('p',approval.mode==='authenticated_now'?'Approved in this application by '+approval.recorded_by:approval.mode==='reported'?'Approved by (reported): '+approval.reported_approver:'Approval recorded from legacy references; approver and date are unknown.'),node('p','Decision date: '+(approval.occurred_at||approval.occurred_date||'Unknown')),node('p','Recorded by '+approval.recorded_by+' at '+approval.recorded_at));}
+ else approvalRegion.append(node('p',d.status==='open'?'Not recorded.':'Structured approval is unavailable. Approver and date are unknown.','muted'));
+ box.append(approvalRegion);
  const controls=$('context');controls.replaceChildren();
  const primary=node('div',undefined,'control-grid control-primary'),actions=node('div',undefined,'control-grid control-secondary'),supporting=node('div',undefined,'control-grid control-supporting');controls.append(primary,actions,supporting);
  const helpEntries=new Map(),help=button('\u24d8',()=>{const opening=help.getAttribute('aria-expanded')!=='true';if(opening)showHelp();else tip.hidden=true;help.setAttribute('aria-expanded',String(opening));},controls);help.className='panel-info';help.setAttribute('aria-label','About these controls');help.setAttribute('aria-expanded','false');
  const tip=node('div',undefined,'control-tooltip');tip.id='panel-control-help';tip.setAttribute('role','tooltip');tip.hidden=true;controls.append(tip);help.setAttribute('aria-describedby',tip.id);help.setAttribute('aria-controls',tip.id);
- const showHelp=()=>{tip.replaceChildren();for(const row of [primary,actions,supporting]){if(!row.children.length)continue;const list=node('dl');for(const cell of row.children){const entry=helpEntries.get(cell),term=node('dt',entry.label),description=node('dd');if(entry.label!==entry.full)description.append(node('strong',entry.full));description.append(node('span',entry.description));list.append(term,description);}tip.append(list);}tip.hidden=false;const rect=help.getBoundingClientRect(),bounds=tip.getBoundingClientRect();tip.style.left=Math.max(18,Math.min(rect.left,innerWidth-bounds.width-18))+'px';tip.style.top=Math.max(18,Math.min(rect.bottom+6,innerHeight-bounds.height-18))+'px';},hideHelp=()=>{tip.hidden=true;help.setAttribute('aria-expanded','false');};
+ const showHelp=()=>{tip.replaceChildren();for(const row of [primary,actions,supporting]){if(!row.children.length)continue;const list=node('dl');for(const cell of row.children){const entry=helpEntries.get(cell),term=node('dt',entry.label),description=node('dd');if(entry.label!==entry.full)description.append(node('strong',entry.full));description.append(node('span',entry.description));list.append(term,description);}tip.append(list);}tip.append(node('p',tip.dataset.availability));tip.hidden=false;const rect=help.getBoundingClientRect(),bounds=tip.getBoundingClientRect();tip.style.left=Math.max(18,Math.min(rect.left,innerWidth-bounds.width-18))+'px';tip.style.top=Math.max(18,Math.min(rect.bottom+6,innerHeight-bounds.height-18))+'px';},hideHelp=()=>{tip.hidden=true;help.setAttribute('aria-expanded','false');};
 
  help.addEventListener('pointerenter',showHelp);help.addEventListener('pointerleave',()=>{if(document.activeElement!==help)hideHelp();});help.addEventListener('focus',showHelp);help.addEventListener('blur',hideHelp);help.addEventListener('keydown',e=>{if(e.key==='Escape'){hideHelp();e.stopPropagation();}});
  function control(label,full,description,op,parent,disabled=false){const cell=node('div',undefined,'compact-control'),action=button(label,()=>{hideHelp();edit(op);},cell,disabled);action.setAttribute('aria-label',full);parent.append(cell);helpEntries.set(cell,{label,full,description});}
- const writable=state.caps.includes('write')&&!d.locked&&d.status!=='deprecated',decide=state.caps.includes('decide');
- if(writable)control('Edit','Edit','Change this record.','decision.edit',primary);
- else if(d.status==='closed'&&!d.locked&&decide)control('Edit','Edit','Change the recorded decision.','decision.edit-resolution',primary);
- if(writable){control('opt','Add option','Propose a solution.','option.add',supporting);control('ref','Add reference','Attach a source.','reference.add',supporting);control('rel','Add relationship','Link another decision.','link.add',supporting);}
+ const writable=state.caps.includes('write')&&!d.locked&&d.status==='open',decide=state.caps.includes('decide');
+ control('Edit','Edit','Change this open record.','decision.edit',primary,!writable);
+ control('Status','Status','Change work status on an open record.','decision.set-work',primary,!writable||d.work_tag==='deferred');
+ control(d.status==='open'&&d.work_tag==='deferred'?'res':'def',d.status==='open'&&d.work_tag==='deferred'?'Resume':'Defer','Pause or resume work on an open record.',d.work_tag==='deferred'?'decision.resume':'decision.defer',actions,!writable);
+ control(d.status==='open'&&d.contested?'resolve':'chal',d.status==='open'&&d.contested?'Resolve challenge':'Challenge','Record a disagreement or its resolution on an open record.',d.contested?'decision.resolve-challenge':'decision.challenge',actions,!writable||!['deferred','under-investigation'].includes(d.work_tag));
+ control('dep','Deprecate','End use of this decision; keep its history.','decision.deprecate',actions,d.status==='deprecated'||!decide);
+ for(const [label,full,description,op] of [['opt','Add option','Propose a solution.','option.add'],['ref','Add reference','Attach a source.','reference.add'],['rel','Add relationship','Link open decisions.','link.add']])control(label,full,description,op,supporting,!writable);
+ tip.dataset.availability=d.status==='closed'?'Reopen before editing content or work status.':d.status==='deprecated'?'Deprecated records cannot be changed.':!state.caps.includes('write')?'Editing requires write access.':'Unavailable actions require a different work status.';
  const closure=node('div',undefined,'closure-slot');question.append(closure);
- if(d.status==='open'&&writable){button('Close',()=>edit('decision.close'),closure,!decide).className='primary';control('Status','Status',d.work_tag==='deferred'?'Resume work before changing status.':'Change the work status.','decision.set-work',primary,d.work_tag==='deferred');control(d.work_tag==='deferred'?'res':'def',d.work_tag==='deferred'?'Resume':'Defer',d.work_tag==='deferred'?'Restart work on this question.':'Pause work until a stated condition is met.',d.work_tag==='deferred'?'decision.resume':'decision.defer',actions);control(d.contested?'resolve':'chal',d.contested?'Resolve challenge':'Challenge',d.contested?'Record how the disagreement was settled.':'Flag a disagreement.',d.contested?'decision.resolve-challenge':'decision.challenge',actions,!['deferred','under-investigation'].includes(d.work_tag));}
- if(d.status==='closed'){button('Reopen',()=>edit('decision.reopen'),closure,d.locked||!decide).className='primary';if(d.locked)closure.append(node('small','Amend the protected baseline to make changes.'));if(!d.locked&&decide)control('protect','Protect baseline','Require an amendment for future changes.','decision.lock',actions);}
- if(d.locked&&decide)control('amend','Amend baseline','Create a linked amendment.','decision.amend',actions);
- if(d.status!=='deprecated'&&decide)control('dep','Deprecate','End use of this decision; keep its history.','decision.deprecate',actions);
- for(const row of [primary,actions,supporting])if(!row.children.length)row.remove();
+ if(d.status==='open')button('Close',()=>edit('decision.close'),closure,!writable||!decide).className='primary';
+ if(d.status==='closed'){
+  button('Reopen',()=>edit('decision.reopen'),closure,d.locked||!decide).className='primary';
+  if(d.locked)closure.append(node('small','Amend the protected baseline to make changes.'));
+  button(d.locked?'Amend':'Protect',()=>edit(d.locked?'decision.amend':'decision.lock'),approvalHeading,!decide).setAttribute('aria-label',d.locked?'Amend baseline':'Protect baseline');
+ }
  for(const [family,label] of [['alternatives','Options'],['references','References'],['links','Relationships']]){
   box.append(node('h3',label,'section-title'));const children=await all(d.collections[family].url);if(generation!==detailGeneration)return;d[family]=children;
   if(!children.length)box.append(node('p','None recorded.','muted'));
   for(const child of children){for(const k of Object.keys(child))child[k]=await expand(child[k]);const card=node('article',undefined,'child-card');
    card.append(node('strong',child.title||child.label||(child.type+' · '+child.source_key+' → '+child.target_key)));
    for(const k of (family==='alternatives'?['description','benefit','cost','disposition','reason']:family==='references'?['locator','kind','availability','authenticity','limitations']:['reason','impact','baseline_disposition']))if(child[k])card.append(node('p',k+': '+child[k],'long-text'));
-   if(writable&&family!=='links'&&!child.retired&&child.disposition!=='retired'){const type=family==='alternatives'?'option':'reference';const pair=node('div',undefined,'item-actions');card.append(pair);button('Edit',()=>edit(type+'.edit',child),pair,child.disposition==='selected');button('Retire',()=>edit(type+'.retire',child),pair,child.disposition==='selected');if(child.disposition==='selected')card.append(node('p','Use Edit on the decision to change the selected solution.','muted'));}
-   if(writable&&family==='links'&&child.active&&child.source_key===d.key&&['relates_to','depends_on'].includes(child.type))button('Unlink',()=>edit('link.unlink',child),card);
+   if(writable&&family!=='links'&&!child.retired&&!['retired','selected'].includes(child.disposition)){const type=family==='alternatives'?'option':'reference';const pair=node('div',undefined,'item-actions');card.append(pair);button('Edit',()=>edit(type+'.edit',child),pair);button('Retire',()=>edit(type+'.retire',child),pair);}
+   if(writable&&family==='links'&&child.active&&child.source_key===d.key&&['relates_to','depends_on'].includes(child.type)){const target=(await api(base()+'/decisions/'+child.target_key)).data;if(generation!==detailGeneration)return;if(target.status==='open'&&!target.locked)button('Unlink',()=>edit('link.unlink',child),card);}
    box.append(card);
   }
  }
@@ -118,15 +127,12 @@ async function detail(key){
 function edit(op,child=null){
  if(['decision.close','decision.edit-resolution'].includes(op)&&state.schemaVersion<2){message('This project needs a data-format upgrade before decisions can be recorded.',true);return;}
  const d=state.record||{},invoker=document.activeElement;
+ if(op==='decision.edit-resolution'||(d.status!=='open'&&['decision.edit','decision.set-work','decision.defer','decision.resume','decision.challenge','decision.resolve-challenge','option.add','option.edit','option.retire','reference.add','reference.edit','reference.retire','link.add','link.unlink'].includes(op))){message('Reopen this decision before changing its content.',true);return;}
  state.edit={op,child,revision:state.revision,decisionRevision:d.revision,key:d.key,requestId:crypto.randomUUID(),pending:null,invoker};
  $('edit-title').textContent=titles[op];$('edit-project').textContent=state.project.name+(d.key&&op!=='decision.create'?' · '+d.key:'');
  const fields=$('edit-fields');fields.replaceChildren();$('form-error').hidden=true;$('conflict').hidden=true;
- if(d.status==='closed'&&['decision.edit','decision.edit-resolution'].includes(op)){
-  const views=node('div',undefined,'form-views');fields.append(views);
-  for(const [label,target] of [['Details','decision.edit'],['Decision','decision.edit-resolution']]){const b=button(label,()=>{if(state.edit.saving||state.edit.pending)return;if(dirty()){state.edit.afterDiscard=()=>edit(target);$('dirty-dialog').showModal();}else{closeEditor();edit(target);}},views,target==='decision.edit-resolution'?!state.caps.includes('decide'):!state.caps.includes('write'));b.setAttribute('aria-pressed',String(op===target));}
- }
- if(['decision.close','decision.edit-resolution'].includes(op))state.edit.resolution=installDecisionForm(fields,d,op==='decision.edit-resolution');
- else state.edit.action=installActionForm(fields,op,d,child,{decide:state.caps.includes('decide'),findDecisions:q=>all(base()+'/decisions?q='+encodeURIComponent(q))});
+ if(op==='decision.close')state.edit.resolution=installDecisionForm(fields,d,false);
+ else state.edit.action=installActionForm(fields,op,d,child,{decide:state.caps.includes('decide'),findDecisions:async q=>{const items=await all(base()+'/decisions?q='+encodeURIComponent(q));return op==='link.add'?items.filter(item=>item.status==='open'&&!item.locked):items;}});
  $('save-edit').textContent=state.edit.action?.submit||'Save decision';state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();
  if(!$('editor').open)$('editor').showModal();fields.querySelector('input:not([disabled]),textarea,select')?.focus();
 }
@@ -143,7 +149,7 @@ $('dirty-save').onclick=()=>{$('dirty-dialog').close();$('edit-form').requestSub
 $('dirty-dialog').oncancel=()=>{if(state.edit)state.edit.afterDiscard=null;};
 window.addEventListener('beforeunload',e=>{if(dirty()){e.preventDefault();e.returnValue='';}});
 $('edit-form').onsubmit=async event=>{
- event.preventDefault();const editState=state.edit;if(!editState)return;const save=$('save-edit');save.disabled=true;editState.saving=true;$('form-error').hidden=true;
+ event.preventDefault();const originView=state.view;const editState=state.edit;if(!editState)return;const save=$('save-edit');save.disabled=true;editState.saving=true;$('form-error').hidden=true;
  try{
   const values=(editState.resolution||editState.action).read(),f=values.data,reason=values.reason,authority_refs=values.authority_refs;
   const revisions={};if(editState.op!=='decision.create')revisions[editState.key]=editState.decisionRevision;
@@ -151,12 +157,13 @@ $('edit-form').onsubmit=async event=>{
   if(other){const target=await api(base()+'/decisions/'+encodeURIComponent(other));revisions[other]=target.data.revision;}
   const operation={op:editState.op,data:f};if(editState.op!=='decision.create')operation.key=editState.key;if(editState.child)operation.id=editState.child.id;
   const payload={expected_ledger_uuid:state.project.ledger_uuid,expected_revision:editState.revision,expected_decision_revisions:revisions,request_id:editState.requestId,reason,authority_refs,operations:[operation]};
-  const result=await sendRetained(editState,payload,body=>api(base()+'/changes',body));const key=result.data[0]?.key,next=editState.afterDiscard;closeEditor();message(editState.resolution?(editState.op==='decision.close'?'Decision saved. This question is closed. Implementation status has not changed.':'Decision updated. Implementation status has not changed.'):'Saved at ledger revision '+result.revision);try{await listing();if(key)await detail(key);next?.();}catch(e){message('Saved successfully. Refresh the view to see current data.');}
+  const result=await sendRetained(editState,payload,body=>api(base()+'/changes',body));const key=result.data[0]?.key,next=editState.afterDiscard;closeEditor();if(state.view===originView)message(editState.resolution?(editState.op==='decision.close'?'Decision saved. This question is closed. Implementation status has not changed.':'Decision updated. Implementation status has not changed.'):'Saved at ledger revision '+result.revision);try{await listing();if(key)await detail(key);next?.();}catch(e){if(state.view===originView)message('Saved successfully. Refresh the view to see current data.');}
  }catch(e){
   if(definitive(e)){editState.pending=null;editState.requestId=crypto.randomUUID();}const error=$('form-error');error.textContent=e.message;(editState.resolution||editState.action)?.showError(e,error);error.hidden=false;error.tabIndex=-1;error.focus();
+  if(e.code==='INVALID_TRANSITION')error.textContent+=' Your draft is preserved. Review the current record and reopen it before editing.';
   if(['REVISION_CONFLICT','STALE_REVISION','REQUEST_ID_REUSED','PROPOSAL_CHANGED'].includes(e.code)||e.code?.includes('STALE')){
    const c=$('conflict');c.hidden=false;c.replaceChildren(node('p','Your draft is preserved. Review the current record before rebasing this draft.'));
-   button('Load current state alongside draft',async()=>{const r=await api(base()+(editState.op==='decision.create'?'/decisions':'/decisions/'+editState.key));c.querySelector('.current-comparison')?.remove();const comparison=node('pre',JSON.stringify(r.data,null,2),'current-comparison');c.append(comparison);button('Use these revisions; keep draft for review',()=>{editState.revision=r.revision;editState.decisionRevision=editState.op==='decision.create'?undefined:r.data.revision;editState.requestId=crypto.randomUUID();editState.pending=null;message('Draft retained. Review differences, then save explicitly.');},c);},c);
+   button('Load current state alongside draft',async()=>{const r=await api(base()+(editState.op==='decision.create'?'/decisions':'/decisions/'+editState.key));c.querySelector('.current-comparison')?.remove();const comparison=node('pre',JSON.stringify(r.data,null,2),'current-comparison');c.append(comparison);if(editState.op==='decision.create'||r.data.status==='open'||!['decision.edit','option.add','option.edit','option.retire','reference.add','reference.edit','reference.retire','link.add','link.unlink','decision.set-work','decision.defer','decision.resume','decision.challenge','decision.resolve-challenge'].includes(editState.op))button('Use these revisions; keep draft for review',()=>{editState.revision=r.revision;editState.decisionRevision=editState.op==='decision.create'?undefined:r.data.revision;editState.requestId=crypto.randomUUID();editState.pending=null;message('Draft retained. Review differences, then save explicitly.');},c);},c);
    if(e.code==='PROPOSAL_CHANGED')button('Keep my text as a written answer',()=>{editState.resolution.asWritten();message('Proposal selection cleared. Review current revisions before saving your written answer.');},c);
   }else if(editState.pending&&(!e.code||e.code==='INTERNAL_ERROR')){
    const c=$('conflict');c.hidden=false;c.replaceChildren(node('p','The save outcome is unknown. Your original request is retained. Retry it before changing the draft.'));
@@ -241,7 +248,8 @@ $('freshness').onclick=async()=>{
   content.querySelector('.revision-comparison')?.remove();const comparison=node('div',undefined,'revision-comparison');
   const format=value=>typeof value==='object'?JSON.stringify(value,null,2):String(value??'Not recorded');
   for(const field of differences){const row=node('section');row.append(node('h3',field));const cells=node('div',undefined,'comparison-cells');for(const [label,value] of [['Displayed',state.record[field]],['Current saved',current.data[field]]]){const cell=node('div');cell.append(node('strong',label),node('pre',format(value)));cells.append(cell);}if(state.edit){const draft=$('edit-fields').querySelector('[name="'+field+'"]');if(draft){const cell=node('div');cell.append(node('strong','Your draft'),node('pre',draft.value));cells.append(cell);}}row.append(cells);comparison.append(row);}content.append(comparison);
-  if(state.edit){button('Rebase draft for review',()=>{state.edit.revision=current.revision;state.edit.decisionRevision=current.data.revision;state.edit.requestId=crypto.randomUUID();state.edit.pending=null;message('Draft retained. Review before saving.');$('live-review').close();},content);}
+  if(state.edit&&(current.data.status==='open'||!['decision.edit','option.add','option.edit','option.retire','reference.add','reference.edit','reference.retire','link.add','link.unlink','decision.set-work','decision.defer','decision.resume','decision.challenge','decision.resolve-challenge'].includes(state.edit.op))){button('Rebase draft for review',()=>{state.edit.revision=current.revision;state.edit.decisionRevision=current.data.revision;state.edit.requestId=crypto.randomUUID();state.edit.pending=null;message('Draft retained. Review before saving.');$('live-review').close();},content);}
+  else if(state.edit)content.append(node('p','Your draft is preserved. Reopen the current closed decision before editing.'));
   else button('Use latest',async()=>{const scroll=$('main-content').scrollTop;await detail(state.record.key);$('main-content').scrollTop=scroll;$('live-review').close();},content);
  },content);
 };

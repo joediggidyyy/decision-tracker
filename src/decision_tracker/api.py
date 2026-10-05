@@ -242,7 +242,11 @@ def create_app(config:Config,environment=None):
         schema=app.openapi().copy()
         from .approvals import Approval
         schema['x-decision-tracker']={'capabilities':['approval_events_v1'],'ledger_schemas':[1,2],
-                                     'approval_input':Approval.model_json_schema()}
+                                     'approval_input':Approval.model_json_schema(),
+                                     'mutation_policy':{'ordinary_requires':'open_unlocked','relationship_endpoints':'both_open_unlocked',
+                                                        'reopen':'separate_committed_request','edit_resolution':'withdrawn_for_new_writes',
+                                                        'closed_lifecycle':['decision.reopen','decision.lock','decision.amend','decision.deprecate'],
+                                                        'historical_receipts':'exact_replay_preserved'}}
         return schema
 
     @app.get("/api/v1/projects")

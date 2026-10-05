@@ -57,3 +57,10 @@ Changes to the private local application are recorded here. This is a developmen
 - Add prepared-candidate discovery and preparation through shared API/CLI rules; retain legacy registration and request replay.
 - Replace accumulated data output with one summary and refreshed file rows; retain safe service stop.
 - Verify isolated browser recovery, responsive layouts and actual 200% zoom; activate the installed backend without changing migration decisions.
+
+## Closed-record controls — 2026-10-05
+
+- Enforce closed-record content/work restrictions in the shared service, API and CLI, including dry runs and atomic batches.
+- Preserve historical request replay and approval history; withdraw new edit-resolution writes.
+- Keep the fixed control grid, disable unavailable actions, hide child mutation controls and place Protect/Amend beside Approval.
+- Scope notices to committed page navigation and preserve drafts after closure by another session.

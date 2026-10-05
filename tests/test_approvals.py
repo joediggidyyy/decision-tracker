@@ -141,8 +141,10 @@ def test_reopen_edit_and_mixed_authority_are_separate(ledger):
     assert s.detail('alpha',u,p,'D000001')['data']['latest_resolution_approval']==first
     change(s,p,u,[{'op':'decision.close','key':'D000001','data':{'answer':'New answer','rationale':'Reconsidered'}}],3,{'D000001':3},authority_refs=['External approval'])
     legacy=s.detail('alpha',u,p,'D000001')['data']['latest_resolution_approval'];assert legacy['mode']=='legacy_reference'
-    change(s,human,u,[{'op':'decision.edit-resolution','key':'D000001','data':{'answer':'Corrected answer','rationale':'Correction','approval':{'mode':'authenticated_now'}}},
-                      {'op':'decision.create','data':{'title':'Other','question':'Unrelated?'}}],4,{'D000001':4})
+    change(s,p,u,[{'op':'decision.reopen','key':'D000001','data':{'impact':'Correct wording'}}],4,{'D000001':4},authority_refs=['Correction authorized'])
+    change(s,p,u,[{'op':'decision.edit','key':'D000001','data':{'answer':'Corrected answer','rationale':'Correction'}},
+                  {'op':'decision.create','data':{'title':'Other','question':'Unrelated?'}}],5,{'D000001':5})
+    change(s,human,u,[{'op':'decision.close','key':'D000001','data':{'approval':{'mode':'authenticated_now'}}}],6,{'D000001':6})
     with s.catalog.project('alpha',u,p) as (db,_):
         events=[json.loads(r[0]) for r in db.execute('SELECT event_json FROM approval_events ORDER BY ledger_revision')]
         assert len(events)==3 and events[2]['supersedes_event_id']==events[1]['event_id']
