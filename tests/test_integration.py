@@ -38,7 +38,7 @@ def test_live_cli_same_service_restart_replay(tmp_path):
  import socket
  sock=socket.socket();sock.bind(("127.0.0.1",0));port=sock.getsockname()[1]
  token=secrets.token_urlsafe(36)
- app=create_app(Config(port=port,data_root=str(tmp_path/"live"),local_storage_confirmed=True,principals=[PrincipalConfig(id="test",token_env="DT_TEST_TOKEN",projects=["*"],capabilities=["read","write","registry"])]),{"DT_TEST_TOKEN":token})
+ app=create_app(Config(port=port,data_root=str(tmp_path/"live"),local_storage_confirmed=True,principals=[PrincipalConfig(id="test",token_env="DT_TEST_TOKEN",projects=["*"],capabilities=["read","propose","write","registry"])]),{"DT_TEST_TOKEN":token})
  server=uvicorn.Server(uvicorn.Config(app,host="127.0.0.1",port=port,log_level="error",access_log=False))
  thread=threading.Thread(target=server.run,kwargs={"sockets":[sock]},daemon=True);thread.start()
  deadline=time.monotonic()+10
@@ -52,6 +52,22 @@ def test_live_cli_same_service_restart_replay(tmp_path):
   code,project=cli("project","create","--project","alpha","--name","Alpha","--expected-catalog-revision","0","--request-id",str(uuid4()))
   assert code==0,project
   uuid=project["data"]["ledger_uuid"];request_id=str(uuid4())
+  binding=tmp_path/"alpha-binding.json"
+  code,bound=cli("project","show","--project","alpha","--bind",str(binding))
+  assert code==0 and json.loads(binding.read_text())["ledger_uuid"]==uuid
+  binding_bytes=binding.read_bytes()
+  code,_=cli("project","show","--project","alpha","--bind",str(binding))
+  assert code!=0 and binding.read_bytes()==binding_bytes
+  code,listed=cli("decision","list","--project","alpha","--binding",str(binding))
+  assert code==0 and listed["data"]==[]
+  code,wrong=cli("decision","list","--project","beta","--binding",str(binding))
+  assert code==3 and wrong["error"]["code"]=="LEDGER_IDENTITY_MISMATCH"
+  envelope={"expected_ledger_uuid":uuid,"expected_revision":0,"expected_decision_revisions":{},"request_id":str(uuid4()),"reason":"Skill dry run","operations":[{"op":"decision.create","data":{"title":"Proposal","question":"Commit later?"}}]}
+  payload=tmp_path/"change.json";payload.write_text(json.dumps(envelope))
+  code,validated=cli("change","apply","--project","alpha","--binding",str(binding),"--input",str(payload),"--dry-run")
+  assert code==0,validated
+  code,listed=cli("decision","list","--project","alpha","--binding",str(binding))
+  assert code==0 and listed["data"]==[]
   args=("decision","create","--project","alpha","--ledger-uuid",uuid,"--expected-revision","0","--request-id",request_id,"--reason","CLI synthetic test","--title","CLI record","--question","Shared rules?")
   code,result=cli(*args);assert code==0,result
   assert result["revision"]==1

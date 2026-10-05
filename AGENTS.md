@@ -19,5 +19,5 @@ The approved product includes browser record mutation, a comprehensive CLI
 and an API. Build the shared rules once. The Polymath home page and app shell
 integration preserve independent app/data boundaries.
 
-A dedicated agent-access GPT skill is a planned follow-up. Do not create a
-stub skill that advertises unimplemented commands.
+The portable agent-access skill is skills/decision-tracker/SKILL.md. Keep it
+aligned with actual CLI/API behavior; do not advertise unimplemented MCP tools.

@@ -40,4 +40,30 @@ The scoped home receipt records the prior Sites and tools section, inserted Tool
 
 Run software verification through native Calamum using tools/prove.py. Proof copies use synthetic data, bounded process supervision and source hashes. Actual browser observations are separate empirical evidence; a verifier cannot invent them. Retain failed attempts.
 
-This first delivery targets the actual Windows/Python3.14 host. POSIX portability is designed, not qualified. Owner acceptance, source-project migrations, production-data onboarding, MCP and a dedicated GPT agent-access skill remain separate work.
+This first delivery targets the actual Windows/Python3.14 host. POSIX portability is designed, not qualified. Owner acceptance, source-project migrations, production-data onboarding and MCP remain separate work. The portable agent-access skill is included under skills/decision-tracker.
+
+
+## Normal foreground startup on Windows
+
+From the repository, create `.local/config.json` from `docs/config.example.json` if no local configuration exists. Inspect it before changing anything. The default data root is `%LOCALAPPDATA%/DecisionTracking`; confirm that this is local nonsynchronized storage before setting `local_storage_confirmed` to true. The example intentionally starts unconfirmed. Keep the preview's synthetic credential and disposable data separate from normal operation.
+
+Provide an owner-managed high-entropy secret through a hidden prompt in the terminal that will run the foreground service. This example temporarily sets only that process's environment and removes the value when the service exits. Do not run it while another service owns the port or data root.
+
+```powershell
+$trackerSecret = Read-Host 'Decision Tracker operator credential' -AsSecureString
+$trackerPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($trackerSecret)
+try {
+    $env:DT_OPERATOR_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($trackerPointer)
+    .venv/Scripts/decision-tracker.exe service serve --config .local/config.json
+} finally {
+    Remove-Item Env:DT_OPERATOR_TOKEN -ErrorAction SilentlyContinue
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($trackerPointer)
+    $trackerSecret.Dispose()
+}
+```
+
+The service necessarily holds authentication material in process memory. This prompt avoids command-line and history disclosure; it does not provide a secret vault. Sign in through the browser with the same owner-managed secret. Ctrl+C stops the service. No startup task or daemon is installed.
+
+For agent access, add a separate principal with a distinct token environment-variable name, explicit project IDs and the needed capabilities. Inject that secret in the service process and authorized agent runtime using the owner's secret mechanism. Do not grant `registry`, `maintain` or `decide` merely to enable reading. Restart to apply configuration. A skill supplies instructions, not credentials or capability grants.
+
+Before real data adoption, create a project-bound backup, download the verified artifact to a new file in owner-controlled local custody, and perform `data restore-check` against that artifact. Keep the catalog backup separately. Actual adoption and recovery activation remain explicit operations; the synthetic proof does not establish a production backup schedule.

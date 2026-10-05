@@ -27,7 +27,7 @@ Stop the foreground service with Ctrl+C. No daemon or automatic startup is insta
 - **CLI:** `decision-tracker --help`; project, decision, option, reference, link, query, change and data groups. Structured fields use `--input FILE` or stdin. All data commands use HTTP; the CLI never bypasses service rules.
 - **API:** versioned `/api/v1` routes. Authenticated `GET /api/v1/schema` exposes OpenAPI. Mutations use typed change envelopes and durable request IDs. See [API and CLI guide](docs/interfaces.md).
 
-A GPT agent-access skill is a follow-up against these interfaces. An MCP server is not included in this alpha.
+The portable [agent-access skill](skills/decision-tracker/SKILL.md) covers these CLI/API interfaces, explicit project binding and conflict recovery. Copy its folder into your agent's supported skill directory. An MCP server is not included in this alpha.
 
 ## Integrity and scope
 
