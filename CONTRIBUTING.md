@@ -34,8 +34,9 @@ $env:CALAMUM_CONFIG_ROOT = Join-Path (Get-Location) '.local/calamum-config'
 Do not invoke PyTest directly. Calamum owns test execution and retained evidence;
 the proof wrapper adds bounded supervision and source correspondence.
 
-Only bootstrap checks exist today. Add application tests when corresponding
-behavior exists. Do not register placeholder passing definitions for planned
+Bootstrap, focused, integration and observed-browser definitions are registered.
+Run tools/prove.py --definition dt-integration --budget-seconds 300 for application regression.
+The browser lane requires actual observations; see tools/browser_host.py. Do not register placeholder passing definitions for planned
 capabilities. Preserve failed evidence and investigate failures before rerunning.
 
 Use explicit staging and review diffs. Never commit credentials, real project

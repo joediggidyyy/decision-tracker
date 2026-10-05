@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "local_storage_confirmed": false,
+  "port": 8765,
+  "principals": [
+    {
+      "id": "operator",
+      "token_env": "DT_OPERATOR_TOKEN",
+      "projects": [
+        "*"
+      ],
+      "capabilities": [
+        "read",
+        "propose",
+        "write",
+        "decide",
+        "maintain",
+        "registry"
+      ]
+    }
+  ]
+}

@@ -1,22 +1,22 @@
 # Security
 
-Decision Tracker is pre-release scaffolding. It has no operational application
-service and no production-supported release.
+Decision Tracker is an internal alpha local application. It is not a production-supported or publicly hosted release. Report concerns privately to the repository owner through an existing trusted channel. Do not include credentials or private records in public issues.
 
-Report concerns privately to the repository owner through an existing trusted
-private channel. Do not post credentials or sensitive project records in issues.
-No response-time commitment is implied.
+## Implemented boundaries
 
-The application contract requires loopback-only hosting, explicit project identity,
-scoped authentication, revision conflict protection, immutable decision history,
-path containment, inert user text and verified recovery artifacts. These controls
-are planned, not yet implemented or certified.
+- Fixed loopback binding, exact Host/Origin checks, no proxy trust or permissive CORS.
+- Injected credential names in configuration; constant-time digest comparison.
+- Explicit per-principal project/capability scopes; no client-supplied authority escalation.
+- HttpOnly SameSite=Strict browser sessions, idle/absolute expiry and same-origin CSRF checks.
+- Explicit ledger identity, revision conflicts and durable request retries.
+- Transactional changes, immutable history and bounded candidate-only import/recovery.
+- Contained local paths with symlink/junction rejection.
+- Packaged offline assets, restrictive CSP and user text rendered through textContent.
 
-Credentials arrive through environment variables or approved handles. Documentation
-may name variables, never their values. Real keys, tokens, local overlays, database
-files, backups and exports must stay outside tracked source.
+Local account compromise is outside the application boundary. Loopback HTTP is deliberately local and not suitable for LAN exposure. The session cookie uses HTTP on loopback, so Secure is not set; do not reverse proxy this alpha to a network listener.
 
-Local Calamum checksums establish byte integrity, not signer identity. Signing is
-optional tooling capability and is not represented as active trust without
-owner-provided authority. Monitoring or packet-capture capability availability
-does not authorize collection.
+No credential belongs in a URL, command argument, tracked file or report. Runtime data, exports, backups and evidence remain ignored. Reference locators are inert evidence text and are never automatically fetched.
+
+Checksums prove byte correspondence, not signer identity. Calamum signing and monitoring are not represented as active trust. No monitor/capture activation, remote permission change or public deployment is included.
+
+See docs/verification.md for actual proof coverage and docs/operations.md for recovery. Passing synthetic tests does not establish owner acceptance or production qualification.

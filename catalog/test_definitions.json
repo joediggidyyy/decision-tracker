@@ -48,7 +48,9 @@
               "pytest",
               "tests/test_bootstrap.py",
               "tests/test_proof.py",
-              "-q"
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
             ],
             "expected_artifacts": [
               "stdout"
@@ -77,6 +79,253 @@
             ]
           }
         ],
+        "empirical_test": []
+      }
+    },
+    {
+      "id": "dt-focus",
+      "title": "Decision Tracker core behavior",
+      "summary": "Transactions, lifecycle history, scoped API and session controls.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "repository-bootstrap"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "core-behavior",
+            "title": "Core application behavior",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_state.py",
+              "tests/test_store.py",
+              "tests/test_api.py",
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
+    },
+    {
+      "id": "dt-integration",
+      "title": "Decision Tracker integrated application",
+      "summary": "Core rules, API, concurrency, CLI, artifacts and recovery.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "integrated-application"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "core-behavior",
+            "title": "Core application behavior",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests",
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
+    },
+    {
+      "id": "dt-browser",
+      "title": "Decision Tracker actual browser review",
+      "summary": "Observed browser interaction with retained screenshot evidence.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "empirical_test"
+      ],
+      "metadata": {
+        "scope": "browser-empirical"
+      },
+      "lanes": {
+        "pytest": [],
+        "sandbox_test": [],
+        "empirical_test": [
+          {
+            "id": "browser-observations",
+            "title": "Actual browser scenarios",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "tools/browser_host.py"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "dt-live-focus",
+      "title": "Decision Tracker live-update boundaries",
+      "summary": "Focused notification, transport, authorization and parser proof.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "integrated-application"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "core-behavior",
+            "title": "Core application behavior",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_live.py",
+              "tests/test_live_http.py",
+              "tests/test_live_monitor.py",
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
         "empirical_test": []
       }
     }

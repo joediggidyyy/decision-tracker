@@ -1,23 +1,15 @@
-# Approved architecture
+# Architecture
 
-Decision Tracker uses one local Python service, a project catalog and one SQLite
-ledger per project. FastAPI/Uvicorn host the shared API and packaged HTML/CSS/JS.
-The CLI calls the same API. Browser record mutation is required.
+Decision Tracker is an independently served, loopback-only application with a Polymath-congruent browser shell. It is usable by any project; organization-specific lifecycle policy is not embedded in its domain logic.
 
-The Polymath home page will place Tools above Workspace and keep Sites in place.
-The tracker card opens the app in a new tab. The app adopts the existing dark
-palette, branded header and app-specific right context panel; list/detail and
-Focus views operate inside that shell.
+The central SQLite catalog maps explicit project IDs to contained ledgers and expected UUIDs. Each project ledger stores decisions, alternatives, references, directed relations, immutable transactions/snapshots, artifact metadata and import receipts. Browser/API/CLI operations converge on one shared service and state transition engine.
 
-Authentication, expected project UUID, revisions, idempotent changes, immutable
-history, decision-tag semantics and verified backups are required. Native import
-creates an unregistered candidate; it does not merge or overwrite live data.
+A conservative in-process coordinator serializes registry and ledger operations through transaction commit. This meets the bounded single-user service model and prevents disable/write races. SQLite BEGIN IMMEDIATE, full synchronization, foreign keys and revisions provide durable write boundaries. No cross-project transaction exists.
 
-Implementation follows the approved business-custody execution contract.
-The machine-local planning index identifies that authority without copying
-business evidence into the package. Source-project migrations are separate work.
-The session target is flexible; security, best practices and proof are not.
+The UI uses external static assets, semantic controls, a full-width decision detail, Focus view, and a right panel with context above results. Both panel boundaries support dragging and keyboard resizing, with nonsecret local layout preferences. At 980 CSS pixels or narrower, the context/results panel collapses behind a toggle and the page uses a single scroll surface. Selecting a result closes the compact panel. Desktop scrollbars appear only while interacting with overflowing regions. It never imports the business workspace folder index. Credentials, source records and application hosting stay independent of the home page.
 
-Future agent access uses API and CLI JSON first. A dedicated GPT skill will teach
-safe discovery, explicit project routing, validation and retry behavior after the
-interfaces exist. MCP remains an optional thin adapter, not a first-build dependency.
+Transactions retain canonical intent and its hash alongside committed outcomes. Revisions retain complete affected aggregates. Protected amendment records an incident relationship in parent history while preserving baseline content. Selected alternatives can change only through explicit resolution operations.
+
+Native export/import retains history exactly. Backup and restore checks operate on bounded contained candidates; no maintenance endpoint overwrites an active ledger. Request scope, expected identity and versions remain mandatory.
+
+The detailed approved business execution contract remains in Polymath planning custody. This implementation record describes actual technical boundaries. MCP and a GPT agent-access skill are follow-ups; neither is required for direct CLI/API operation.

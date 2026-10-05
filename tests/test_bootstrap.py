@@ -23,9 +23,8 @@ def test_portable_project_descriptor_and_roots():
         assert ".." not in Path(value).parts
     assert (ROOT / "catalog/test_definitions.json").is_file()
 
-def test_bootstrap_does_not_claim_product_implementation():
+def test_private_repository_contract_and_cli_entry_point():
     contract = json.loads((ROOT / "docs/repository-contract.json").read_text())
-    assert contract["implementation_status"] == "scaffold"
     assert contract["visibility"] == "private"
     assert contract["license"] == "not-selected"
-    assert "project.scripts" not in (ROOT / "pyproject.toml").read_text()
+    assert tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["scripts"]["decision-tracker"] == "decision_tracker.cli:main"

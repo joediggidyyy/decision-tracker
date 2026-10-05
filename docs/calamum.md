@@ -20,7 +20,7 @@ The catalog uses controlled category/profile/tag/policy vocabulary from the
 Calamum README. One definition tests one concern and can combine pytest
 (code assertions), sandbox_test (controlled workflow) and empirical_test
 (actual observations). A lane name does not itself create OS isolation.
-Only real implemented bootstrap coverage is registered now.
+The catalog now binds bootstrap, core behavior, integrated recovery/CLI/security and actual browser observations.
 
 ## Evidence and reports
 

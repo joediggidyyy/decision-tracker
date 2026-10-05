@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decision Tracker · Polymath Global</title>
+<link rel="stylesheet" href="/static/styles.css"><link rel="icon" href="/static/logo.png">
+<script type="module" src="/static/app.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<header class="topbar"><div class="topbar__inner">
+<a class="brand" href="/" aria-label="Decision Tracker home"><img src="/static/logo.png" alt="Polymath Global logo" width="34" height="34"><span>Polymath <span class="mono">Global</span></span></a>
+<div class="app-name">Decision Tracker <span class="local-mark">Local workspace</span></div>
+<div class="header-actions"><label>Project <select id="project"><option value="">Choose project</option></select></label>
+<button id="freshness" type="button" class="freshness gray" title="Select project" aria-label="Select project"><span class="freshness-dot" aria-hidden="true"></span><span id="freshness-label">Select project</span></button><span id="freshness-announcement" class="sr-only" role="status" aria-live="polite"></span>
+<button id="projects-button" type="button">Projects & data</button><button id="signout" type="button" hidden>Sign out</button></div>
+</div></header>
+<button id="focus-toggle" class="focus-toggle" type="button" aria-label="Focus decision" title="Focus decision" aria-pressed="false" hidden><span aria-hidden="true"></span></button>
+<div class="local-shell">
+<button id="panel-toggle" class="panel-toggle" type="button" aria-expanded="false" aria-controls="decision-sidebar">Context &amp; results</button>
+<main id="main-content" class="local-content">
+<section id="login-view" class="page">
+<p class="eyebrow">Decision Tracker</p><h1>Sign in</h1>
+<p class="muted">Use your injected local-service credential. Your credential is not stored in this browser.</p>
+<form id="login-form"><label>Credential <input id="token" type="password" autocomplete="off" required maxlength="4096"></label><button class="primary" type="submit">Sign in</button></form>
+</section>
+<section id="workspace" class="workspace" hidden>
+<div class="workspace-heading"><div><p class="eyebrow">Project decisions</p><h1 id="workspace-title">Decisions</h1></div></div>
+<form id="filters" class="toolbar"><label>Search <input id="search" type="search" placeholder="Search decisions" maxlength="512"></label>
+<label>Status <select id="status"><option value="">All statuses</option><option>open</option><option>closed</option><option>deprecated</option></select></label>
+<label>Work <select id="work"><option value="">All work</option><option>queued</option><option>under-investigation</option><option>deferred</option></select></label>
+<button type="submit">Search</button><button id="new-decision" class="primary" type="button">New decision</button></form>
+<div id="decision-columns" class="decision-columns">
+
+<section id="detail" class="detail" aria-label="Selected decision"><p class="muted">Choose a decision to see its question, answer, evidence and history.</p></section>
+</div></section>
+<section id="projects-view" class="page" hidden><h1>Projects & data</h1>
+<div id="project-admin"></div><h2>Create project</h2>
+<form id="create-project"><label>Project ID <input name="project_id" pattern="[a-z][a-z0-9-]{0,47}" required maxlength="48"></label><label>Display name <input name="name" required maxlength="160"></label><button type="submit" class="primary">Create project</button></form>
+<h2>Register a verified candidate</h2><form id="register-project"><label>Project ID <input name="project_id" pattern="[a-z][a-z0-9-]{0,47}" required></label><label>Display name <input name="name" required maxlength="160"></label><label>Contained ledger path <input name="relative_path" required placeholder="candidates/…/ledger.sqlite"></label><button type="submit">Register candidate</button></form>
+<p class="muted">Native import, restore checks and batch changes are also available through the CLI/API. Registration cannot replace an active ledger.</p>
+<section id="project-management" aria-labelledby="project-management-title"><h2 id="project-management-title">Manage project access</h2><div id="project-access-actions"></div></section>
+<div id="maintenance"></div>
+<div class="toolbar"><button id="back-workspace" type="button">Back to decisions</button></div>
+</section>
+<div id="notice" class="notice" role="status" aria-live="polite"></div>
+<div id="error" class="error" role="alert" hidden></div>
+</main>
+<div id="workspace-divider" class="workspace-divider" role="separator" aria-label="Resize decision workspace and side panel" aria-orientation="vertical" aria-valuemin="230" aria-valuemax="480" aria-valuenow="280" tabindex="0" title="Drag to resize the side panel. Left and Right arrow keys resize."></div>
+<aside id="decision-sidebar" tabindex="-1" class="local-sidebar" aria-label="Decision workspace"><div class="sidebar-context"><details id="context-disclosure" open><summary>Decision context</summary><div id="context" class="local-sidebar__scroll"><p>Select a project after signing in.</p></div></details></div><div id="panel-divider" class="panel-divider" role="separator" aria-label="Resize decision context and results" aria-orientation="horizontal" aria-valuemin="20" aria-valuemax="75" aria-valuenow="50" tabindex="0" title="Drag to resize. Arrow keys resize; Home and End move to limits."></div><section class="sidebar-results" aria-label="Decision results"><div class="results-heading"><h2>Results</h2><span id="result-count" class="muted"></span></div><div id="results" class="results-scroll"></div><button id="load-more" type="button" hidden>Load more</button></section></aside>
+</div>
+<dialog id="editor"><form id="edit-form"><div class="dialog-heading"><h2 id="edit-title">Edit decision</h2><button id="cancel-edit" type="button" aria-label="Close editor">Cancel</button></div><p id="edit-project" class="muted"></p><div id="edit-fields"></div><div id="form-error" role="alert" class="error" hidden></div><div id="conflict" hidden></div><button id="save-edit" class="primary" type="submit">Save</button></form></dialog>
+<dialog id="dirty-dialog"><h2>Unsaved changes</h2><p>Save your changes before switching, discard them, or stay here.</p><div class="toolbar"><button id="dirty-save" type="button">Save</button><button id="dirty-discard" type="button">Discard</button><button id="dirty-cancel" type="button">Cancel</button></div></dialog>
+<dialog id="live-review"><div class="dialog-heading"><h2>Workspace updates</h2><button id="close-live-review" type="button">Close</button></div><div id="live-review-content"></div></dialog>
+</body></html>

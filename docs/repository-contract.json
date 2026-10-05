@@ -4,17 +4,17 @@
   "repository": "https://github.com/joediggidyyy/decision-tracker",
   "owner": "Polymath Global",
   "approval_authority": "operator",
-  "ratification": "Operator approved matured plan/interface, then explicitly requested repository initialization, project venv and native Calamum setup on 2026-10-05.",
+  "ratification": "Operator approved matured plan/interface, then explicitly requested repository initialization, project venv and native Calamum setup on 2026-10-05. Operator subsequently directed begin plan execution, status: go.",
   "visibility": "private",
   "canonical_home": "this standalone repository",
   "client_owned": false,
   "ecosystem": "Python 3.14; src/decision_tracker",
-  "implementation_status": "scaffold",
+  "implementation_status": "internal-alpha",
   "license": "not-selected",
   "distribution": "No publication or distribution license authorized; no license invented.",
   "source_authority": "Repository implementation; approved business planning retained separately in Polymath custody.",
   "data_boundary": "No runtime data, secrets, backups, exports or generated evidence in tracked source.",
   "proof": "Native Calamum, bounded supervision, source manifests, retained runs and aggregates.",
   "publication": "No push or remote-setting changes in this setup task.",
-  "follow_up": "Implement product, then create a dedicated GPT agent-access skill against verified API/CLI."
+  "follow_up": "Owner acceptance and dedicated GPT agent-access skill; MCP and source-project migrations remain separate."
 }

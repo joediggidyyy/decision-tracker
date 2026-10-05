@@ -23,6 +23,9 @@ def source_files(root):
     for name in ["src", "tests", "tools", "catalog", "docs"]:
         files.extend(p for p in (root / name).rglob("*") if p.is_file()
                      and "__pycache__" not in p.parts and not any(x.endswith(".egg-info") for x in p.parts))
+    for name in ["home-preview.html","home.css","scoped-change.json"]:
+        candidate=root / ".local/home-integration" / name
+        if candidate.is_file():files.append(candidate)
     return sorted(set(files))
 
 def job_for(proc):
@@ -89,7 +92,7 @@ def supervise(command, cwd, env, output, seconds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap"])
+    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus"])
     parser.add_argument("--budget-seconds", type=int, default=60)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
@@ -106,16 +109,17 @@ def main():
     for key in list(env):
         if key.startswith(("DT_", "CALAMUM_")):
             env.pop(key)
+    env["DECISION_TRACKER_PROOF_WHEELS"] = str(root / ".local/wheels")
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["PYTHONPATH"] = str(proof / "src")
     env["CALAMUM_CONFIG_ROOT"] = str(run / "config")
     command = [str(Path(sys.executable).with_name("calamum.exe")), "test", "run",
                args.definition, "--project", str(proof), "--catalog-root", str(proof / "catalog"),
                "--runs-root", str(root / ".calamum/generated/runs"),
-               "--job", "repository-bootstrap", "--json"]
+               "--job", args.definition, "--json"]
     started = time.time()
     result = {"source_sha256": before, "interpreter": sys.executable,
-              "scope": "Repository bootstrap only", "started": started}
+              "scope": args.definition, "started": started}
     try:
         code, expired = supervise(command, proof, env, run / "calamum-output.log", args.budget_seconds)
         after = {p.relative_to(root).as_posix(): sha(p) for p in source_files(root)}
