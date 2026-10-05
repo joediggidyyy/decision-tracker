@@ -92,7 +92,7 @@ def supervise(command, cwd, env, output, seconds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form"])
+    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form", "dt-action-forms"])
     parser.add_argument("--budget-seconds", type=int, default=60)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
@@ -109,6 +109,16 @@ def main():
     for key in list(env):
         if key.startswith(("DT_", "CALAMUM_")):
             env.pop(key)
+    runtime_path = root / ".local/browser-runtime.json"
+    if runtime_path.exists():
+        runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
+        for key, variable in [("node_modules", "NODE_PATH"),
+                              ("headless_executable", "PROOF_BROWSER_EXECUTABLE"),
+                              ("browser_executable", "PROOF_FULL_BROWSER")]:
+            path = Path(runtime[key])
+            if not path.is_absolute() or not path.exists():
+                raise ValueError("Browser proof runtime path is unavailable: " + key)
+            env[variable] = str(path)
     env["DECISION_TRACKER_PROOF_WHEELS"] = str(root / ".local/wheels")
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["PYTHONPATH"] = str(proof / "src")

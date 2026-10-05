@@ -652,6 +652,70 @@
           }
         ]
       }
+    },
+    {
+      "id": "dt-action-forms",
+      "title": "Decision page action forms and layout",
+      "summary": "Decision page action forms and layout",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "integrated-application"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "action-form-browser",
+            "title": "Decision page action forms and layout",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_action_browser.py",
+              "tests/test_decision_form.py",
+              "-q",
+              "-s",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
     }
   ]
 }

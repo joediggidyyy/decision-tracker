@@ -4,6 +4,13 @@
 
 Changes to the private local application are recorded here. This is a development history, not a public release announcement.
 
+## Unreleased - decision page and action forms
+
+- Grouped Controls panel, blue primary headings, stable Close/Reopen placement and uniform Edit/Retire buttons.
+- Consistent New/Edit/lifecycle/item forms, structured evidence editing and clear conditional approval-source fields.
+- History/snapshot toggles, protected drafts and responsive layouts.
+- Native integrated regression: 107 passed; isolated Chromium includes session recovery, lost-response replay and actual 200% zoom saves. No production data upgrade or migration performed.
+
 ## Unreleased — decision approval form
 
 - Visible proposal choices, generated decision/explanation/change note and protected edited text.

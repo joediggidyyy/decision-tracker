@@ -4,7 +4,7 @@ export function defaults(p,editing=false){return {answer:p.description?.trim()?p
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 export function installDecisionForm(container,d,editing=false){
  const notice=el('p');notice.setAttribute('role','status');
- container.append(el('h3',d.question),el('p','Choose a proposal or write your answer. Saving closes this question; it does not perform the work.'));
+ container.append(el('h3',d.question),el('p',editing?'Update the recorded answer. Saving keeps this decision closed; it does not perform the work.':'Choose a proposal or write your answer. Saving closes this question; it does not perform the work.'));
  const choices=el('fieldset');choices.append(el('legend','Which proposed solution do you choose?'));container.append(choices);
  const proposals=(d.alternatives||[]).filter(p=>p.disposition!=='retired').sort((a,b)=>a.position-b.position||a.id.localeCompare(b.id));
  let selected=editing?proposals.find(p=>p.disposition==='selected')?.id||'':null;

@@ -56,3 +56,11 @@ Credential and lifecycle verification uses `dt-auth-focus`; actual account inter
 ---
 
 <p align="center">Maintained by Polymath Global</p>
+
+## Action-form browser proof
+
+`tools/prove.py --definition dt-action-forms --budget-seconds 240` runs the focused browser and resolution checks through native Calamum. `dt-integration` includes these checks. The browser test uses disposable local data, a synthetic password and an ephemeral loopback port.
+
+Provide Playwright through `NODE_PATH`, with browser executable overrides `PROOF_BROWSER_EXECUTABLE` and `PROOF_FULL_BROWSER`. Alternatively, keep these machine-local paths in ignored `.local/browser-runtime.json`, using keys `node_modules`, `headless_executable` and `browser_executable`. The proof supervisor validates and loads that file. No browser runtime path belongs in portable source. The full Chromium executable supports a disposable test extension that sets and reads actual browser zoom; CSS scaling is not used as a substitute.
+
+Browser screenshots and `observations.json` are retained under each proof copy's `.local/action-browser`. Test profiles, credentials and extension files are isolated there and remain untracked.

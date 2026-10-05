@@ -43,3 +43,13 @@ The historical home-layout proof needs retained `.local/home-integration` artifa
 ---
 
 <p align="center">Maintained by Polymath Global</p>
+
+## Decision-page layout and action forms — 2026-10-05
+
+Native run `20261005T145013Z-dt-integration` passed **107 tests** with source unchanged. Proof: `.local/proofs/ea82cd7f9cf04108b206e4893a7e5d52/proof-manifest.json`. Final UTF-8 punctuation correction and line-ending normalization are verified by the focused action-form proof retained in the final implementation evidence.
+
+The isolated Chromium workflow recorded 21 named checks spanning New/Edit, structured evidence clearing, option/reference operations, rejected-option requirements, relationship/unlink, lifecycle actions, Close/Edit resolution, item retirement, history/snapshot toggles and late-response cancellation. Session expiry preserved the draft through reauthentication; a lost save response replayed the identical request. Wide and 320-pixel layouts, keyboard focus/Escape, and actual browser zoom at 200% were exercised. New decision and Close both saved at 200%. Screenshots were inspected. This supersedes the earlier lack of actual zoom evidence for these tested scenarios; it is not blanket assistive-technology certification.
+
+The current page refinement is ready for operator reassessment. The operator previously accepted the Close form's appearance; this is not acceptance of every revised workflow. No active-project schema upgrade, migration, credential change or remote push was performed. Earlier deployment facts are historical and must be rechecked before any future activation.
+
+Retained failed attempts include UTF-8 subprocess capture, an unavailable default browser binary, a test expecting immediate checkbox clearing despite the confirmation step, and an assertion racing the post-save refresh. The final source-corresponding run passed. Browser/package locations remain in ignored local configuration.

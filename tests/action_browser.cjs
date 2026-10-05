@@ -1,0 +1,68 @@
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:process.env.PROOF_BROWSER_EXECUTABLE});
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],checks=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ const url=process.argv[2],out=process.argv[3];
+ const check=(name)=>{checks.push(name);console.log('PASS '+name);};
+ try{
+  await page.goto(url);await page.locator('#token').fill('Synthetic action form test password');await page.locator('#login-submit').click();
+  await page.locator('#create-project input[name=project_id]').fill('review');await page.locator('#create-project input[name=name]').fill('Form review');await page.locator('#create-project button').click();
+  const dialog=page.locator('#editor'),fields=page.locator('#edit-fields');
+  const fill=(name,value)=>fields.locator(`[name="${name}"]`).fill(value);
+  const open=async name=>{await page.locator('#context').getByRole('button',{name,exact:true}).click();await dialog.waitFor();};
+  const save=async()=>{const previous=await page.locator('#detail').evaluate(n=>n.querySelector('.eyebrow')?.textContent||null);await page.locator('#save-edit').click();await dialog.waitFor({state:'hidden'});await page.waitForFunction(old=>document.querySelector('#detail .eyebrow')?.textContent!==old,previous);await page.locator('#detail[data-loaded=true]').waitFor();};
+  const cancel=async()=>{await page.locator('#cancel-edit').click();if(await page.locator('#dirty-dialog').isVisible())await page.locator('#dirty-discard').click();await dialog.waitFor({state:'hidden'});};
+  const create=async title=>{await page.locator('#new-decision').click();await fill('title',title);await fill('question','Which approach should we use?');await save();};
+  await create('Primary decision');check('New decision saves required-only open record');
+  const headingColor=await page.locator('.question-heading h3').evaluate(n=>getComputedStyle(n).color);
+  assert.notEqual(headingColor,await page.locator('#detail h3').filter({hasText:/^Answer$/}).evaluate(n=>getComputedStyle(n).color));
+  assert.equal(await page.locator('#detail > .toolbar').count(),0);check('Primary headings and grouped controls');
+  await open('Edit');await fill('title','Primary edited');await fields.locator('[name=implementation_enabled]').check();await fill('implementation_status','In progress');await fill('implementation_role','Engineering');await fill('implementation_source_0','Source note');await save();
+  await open('Edit');assert.equal(await fields.locator('[name=implementation_status]').inputValue(),'In progress');await fields.locator('[name=implementation_enabled]').click();await fields.getByRole('button',{name:'Clear entry',exact:true}).click();await save();check('Evidence fields round-trip and explicit clearing');
+  await open('Add option');await fill('title','First solution');await fill('description','Use a local drive');await fill('benefit','Reliable');await save();
+  const option=page.locator('.child-card').filter({hasText:'First solution'});
+  await option.getByRole('button',{name:'Edit',exact:true}).click();await fill('cost','Backups required');await save();check('Option add/edit');
+  await open('Add option');await fill('title','Rejected solution');await fields.locator('[name=disposition]').selectOption('rejected');assert.equal(await fields.locator('[name=option_reason]').getAttribute('required'),'');await fill('option_reason','Does not meet requirements');await fill('authority_0','Operator rejects this proposal');await save();check('Rejected option conditional fields');
+  await page.screenshot({path:out+'/controls-wide.png'});
+
+  await open('Add reference');await fill('label','Design note');await fill('locator','docs/design.md');await save();
+  const ref=page.locator('.child-card').filter({hasText:'Design note'});await ref.getByRole('button',{name:'Edit',exact:true}).click();await fields.locator('summary').click();await fill('version','2');await save();check('Reference add/edit');
+  await open('Status');await fields.locator('[name=work_tag]').selectOption('under-investigation');await save();
+  await open('Challenge');await fill('reason','Need more evidence');await save();await open('Resolve challenge');await fill('reason','Reviewed evidence');await save();
+  await open('Defer');await fill('resume_trigger','When review completes');await fill('reason','Waiting for review');await save();await open('Resume');await fill('reason','Review completed');await save();check('Status, challenge, defer and reciprocal actions');
+  await create('Related decision');await page.locator('#results button').filter({hasText:'Primary edited'}).click();await open('Add relationship');await fields.locator('[name=target_key] option').filter({hasText:'Related decision'}).waitFor({state:'attached'});await fields.locator('[name=target_key]').selectOption({label:'D000002 · Related decision · open'});await fill('reason','Shared concern');await save();
+  await page.locator('.child-card').getByRole('button',{name:'Unlink',exact:true}).click();await fill('reason','No longer needed');await save();check('Relationship picker and unlink');
+  await page.locator('.closure-slot button').click();await fields.getByLabel('First solution',{exact:true}).check();await save();assert.equal(await page.locator('.closure-slot button').innerText(),'Reopen');check('Close proposal and stable Reopen anchor');
+  await open('Edit');await fields.getByRole('button',{name:'Decision',exact:true}).click();await fields.locator('[name=rationale]').fill('Confirmed benefit');await save();check('Closed record Edit resolution view');
+  await page.locator('.closure-slot button').click();await fill('impact','Investigate alternatives');await fill('reason','New information');await fill('authority_0','Operator authorizes reopening');await save();
+  await option.getByRole('button',{name:'Retire',exact:true}).click();await fill('reason','Replace proposal');await save();await ref.getByRole('button',{name:'Retire',exact:true}).click();await fill('reason','Old reference');await save();check('Reopen and item retirement');
+  await page.locator('.closure-slot button').click();await fill('answer','Use the revised approach');await fill('rationale','It meets the requirements');await save();
+  await open('Protect baseline');await fill('baseline','Release 1');await fill('reason','Approved baseline');await fill('authority_0','Operator approves release baseline');await save();assert.equal(await page.locator('.closure-slot button').isDisabled(),true);
+  await open('Amend baseline');await fill('question','What should change?');await fill('impact','Add capability');await fill('reason','New requirement');await fill('authority_0','Operator authorizes amendment');await save();check('Protect and amend baseline');
+  await open('Deprecate');await fields.locator('[name=kind]').selectOption('obsolete');await fill('reason','No longer applicable');await fill('authority_0','Operator authorizes deprecation');await save();check('Deprecation');
+  const history=page.locator('#context').getByRole('button',{name:'History',exact:true});await history.click();await page.getByRole('button',{name:'View snapshot',exact:true}).first().waitFor();assert.equal(await page.getByRole('heading',{name:'Recorded history'}).count(),1);
+  const snap=page.getByRole('button',{name:'View snapshot',exact:true}).first();await snap.click();await snap.locator('..').locator('pre').waitFor();await snap.click();assert.equal(await snap.locator('..').locator('pre').count(),0);await history.click();assert.equal(await page.getByRole('heading',{name:'Recorded history'}).count(),0);await history.click();await page.getByRole('heading',{name:'Recorded history'}).waitFor();check('History and per-snapshot toggles');await history.click();
+  await page.route('**/history*',async route=>{await new Promise(r=>setTimeout(r,180));await route.continue();});await history.click();await history.click();await page.waitForTimeout(300);assert.equal(await page.getByRole('heading',{name:'Recorded history'}).count(),0);await page.unroute('**/history*');check('Late history response cannot resurrect closed content');
+
+  await page.locator('#new-decision').click();await fill('title','Unsaved');await page.locator('#cancel-edit').click();await page.locator('#dirty-cancel').click();assert.equal(await fields.locator('[name=title]').inputValue(),'Unsaved');await cancel();check('Dirty cancellation preserves draft');
+  await page.locator('#new-decision').click();await fill('title','Session draft');await fill('question','Can this draft survive sign-in?');
+  const session=await (await page.request.get(url+'/api/v1/session')).json();await page.request.delete(url+'/api/v1/session',{headers:{Origin:url,'X-CSRF-Token':session.data.csrf_token}});
+  await page.locator('#save-edit').click();await page.locator('#form-error').waitFor();assert.equal(await fields.locator('[name=title]').inputValue(),'Session draft');
+  await page.locator('#editor-account').click();await page.locator('#current-password').fill('Synthetic action form test password');await page.locator('#account-signin').click();await page.getByText('Signed in. Your draft is retained.',{exact:true}).waitFor();await page.locator('#close-account').click();await save();check('Session expiry and reauthentication retain draft');
+  await page.locator('#new-decision').click();await fill('title','Retry draft');await fill('question','Does one save create only one record?');let requests=[];await page.route('**/changes',async route=>{requests.push(route.request().postData());const response=await route.fetch();if(requests.length===1)await route.fulfill({response,body:'broken JSON'});else await route.fulfill({response});});await save();await page.unroute('**/changes');assert.equal(requests.length,2);assert.equal(requests[0],requests[1]);check('Lost save response replays identical request');
+  await page.locator('#new-decision').click();await page.keyboard.press('Tab');assert.ok(await dialog.evaluate(n=>n.contains(document.activeElement)));await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});check('Keyboard focus and Escape');
+
+  await page.setViewportSize({width:320,height:740});await page.locator('#new-decision').click();await page.screenshot({path:out+'/new-narrow.png',fullPage:false});assert.ok(await dialog.evaluate(n=>n.scrollWidth<=n.clientWidth));await cancel();assert.ok(await page.locator('.local-sidebar').evaluate(n=>n.getBoundingClientRect().top>=document.querySelector('.local-content').getBoundingClientRect().bottom));
+  await page.setViewportSize({width:1440,height:1000});await page.locator('#new-decision').click();await page.screenshot({path:out+'/new-wide.png',fullPage:false});await cancel();check('Wide and narrow form layout');
+  // Browser-level zoom via a disposable extension; no CSS-scale substitute.
+  if(process.env.PROOF_FULL_BROWSER){
+   const extension=out+'/zoom-extension';fs.mkdirSync(extension,{recursive:true});fs.writeFileSync(extension+'/manifest.json',JSON.stringify({manifest_version:3,name:'Isolated zoom verification',version:'1.0',permissions:['tabs'],background:{service_worker:'worker.js'}}));fs.writeFileSync(extension+'/worker.js','chrome.runtime.onInstalled.addListener(()=>{});');
+   const zoomContext=await chromium.launchPersistentContext(out+'/zoom-profile',{headless:true,executablePath:process.env.PROOF_FULL_BROWSER,viewport:{width:1440,height:1000},ignoreDefaultArgs:['--disable-extensions'],args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]});
+   try{await zoomContext.addCookies(await page.context().cookies());const zoomPage=await zoomContext.newPage();await zoomPage.goto(url+'/#project=review&decision=D000002');await zoomPage.locator('#new-decision').waitFor();const worker=zoomContext.serviceWorkers()[0]||await zoomContext.waitForEvent('serviceworker');const zoom=await worker.evaluate(async()=>{const tabs=await chrome.tabs.query({});const tab=tabs.find(t=>t.url.startsWith('http://127.0.0.1'));await chrome.tabs.setZoom(tab.id,2);return await chrome.tabs.getZoom(tab.id);});assert.equal(zoom,2);await zoomPage.locator('#new-decision').click();assert.ok(await zoomPage.locator('#editor').evaluate(n=>n.scrollWidth<=n.clientWidth));await zoomPage.screenshot({path:out+'/new-200-percent.png'});await zoomPage.locator('[name=title]').fill('Zoom decision');await zoomPage.locator('[name=question]').fill('Can the form be saved at 200 percent?');await zoomPage.locator('#save-edit').click();await zoomPage.locator('#editor').waitFor({state:'hidden'});await zoomPage.locator('.closure-slot button').click();await zoomPage.locator('[name=answer]').fill('Yes');await zoomPage.locator('[name=rationale]').fill('Controls remain reachable at browser zoom.');await zoomPage.screenshot({path:out+'/close-200-percent.png'});await zoomPage.locator('#save-edit').click();await zoomPage.locator('#editor').waitFor({state:'hidden'});check('Actual browser zoom 200 percent: New and Close saves');}finally{await zoomContext.close();}
+  }
+  assert.deepEqual(errors,[]);fs.writeFileSync(out+'/observations.json',JSON.stringify({checks,errors,browser:await browser.version()},null,2));
+ }catch(e){await page.screenshot({path:out+'/failure.png',fullPage:false});console.error('Page errors',errors);throw e;}finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exit(1)});
