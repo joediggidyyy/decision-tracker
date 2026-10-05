@@ -57,3 +57,7 @@ Retained failed attempts include UTF-8 subprocess capture, an unavailable defaul
 ## Compact control size limits
 
 Operator-directed sizing: preserve each row's proportions while shrinking to a floor. Three-column buttons retain a 2:1 ratio and minimum 64 by 32 CSS pixels; Edit/Status retain 3:1 and minimum100 pixels wide. The controls footprint is bounded between240 and280 pixels. Below the minimum viewport width, overflow preserves geometry instead of squeezing or wrapping buttons. Native focused proof `.local/proofs/27e000695f904c9aad3a7f127ef7372d` passed four tests, including measured ratios at sidebar resize limits and a220-pixel viewport. The one panel tooltip and History toggle remain covered.
+
+## Panel help formatting and centering
+
+The single panel tooltip uses aligned abbreviation/description columns, full action names where needed, and subtle dividers in button order. The bounded control group is centered horizontally within wider panels. Native focused proof `.local/proofs/b9117ac241f34588a71f96a2b9b93798` passed four tests with unchanged source, including tooltip ordering and measured centering. The rendered tooltip screenshot was inspected.
