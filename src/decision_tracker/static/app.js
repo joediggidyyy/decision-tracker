@@ -194,10 +194,10 @@ new ResizeObserver(()=>resizePanel(contextShare)).observe(sidebar);
 
 const workspaceDivider=$('workspace-divider'),shell=document.querySelector('.local-shell');
 let sidebarWidth=280;
-try{const saved=Number(localStorage.getItem('dt.sidebarWidth'));if(saved>=230&&saved<=640)sidebarWidth=saved;}catch{}
+try{const saved=Number(localStorage.getItem('dt.sidebarWidth'));if(saved>=240&&saved<=640)sidebarWidth=saved;}catch{}
 function resizeWorkspace(value,persist=false){
  const width=shell.getBoundingClientRect().width;if(width<=980)return;
- const maximum=Math.min(640,width-570),minimum=230;
+ const maximum=Math.min(640,width-570),minimum=240;
  sidebarWidth=Math.min(maximum,Math.max(minimum,value));shell.style.setProperty('--sidebar-width',sidebarWidth+'px');
  workspaceDivider.setAttribute('aria-valuenow',String(Math.round(sidebarWidth)));workspaceDivider.setAttribute('aria-valuemax',String(Math.floor(maximum)));
  workspaceDivider.setAttribute('aria-valuetext',Math.round(sidebarWidth)+' pixel side panel');
@@ -206,7 +206,7 @@ function resizeWorkspace(value,persist=false){
 workspaceDivider.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();workspaceDivider.focus();workspaceDivider.setPointerCapture(event.pointerId);workspaceDivider.classList.add('dragging');});
 workspaceDivider.addEventListener('pointermove',event=>{if(!workspaceDivider.hasPointerCapture(event.pointerId))return;resizeWorkspace(shell.getBoundingClientRect().right-event.clientX-5);});
 for(const type of ['pointerup','pointercancel'])workspaceDivider.addEventListener(type,event=>{if(workspaceDivider.hasPointerCapture(event.pointerId))workspaceDivider.releasePointerCapture(event.pointerId);workspaceDivider.classList.remove('dragging');resizeWorkspace(sidebarWidth,true);});
-workspaceDivider.addEventListener('keydown',event=>{const step=event.shiftKey?50:15;const values={ArrowLeft:sidebarWidth+step,ArrowRight:sidebarWidth-step,Home:230,End:640};if(event.key in values){event.preventDefault();resizeWorkspace(values[event.key],true);}});
+workspaceDivider.addEventListener('keydown',event=>{const step=event.shiftKey?50:15;const values={ArrowLeft:sidebarWidth+step,ArrowRight:sidebarWidth-step,Home:240,End:640};if(event.key in values){event.preventDefault();resizeWorkspace(values[event.key],true);}});
 new ResizeObserver(()=>resizeWorkspace(sidebarWidth)).observe(shell);
 
 const live=new LiveMonitor(()=>({key:state.record?.key||null,decisionRevision:state.record?.revision,listRevision:state.listRevision,contextFingerprint:state.contextFingerprint}), (color,label)=>{

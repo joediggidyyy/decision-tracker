@@ -53,3 +53,7 @@ The isolated Chromium workflow recorded 21 named checks spanning New/Edit, struc
 The current page refinement is ready for operator reassessment. The operator previously accepted the Close form's appearance; this is not acceptance of every revised workflow. No active-project schema upgrade, migration, credential change or remote push was performed. Earlier deployment facts are historical and must be rechecked before any future activation.
 
 Retained failed attempts include UTF-8 subprocess capture, an unavailable default browser binary, a test expecting immediate checkbox clearing despite the confirmation step, and an assertion racing the post-save refresh. The final source-corresponding run passed. Browser/package locations remain in ignored local configuration.
+
+## Compact control size limits
+
+Operator-directed sizing: preserve each row's proportions while shrinking to a floor. Three-column buttons retain a 2:1 ratio and minimum 64 by 32 CSS pixels; Edit/Status retain 3:1 and minimum100 pixels wide. The controls footprint is bounded between240 and280 pixels. Below the minimum viewport width, overflow preserves geometry instead of squeezing or wrapping buttons. Native focused proof `.local/proofs/27e000695f904c9aad3a7f127ef7372d` passed four tests, including measured ratios at sidebar resize limits and a220-pixel viewport. The one panel tooltip and History toggle remain covered.
