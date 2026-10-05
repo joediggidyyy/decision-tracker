@@ -79,3 +79,9 @@
 .account-watermark{width:44px;height:44px;border:0;background:transparent;color:var(--muted,#94a3b8);padding:10px;min-width:44px}
 .account-watermark span,.account-watermark svg{display:inline-block;font-size:18px;line-height:18px;opacity:.6}.account-watermark:hover span,.account-watermark:focus-visible span,.account-watermark:hover svg,.account-watermark:focus-visible svg{opacity:1}
 .account-watermark:focus-visible{outline:2px solid #65d6a6;outline-offset:-3px}#account-dialog{max-width:520px}#draft-protection:empty{display:none}
+/* Resolution choices remain readable without forcing a narrow dropdown. */
+#edit-fields fieldset{min-width:0;margin:1rem 0;padding:1rem;border:1px solid var(--line,#43596b);border-radius:8px}
+#edit-fields fieldset label:has(input[type=radio]),#edit-fields label:has(input[type=checkbox]){display:flex;align-items:flex-start;gap:.65rem}
+#edit-fields input[type=radio],#edit-fields input[type=checkbox]{width:auto;flex:none;margin-top:.25rem}
+#edit-fields fieldset p,#edit-fields details{overflow-wrap:anywhere}
+#edit-fields [hidden]{display:none!important}

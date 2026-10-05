@@ -1,3 +1,5 @@
+import {installDecisionForm} from './decision-form.js';
+import {sendRetained,definitive,readResponse} from './save-request.js';
 import {LiveMonitor} from './live.js';
 import {installAccount} from './account.js';
 const $=id=>document.getElementById(id);
@@ -14,8 +16,8 @@ async function api(path,body,method=body===undefined?'GET':'POST'){
  const headers={};if(state.project)headers['X-Ledger-UUID']=state.project.ledger_uuid;
  if(body!==undefined)headers['Content-Type']='application/json';
  if(state.csrf)headers['X-CSRF-Token']=state.csrf;
- const r=await fetch(path,{method,headers,credentials:'same-origin',body:body===undefined?undefined:JSON.stringify(body)});
- const value=r.status===204?{ok:true,data:{}}:await r.json();if(binding&&(!state.project||state.project.project_id!==binding.id||state.project.ledger_uuid!==binding.uuid))throw new Error('Project changed. Discarding the previous response.');if(!r.ok){const e=new Error(value.error?.message||'Request failed');e.code=value.error?.code;e.details=value.error?.details;throw e;}return value;
+ const r=await fetch(path,{method,headers,credentials:'same-origin',body:body===undefined?undefined:JSON.stringify(body),signal:path.endsWith('/changes')?AbortSignal.timeout(15000):undefined});
+ const value=r.status===204?{ok:true,data:{}}:await readResponse(r);if(binding&&(!state.project||state.project.project_id!==binding.id||state.project.ledger_uuid!==binding.uuid))throw new Error('Project changed. Discarding the previous response.');if(!r.ok){const e=new Error(value.error?.message||'Request failed');e.code=value.error?.code;e.details=value.error?.details;throw e;}return value;
 }
 const base=()=>'/api/v1/projects/'+encodeURIComponent(state.project.project_id);
 function button(label,fn,parent,disabled=false){const b=node('button',label);b.type='button';b.disabled=disabled;b.onclick=()=>Promise.resolve().then(fn).catch(failure);parent.append(b);return b;}
@@ -50,16 +52,20 @@ async function expand(value){if(!value||typeof value!=='object'||!value.chunks_u
 async function all(url){const values=[];let cursor=null;do{const r=await api(url+(cursor?(url.includes('?')?'&':'?')+'cursor='+encodeURIComponent(cursor):''));values.push(...r.data);cursor=r.next_cursor;}while(cursor);return values;}
 async function detail(key){
  const generation=++detailGeneration;
- const r=await api(base()+'/decisions/'+key);state.revision=r.revision;const d=r.data;
+ const r=await api(base()+'/decisions/'+key);state.revision=r.revision;state.schemaVersion=r.schema_version;const d=r.data;
  for(const k of Object.keys(d))d[k]=await expand(d[k]);
  if(generation!==detailGeneration)return;rememberView(key);state.record=d;for(const b of $('results').querySelectorAll('button'))b.setAttribute('aria-current',b.dataset.key===key?'true':'false');
  const box=$('detail');box.replaceChildren();
  box.append(node('p',d.key+' · revision '+d.revision,'eyebrow'),node('h2',d.title),node('p',d.status+(d.locked?' · protected baseline '+d.baseline:''),'badge'));
+ if(state.schemaVersion<2)box.append(node('p','This project needs a verified data-format upgrade before the new decision form can be used. Existing decisions remain readable.','notice'));
  for(const [label,k] of [['Question','question'],['Answer','answer'],['Rationale','rationale']]){box.append(node('h3',label),node('p',d[k]||'Not recorded.','long-text'));}
+ const approval=d.latest_resolution_approval;
+ if(approval){box.append(node('h3','Approval'),node('p',approval.mode==='authenticated_now'?'Approved in this application by '+approval.recorded_by:approval.mode==='reported'?'Approved by (reported): '+approval.reported_approver:'Approval recorded from legacy references; approver and date are unknown.'));
+  box.append(node('p','Decision date: '+(approval.occurred_at||approval.occurred_date||'Unknown')),node('p','Recorded by '+approval.recorded_by+' at '+approval.recorded_at));}
  const actions=node('div',undefined,'toolbar');box.append(actions);
  const writable=state.caps.includes('write')&&!d.locked&&d.status!=='deprecated',decide=state.caps.includes('decide');
  if(writable){button('Edit',()=>edit('decision.edit'),actions);button('Add option',()=>edit('option.add'),actions);button('Add reference',()=>edit('reference.add'),actions);button('Add relationship',()=>edit('link.add'),actions);}
- if(d.status==='open'&&writable){button('Close decision',()=>edit('decision.close'),actions,!decide);button(d.work_tag==='deferred'?'Resume':'Defer',()=>edit(d.work_tag==='deferred'?'decision.resume':'decision.defer'),actions);button('Set work',()=>edit('decision.set-work'),actions);if(['deferred','under-investigation'].includes(d.work_tag))button(d.contested?'Resolve challenge':'Challenge',()=>edit(d.contested?'decision.resolve-challenge':'decision.challenge'),actions);}
+ if(d.status==='open'&&writable){button('Record decision',()=>edit('decision.close'),actions,!decide);button(d.work_tag==='deferred'?'Resume':'Defer',()=>edit(d.work_tag==='deferred'?'decision.resume':'decision.defer'),actions);button('Set work',()=>edit('decision.set-work'),actions);if(['deferred','under-investigation'].includes(d.work_tag))button(d.contested?'Resolve challenge':'Challenge',()=>edit(d.contested?'decision.resolve-challenge':'decision.challenge'),actions);}
  if(d.status==='closed'&&!d.locked&&decide){for(const [label,op] of [['Edit resolution','edit-resolution'],['Reopen','reopen'],['Protect baseline','lock']])button(label,()=>edit('decision.'+op),actions);}
  if(d.locked&&decide)button('Amend baseline',()=>edit('decision.amend'),actions);
  if(d.status!=='deprecated'&&decide)button('Deprecate',()=>edit('decision.deprecate'),actions);
@@ -85,18 +91,13 @@ async function detail(key){
 }
 function field(name,label,value='',options=null,required=false){const wrap=node('label',label);let input;if(options){input=node('select');for(const value of options)input.add(new Option(value,value));}else input=node(['title','owner_role','baseline','target_key','replacement_key','label','locator','version','sha256'].includes(name)?'input':'textarea');input.name=name;input.value=value??'';input.required=required;if(name==='title')input.maxLength=160;wrap.append(input);$('edit-fields').append(wrap);return input;}
 function edit(op,child=null){
+ if(['decision.close','decision.edit-resolution'].includes(op)&&state.schemaVersion<2){message('This project needs a data-format upgrade before decisions can be recorded.',true);return;}
  const d=state.record||{};state.edit={op,child,revision:state.revision,decisionRevision:d.revision,key:d.key,requestId:crypto.randomUUID(),pending:null};
  $('edit-title').textContent=op.replaceAll('.',' · ').replaceAll('-',' ');$('edit-project').textContent=state.project.name+(d.key&&op!=='decision.create'?' · '+d.key:'');
  $('edit-fields').replaceChildren();$('form-error').hidden=true;$('conflict').hidden=true;
  const common=()=>{field('reason','Reason for this change','',null,true);field('authority_refs','Authority references (one per line)');};
  if(['decision.create','decision.edit'].includes(op)){field('title','Title',op.endsWith('create')?'':d.title,null,true);field('question','Question',op.endsWith('create')?'':d.question,null,true);field('owner_role','Owner role',op.endsWith('create')?'':d.owner_role);if(op.endsWith('create')||d.status==='open'){field('answer','Answer',op.endsWith('create')?'':d.answer);field('rationale','Rationale',op.endsWith('create')?'':d.rationale);}if(op.endsWith('edit'))field('evidence_state','Evidence state (JSON; implementation, verification, acceptance)',JSON.stringify(d.evidence_state,null,2));}
- if(['decision.close','decision.edit-resolution'].includes(op)){field('answer','Answer',d.answer,null,true);field('rationale','Rationale',d.rationale,null,true);}
- if(['decision.close','decision.edit-resolution'].includes(op)){
- const selected=field('selected_option','Selected option (optional)','',[],false);
- selected.add(new Option('No selected option',''));
- for(const option of (d.alternatives||[]).filter(x=>x.disposition!=='retired'))selected.add(new Option(option.title,option.id));
- selected.value=(d.alternatives||[]).find(x=>x.disposition==='selected')?.id||'';
-}
+ if(['decision.close','decision.edit-resolution'].includes(op)){state.edit.resolution=installDecisionForm($('edit-fields'),d,op==='decision.edit-resolution');$('edit-title').textContent=op==='decision.close'?'Record decision':'Edit decision';}
  if(op==='decision.reopen'||op==='decision.amend')field('impact','Impact statement','',null,true);
  if(op==='decision.amend'){field('title','Amendment title',d.title+' amendment',null,true);field('question','Amendment question','',null,true);field('baseline_disposition','Baseline disposition','continue',['continue','pause']);}
  if(op==='decision.lock')field('baseline','Baseline identifier','',null,true);
@@ -106,7 +107,7 @@ function edit(op,child=null){
  if(op.startsWith('option.')&&!op.endsWith('retire')){for(const k of ['title','description','benefit','cost'])field(k,k,child?.[k]||'',null,k==='title');field('disposition','Disposition',child?.disposition||'unselected',['unselected','rejected']);field('option_reason','Option disposition reason',child?.reason||'');}
  if(op.startsWith('reference.')&&!op.endsWith('retire')){for(const k of ['label','locator','kind','version','sha256','availability','authenticity','limitations'])field(k,k,child?.[k]||({kind:'evidence',availability:'unknown',authenticity:'unknown'}[k]||''),({kind:['evidence','authority','external-decision'],availability:['known','unavailable','unknown'],authenticity:['verified','unverified','unknown']}[k]||null),['label','locator','kind'].includes(k));}
  if(op==='link.add'){field('target_key','Target decision key','',null,true);field('type','Relationship','relates_to',['relates_to','depends_on']);}
- common();state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();$('editor').showModal();
+ if(!state.edit.resolution)common();$('save-edit').textContent=state.edit.resolution?'Save decision':'Save';state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();$('editor').showModal();
 }
 $('new-decision').onclick=()=>edit('decision.create');
 function dirty(){return state.edit&&state.edit.initial!==new URLSearchParams(new FormData($('edit-form'))).toString();}
@@ -120,7 +121,7 @@ window.addEventListener('beforeunload',e=>{if(dirty()){e.preventDefault();e.retu
 $('edit-form').onsubmit=async event=>{
  event.preventDefault();const editState=state.edit;if(!editState)return;const save=$('save-edit');save.disabled=true;$('form-error').hidden=true;
  try{
-  const f=Object.fromEntries(new FormData(event.target)),reason=f.reason,authority_refs=f.authority_refs.split('\n').map(x=>x.trim()).filter(Boolean);delete f.reason;delete f.authority_refs;
+  const resolution=editState.resolution?.read();const f=resolution?resolution.data:Object.fromEntries(new FormData(event.target)),reason=resolution?resolution.reason:f.reason,authority_refs=resolution?resolution.authority_refs:(f.authority_refs||'').split('\n').map(x=>x.trim()).filter(Boolean);delete f.reason;delete f.authority_refs;
   if(f.evidence_state)f.evidence_state=JSON.parse(f.evidence_state);
   if('option_reason' in f){f.reason=f.option_reason;delete f.option_reason;}
   if(editState.op==='decision.edit-resolution'&&f.selected_option==='')f.selected_option=null;
@@ -130,15 +131,17 @@ $('edit-form').onsubmit=async event=>{
   if(other){const target=await api(base()+'/decisions/'+encodeURIComponent(other));revisions[other]=target.data.revision;}
   const operation={op:editState.op,data:f};if(editState.op!=='decision.create')operation.key=editState.key;if(editState.child)operation.id=editState.child.id;
   const payload={expected_ledger_uuid:state.project.ledger_uuid,expected_revision:editState.revision,expected_decision_revisions:revisions,request_id:editState.requestId,reason,authority_refs,operations:[operation]};
-  const fingerprint=JSON.stringify(payload);if(editState.pending&&editState.pending!==fingerprint)throw new Error('A prior request may have committed. Reload current state before changing the retained request.');
-  editState.pending=fingerprint;
-  const result=await api(base()+'/changes',payload);const key=result.data[0]?.key;closeEditor();message('Saved at ledger revision '+result.revision);await listing();if(key)await detail(key);
+  const result=await sendRetained(editState,payload,body=>api(base()+'/changes',body));const key=result.data[0]?.key;closeEditor();message(editState.resolution?(editState.op==='decision.close'?'Decision saved. This question is closed. Implementation status has not changed.':'Decision updated. Implementation status has not changed.'):'Saved at ledger revision '+result.revision);try{await listing();if(key)await detail(key);}catch(e){message('Saved successfully. Refresh the view to see current data.');}
  }catch(e){
-  $('form-error').textContent=e.message+(e.details?' '+JSON.stringify(e.details):'');$('form-error').hidden=false;
-  if(['REVISION_CONFLICT','STALE_REVISION','REQUEST_ID_REUSED'].includes(e.code)||e.code?.includes('STALE')){
+  if(definitive(e)){editState.pending=null;editState.requestId=crypto.randomUUID();}const error=$('form-error');error.textContent=e.message;editState.resolution?.showError(e,error);error.hidden=false;error.tabIndex=-1;error.focus();
+  if(['REVISION_CONFLICT','STALE_REVISION','REQUEST_ID_REUSED','PROPOSAL_CHANGED'].includes(e.code)||e.code?.includes('STALE')){
    const c=$('conflict');c.hidden=false;c.replaceChildren(node('p','Your draft is preserved. Review the current record before rebasing this draft.'));
    button('Load current state alongside draft',async()=>{const r=await api(base()+(editState.op==='decision.create'?'/decisions':'/decisions/'+editState.key));c.append(node('pre',JSON.stringify(r.data,null,2)));button('Use these revisions; keep draft for review',()=>{editState.revision=r.revision;editState.decisionRevision=editState.op==='decision.create'?undefined:r.data.revision;editState.requestId=crypto.randomUUID();editState.pending=null;message('Draft retained. Review differences, then save explicitly.');},c);},c);
-  }else if(e.code)editState.pending=null;
+   if(e.code==='PROPOSAL_CHANGED')button('Keep my text as a written answer',()=>{editState.resolution.asWritten();message('Proposal selection cleared. Review current revisions before saving your written answer.');},c);
+  }else if(editState.pending&&(!e.code||e.code==='INTERNAL_ERROR')){
+   const c=$('conflict');c.hidden=false;c.replaceChildren(node('p','The save outcome is unknown. Your original request is retained. Retry it before changing the draft.'));
+   button('Retry original save',async()=>{const result=await api(base()+'/changes',JSON.parse(editState.pending));const key=result.data[0]?.key;closeEditor();message('Saved successfully.');try{await listing();if(key)await detail(key);}catch{message('Saved successfully. Refresh the view to see current data.');}},c);
+  }else editState.pending=null;
  }finally{save.disabled=false;}
 };
 async function admin(){

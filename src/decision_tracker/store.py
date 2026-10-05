@@ -105,7 +105,21 @@ CREATE TABLE catalog_requests(principal_id TEXT NOT NULL,request_id TEXT NOT NUL
  PRIMARY KEY(principal_id,request_id)) STRICT;
 """
 
-def initialize(path, uuid=None):
+APPROVAL_SQL = """
+CREATE TABLE approval_events(event_id TEXT PRIMARY KEY,decision_key TEXT NOT NULL REFERENCES decisions(key),
+ ledger_revision INTEGER NOT NULL REFERENCES transactions(ledger_revision),operation_ordinal INTEGER NOT NULL CHECK(operation_ordinal>=0),
+ supersedes_event_id TEXT REFERENCES approval_events(event_id),event_json TEXT NOT NULL CHECK(json_valid(event_json)),event_sha256 TEXT NOT NULL,
+ UNIQUE(ledger_revision,operation_ordinal)) STRICT;
+CREATE INDEX approval_history ON approval_events(decision_key,ledger_revision,event_id);
+CREATE TABLE schema_upgrades(request_id TEXT PRIMARY KEY,principal_id TEXT NOT NULL,from_version INTEGER NOT NULL,to_version INTEGER NOT NULL,
+ ledger_revision INTEGER NOT NULL,recorded_at TEXT NOT NULL,backup_artifact_id TEXT,request_hash TEXT NOT NULL,receipt_json TEXT NOT NULL CHECK(json_valid(receipt_json))) STRICT;
+CREATE TRIGGER immutable_approval_update BEFORE UPDATE ON approval_events BEGIN SELECT RAISE(ABORT,'Immutable approval'); END;
+CREATE TRIGGER immutable_approval_delete BEFORE DELETE ON approval_events BEGIN SELECT RAISE(ABORT,'Immutable approval'); END;
+CREATE TRIGGER immutable_upgrade_update BEFORE UPDATE ON schema_upgrades BEGIN SELECT RAISE(ABORT,'Immutable upgrade'); END;
+CREATE TRIGGER immutable_upgrade_delete BEFORE DELETE ON schema_upgrades BEGIN SELECT RAISE(ABORT,'Immutable upgrade'); END;
+"""
+
+def initialize(path, uuid=None, schema_version=2):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("xb"):
@@ -115,22 +129,33 @@ def initialize(path, uuid=None):
         db.execute("PRAGMA journal_mode=DELETE")
         db.execute("PRAGMA synchronous=FULL")
         db.execute("PRAGMA foreign_keys=ON")
-        db.executescript("BEGIN IMMEDIATE;\n" + (LEDGER_SQL if uuid else CATALOG_SQL))
+        require(schema_version in (1,2),'UNSUPPORTED_SCHEMA','Unsupported ledger schema.',409)
+        ledger_sql=LEDGER_SQL.replace('CHECK(schema_version=1)',f'CHECK(schema_version={schema_version})')
+        db.executescript("BEGIN IMMEDIATE;\n" + (ledger_sql+(APPROVAL_SQL if schema_version==2 else '') if uuid else CATALOG_SQL))
         if uuid:
-            db.execute("INSERT INTO meta VALUES(1,?,1,0,?)", (uuid, now()))
+            db.execute("INSERT INTO meta VALUES(1,?,?,0,?)", (uuid,schema_version,now()))
+            if schema_version==2:
+                receipt={'initialized':True,'ledger_uuid':str(uuid),'schema_version':2,'revision':0}
+                db.execute('INSERT INTO schema_upgrades VALUES(?,?,?,?,?,?,?,?,?)',
+                           ('initialize','system',0,2,0,now(),None,digest(receipt),encode(receipt)))
         db.commit()
     finally:
         db.close()
 
 def metadata(db, uuid=None):
     row = db.execute("SELECT * FROM meta WHERE id=1").fetchone()
-    require(row is not None and row["schema_version"] == 1, "UNSUPPORTED_SCHEMA", "Unsupported ledger schema.", 409)
+    require(row is not None and row["schema_version"] in (1,2), "UNSUPPORTED_SCHEMA", "Unsupported ledger schema.", 409)
+    if row['schema_version']==2:
+        receipt=db.execute('SELECT * FROM schema_upgrades').fetchall()
+        require(len(receipt)==1 and receipt[0]['to_version']==2 and receipt[0]['from_version'] in (0,1)
+                and 0<=receipt[0]['ledger_revision']<=row['ledger_revision'],
+                'INTEGRITY_FAILED','Approval schema receipt is missing or invalid.',409)
     if uuid is not None:
         require(row["ledger_uuid"] == str(uuid), "LEDGER_IDENTITY_MISMATCH", "Ledger identity does not match.", 409)
     return dict(row)
 
 MODELS = {"decisions": Decision, "alternatives": Option, "references": Reference, "links": Link}
-JSON_FIELDS = {"authority_refs", "evidence_state", "attribution", "result_json", "snapshot_json", "validation_summary", "request_json"}
+JSON_FIELDS = {"authority_refs", "evidence_state", "attribution", "result_json", "snapshot_json", "validation_summary", "request_json", "event_json", "receipt_json"}
 
 def unpack(row):
     obj = dict(row)

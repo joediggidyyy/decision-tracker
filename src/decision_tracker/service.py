@@ -16,7 +16,7 @@ class Service:
 
     def envelope(self, project, meta, data, **extra):
         return {"ok":True,"project_id":project["project_id"],"ledger_uuid":meta["ledger_uuid"],
-                "revision":meta["ledger_revision"],"schema_version":1,"data":data,
+                "revision":meta["ledger_revision"],"schema_version":meta['schema_version'],"data":data,
                 "complete":True,"next_cursor":None,**extra}
 
     def change(self, project_id, principal, request):
@@ -26,6 +26,8 @@ class Service:
             from .state import DECIDE
             cap="decide" if op.op in DECIDE else "propose" if request.validate_only and "write" not in principal.capabilities else "write"
             principal.need(cap)
+            if isinstance(op.data.get('approval'),dict) and op.data['approval'].get('mode')=='authenticated_now':
+                require(principal.auth_method=='human_password_session','FORBIDDEN','Only a signed-in person can approve now.',403)
         payload=request.model_dump(mode="json",exclude={"request_id","validate_only"})
         digest=store.digest(payload)
         with self.catalog.project(project_id,str(request.expected_ledger_uuid),principal,True) as (db,project):
@@ -36,12 +38,25 @@ class Service:
                 require(previous["request_hash"]==digest,"REQUEST_ID_REUSED","Request ID was used with different content.",409)
                 result=json.loads(previous["result_json"]);result["replayed"]=True
                 return result
+            require(meta['schema_version']==2,'UPGRADE_REQUIRED','This project needs a data-format upgrade before changes can be saved.',409)
             if meta["ledger_revision"]!=request.expected_revision:stale(meta["ledger_revision"])
-            mutation=Mutator(db,principal,request)
-            for op in request.operations:mutation.apply(op)
-            mutation.validate()
-            rev=meta["ledger_revision"]+1
+            from . import approvals
             stamp=now()
+            require(not any(k.startswith('dt_') for k in request.attribution),'VALIDATION_ERROR','Server attribution fields cannot be supplied.')
+            events=approvals.prepare(db,principal,request,stamp)
+            effective=request.model_copy(deep=True)
+            mutation=Mutator(db,principal,effective)
+            for ordinal,op in enumerate(effective.operations):
+                # Internal evidence includes one server reference beyond the 32 caller sources.
+                mutation.request=effective.model_copy(update={'authority_refs':events[ordinal]['sources'] if ordinal in events else request.authority_refs})
+                if ordinal in events:
+                    op.data.pop('approval',None);op.data.pop('expected_option_revision',None)
+                mutation.apply(op)
+            mutation.validate()
+            for event in events.values():
+                require(len(store.encode(store.snapshot(db,event['decision_key'])).encode())+len(store.encode(event).encode())<=131072,
+                        'LIMIT_EXCEEDED','Decision and approval together exceed 128 KiB.',413)
+            rev=meta["ledger_revision"]+1
             for key,old in mutation.original.items():
                 db.execute("UPDATE decisions SET revision=?,updated_at=? WHERE key=?",(old+1,stamp,key))
             summaries=[{k:store.get(db,"decisions",key)[k] for k in ("key","title","status","locked","revision")}
@@ -58,6 +73,7 @@ class Service:
                        (rev,str(uuid4()),principal.id,str(request.request_id),digest,store.encode(request.attribution),
                         request.reason,store.encode(request.authority_refs),stamp,
                         request.occurred_at.isoformat() if request.occurred_at else None,store.encode(result),store.encode(payload)))
+            for event in events.values():approvals.insert(db,event)
             for key,old in mutation.original.items():
                 snapshot=store.snapshot(db,key)
                 db.execute("INSERT INTO revisions VALUES(?,?,?,?,?)",
@@ -141,6 +157,8 @@ class Service:
                 collections[family]={"count":len(snapshot.pop(family)),
                                      "url":base+"/"+("options" if family=="alternatives" else family)+"?revision="+str(snaprev)}
             data=self.compact(snapshot,base,snaprev);data["collections"]=collections
+            from .approvals import latest
+            data['latest_resolution_approval']=latest(db,key,snaprev)
             return self.envelope(project,meta,data,as_of_revision=revision)
 
     def children(self,project_id,uuid,principal,key,family,cursor=None,limit=50,revision=None):
@@ -184,7 +202,10 @@ class Service:
             store.get(db,"decisions",key);meta=store.metadata(db,uuid)
             items=[]
             for row in db.execute("SELECT r.ledger_revision,r.prior_decision_revision,r.snapshot_sha256,t.principal_id,t.reason,t.authority_refs,t.recorded_at,t.attribution FROM revisions r JOIN transactions t USING(ledger_revision) WHERE decision_key=? ORDER BY r.ledger_revision",(key,)):
-                item=store.unpack(row);items.append((f'{item["ledger_revision"]:020d}',item))
+                item=store.unpack(row)
+                from .approvals import latest
+                item['approval']=latest(db,key,item['ledger_revision'])
+                items.append((f'{item["ledger_revision"]:020d}',item))
             data,cur,complete=self.page(items,meta,{"key":key,"kind":"history"},cursor,limit)
             return self.envelope(project,meta,data,next_cursor=cur,complete=complete)
 

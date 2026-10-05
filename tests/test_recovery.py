@@ -47,5 +47,5 @@ def test_incomplete_artifact_refused_and_unknown_schema(ledger):
  with pytest.raises(Fault,match="not verified"):Artifacts(s).download("alpha",u,p,"pending")
  with s.catalog.project("alpha",u,p) as (db,_):
   db.execute("PRAGMA ignore_check_constraints=ON")
-  db.execute("UPDATE meta SET schema_version=2")
+  db.execute("UPDATE meta SET schema_version=99")
  with pytest.raises(Fault,match="Unsupported"):s.list_decisions("alpha",u,p)

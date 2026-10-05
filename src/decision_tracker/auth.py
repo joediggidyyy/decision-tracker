@@ -13,6 +13,7 @@ class Principal:
     id: str
     projects: frozenset
     capabilities: frozenset
+    auth_method: str = 'agent_bearer'
 
     def project(self, project_id):
         require("*" in self.projects or project_id in self.projects, "NOT_FOUND", "Project is unavailable.", 404)

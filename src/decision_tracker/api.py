@@ -169,7 +169,8 @@ def create_app(config:Config,environment=None):
         if request.method not in ("GET","HEAD"):
             require(request.headers.get("origin")==origin and hmac.compare_digest(request.headers.get("x-csrf-token",""),session["csrf"]),
                     "FORBIDDEN","Session write requires same-origin CSRF protection.",403)
-        return session["principal"]
+        from dataclasses import replace
+        return replace(session["principal"],auth_method='legacy_token_session' if legacy else 'human_password_session')
 
     def principal(request,touch=True):
         # Credential mutation and admission are ordered by the same store lock.
@@ -238,7 +239,11 @@ def create_app(config:Config,environment=None):
     @app.get("/api/v1/schema")
     def schema(request:Request):
         principal(request)
-        return app.openapi()
+        schema=app.openapi().copy()
+        from .approvals import Approval
+        schema['x-decision-tracker']={'capabilities':['approval_events_v1'],'ledger_schemas':[1,2],
+                                     'approval_input':Approval.model_json_schema()}
+        return schema
 
     @app.get("/api/v1/projects")
     def projects(request:Request):
@@ -302,12 +307,6 @@ def create_app(config:Config,environment=None):
     def impact(project_id:str,key:str,request:Request):
         return output(request,service.related(project_id,identity(request),principal(request),key,True))
 
-    @app.get("/api/v1/projects/{project_id}/decisions/{key}/{collection}")
-    def children(project_id:str,key:str,collection:str,request:Request,cursor:str|None=None,
-                 limit:int=Query(50,ge=1,le=200),revision:int|None=None):
-        family="alternatives" if collection=="options" else collection
-        return output(request,service.children(project_id,identity(request),principal(request),key,family,cursor,limit,revision))
-
     app.state.principal=principal
     app.state.identity=identity
     app.state.output=output
@@ -317,6 +316,14 @@ def create_app(config:Config,environment=None):
     from .artifacts import mount
     from fastapi.staticfiles import StaticFiles
     mount(app)
+    from .approval_api import mount as mount_approvals
+    mount_approvals(app)
+    @app.get("/api/v1/projects/{project_id}/decisions/{key}/{collection}")
+    def children(project_id:str,key:str,collection:str,request:Request,cursor:str|None=None,
+                 limit:int=Query(50,ge=1,le=200),revision:int|None=None):
+        family="alternatives" if collection=="options" else collection
+        return output(request,service.children(project_id,identity(request),principal(request),key,family,cursor,limit,revision))
+
     assets=Path(__file__).parent / "static"
     app.mount("/static",StaticFiles(directory=assets),name="static")
     @app.get("/",include_in_schema=False)

@@ -14,13 +14,16 @@ from .errors import require, Fault, missing
 
 TABLES=("decisions","alternatives","references","links","transactions","revisions")
 SORT={"decisions":"key","alternatives":"id","references":"id","links":"id",
-      "transactions":"ledger_revision","revisions":"decision_key,ledger_revision"}
+      "transactions":"ledger_revision","revisions":"decision_key,ledger_revision",
+      "approval_events":"ledger_revision,operation_ordinal","schema_upgrades":"recorded_at,request_id"}
+
+def tables(version):return TABLES+('approval_events','schema_upgrades') if version==2 else TABLES
 
 def bundle(db):
     meta=store.metadata(db)
-    return {"format":"decision-tracker/v1","schema_version":1,"ledger_uuid":meta["ledger_uuid"],
+    return {"format":f"decision-tracker/v{meta['schema_version']}","schema_version":meta['schema_version'],"ledger_uuid":meta["ledger_uuid"],
             "ledger_revision":meta["ledger_revision"],"meta":meta,
-            **{table:[store.unpack(row) for row in db.execute(f'SELECT * FROM "{table}" ORDER BY {SORT[table]}')] for table in TABLES}}
+            **{table:[store.unpack(row) for row in db.execute(f'SELECT * FROM "{table}" ORDER BY {SORT[table]}')] for table in tables(meta['schema_version'])}}
 
 def validate_history(db):
     store.integrity(db);meta=store.metadata(db)
@@ -58,6 +61,9 @@ def validate_history(db):
     validator.validate()
     for table,model in store.MODELS.items():
         for row in db.execute(f'SELECT * FROM "{table}"'):model.model_validate(store.unpack(row))
+    if meta['schema_version']==2:
+        from .approval_history import validate
+        validate(db,meta)
     return {"integrity":"ok","ledger_uuid":meta["ledger_uuid"],"revision":meta["ledger_revision"],
             "logical_sha256":store.digest(bundle(db))}
 
@@ -147,9 +153,11 @@ class Artifacts:
     def import_native(self,principal,value,promote=False):
         principal.need("maintain")
         # Import privilege does not grant registry access; candidate registration is separate.
-        require(isinstance(value,dict) and set(value)==set(TABLES)|{"format","schema_version","ledger_uuid","ledger_revision","meta"},
+        version=value.get('schema_version') if isinstance(value,dict) else None
+        require(type(version) is int and version in (1,2),'UNSUPPORTED_SCHEMA','Unsupported interchange format.',409)
+        require(isinstance(value,dict) and set(value)==set(tables(version))|{"format","schema_version","ledger_uuid","ledger_revision","meta"},
                 "VALIDATION_ERROR","Native bundle fields do not match v1.")
-        require(value["format"]=="decision-tracker/v1" and value["schema_version"]==1,
+        require(value["format"]==f"decision-tracker/v{version}",
                 "UNSUPPORTED_SCHEMA","Unsupported interchange format.",409)
         require(len(store.encode(value).encode())<=10*1024*1024 and len(value["decisions"])<=500,
                 "LIMIT_EXCEEDED","Import exceeds v1 capacity.",413)
@@ -160,17 +168,22 @@ class Artifacts:
                 "LIMIT_EXCEEDED","Invalid import revision count.",413)
         candidate_id=str(uuid4());relative=f"candidates/{candidate_id}/ledger.sqlite"
         path=contained(self.root,relative);path.parent.mkdir(parents=True)
-        store.initialize(path,value["ledger_uuid"])
+        store.initialize(path,value["ledger_uuid"],schema_version=version)
         with store.connect(path,True) as db:
             db.execute("PRAGMA defer_foreign_keys=ON")
             require(set(value["meta"])=={"id","ledger_uuid","schema_version","ledger_revision","created_at"}
-                    and value["meta"]["id"]==1 and value["meta"]["schema_version"]==1
+                    and value["meta"]["id"]==1 and value["meta"]["schema_version"]==version
                     and value["meta"]["ledger_uuid"]==value["ledger_uuid"]
                     and value["meta"]["ledger_revision"]==value["ledger_revision"],
                     "VALIDATION_ERROR","Bundle metadata is inconsistent.")
             db.execute("UPDATE meta SET ledger_revision=?,created_at=? WHERE id=1",
                        (value["ledger_revision"],value["meta"]["created_at"]))
-            for table in TABLES:
+            if version==2:
+                # Empty candidate initialization is replaced by the source initialization/upgrade receipt.
+                db.execute('DROP TRIGGER immutable_upgrade_delete')
+                db.execute('DELETE FROM schema_upgrades')
+                db.execute("CREATE TRIGGER immutable_upgrade_delete BEFORE DELETE ON schema_upgrades BEGIN SELECT RAISE(ABORT,'Immutable upgrade'); END")
+            for table in tables(version):
                 require(isinstance(value[table],list),"VALIDATION_ERROR","Native table must be an array.")
                 columns=[r[1] for r in db.execute(f'PRAGMA table_info("{table}")')]
                 for row in value[table]:
@@ -181,7 +194,7 @@ class Artifacts:
             result=validate_history(db)
             require(store.digest(bundle(db))==store.digest(value),"INTEGRITY_FAILED","Import did not round-trip exactly.",409)
             db.execute("INSERT INTO import_receipts VALUES(?,?,?,?,?,?,?)",
-                       (candidate_id,store.digest(value),"decision-tracker/v1",value["ledger_uuid"],value["ledger_revision"],now(),store.encode(result)))
+                       (candidate_id,store.digest(value),value['format'],value["ledger_uuid"],value["ledger_revision"],now(),store.encode(result)))
         # Validated-only candidates are retained as evidence, never registered.
         return {"ok":True,"data":{**result,"candidate_id":candidate_id,
                 "relative_path":relative if promote else None,"registered":False,"validated_only":not promote}}

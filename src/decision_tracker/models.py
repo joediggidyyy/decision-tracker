@@ -39,7 +39,7 @@ class Decision(Model):
     deprecation_kind: Literal["superseded", "obsolete", "withdrawn", "duplicate", "error"] | None = None
     deprecation_reason: str | None = Field(default=None, max_length=8192)
     replacement_key: str | None = None
-    authority_refs: list[ReferenceText] = Field(default_factory=list, max_length=32)
+    authority_refs: list[ReferenceText] = Field(default_factory=list, max_length=33)
     occurred_at: datetime | None = None
     created_at: str = Field(default_factory=now)
     updated_at: str = Field(default_factory=now)

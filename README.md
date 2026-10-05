@@ -8,7 +8,7 @@ Decision Tracker is a portable application for people and agents. Each project h
 
 **Internal alpha · Python 3.14 · Private repository**
 
-The application supports creating and editing decisions, comparing alternatives, recording evidence and changing decision status. The operator has accepted the system-browser experience and launch from Polymath home. See the [verification record](docs/verification.md) for automated evidence and remaining qualification limits.
+The application supports creating and editing decisions, comparing alternatives, recording evidence and changing decision status. The operator accepted the earlier system-browser experience and launch from Polymath home. The new decision-approval form is implemented and regression-tested; its remaining qualification and live activation are pending. See the [verification record](docs/verification.md) for automated evidence and remaining qualification limits.
 
 ## Site map
 

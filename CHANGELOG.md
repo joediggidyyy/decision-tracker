@@ -4,6 +4,13 @@
 
 Changes to the private local application are recorded here. This is a development history, not a public release announcement.
 
+## Unreleased — decision approval form
+
+- Visible proposal choices, generated decision/explanation/change note and protected edited text.
+- Automatic human approval identity/time; separate reported dates with exact/date-only/unknown precision.
+- Immutable schema2 approval events, guarded backup-first upgrades and versioned exchange/recovery.
+- Retained-request recovery, plain errors and approval readback. Automated integration: 104 tests passed. Live activation and revised-form owner acceptance remain pending; see Verification.
+
 ## 0.1.0.dev0 — internal alpha
 
 ### Decision workspace

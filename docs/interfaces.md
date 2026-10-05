@@ -111,6 +111,28 @@ Draft routes: POST `/api/v1/service/draft-leases`, PUT/DELETE `/api/v1/service/d
 
 Local credential operations are an OS-owner administrative exception, not ledger access. See Operations for private terminal prompts. Select `--deployment FILE` when using a nondefault deployment. `--credential-principal NAME` and `--token-env NAME` are mutually exclusive. Start explicitly with `service ensure-running`; data commands do not silently launch or replay writes.
 
+## Decision approval events (schema 2)
+
+The **Record decision** form shows proposed solutions, then Decision and Why this choice. Selecting a proposal fills those fields and the optional change note. Editing the answer switches to a written answer; editing the explanation keeps the proposal selected. Save closes the question; it does not perform implementation work.
+
+`decision.close` and `decision.edit-resolution` accept `data.approval`. Current approval is `{"mode":"authenticated_now"}` and requires a password-authenticated human session plus decide permission. Recorder identity and UTC recording time come from the server. Agent bearer credentials and legacy token sessions cannot use this mode.
+
+For an earlier or external approval, use:
+
+```json
+{"mode":"reported","approver":"Project owner","sources":["Meeting note dated 2020-01-02"],"precision":"date","occurred_date":"2020-01-02","utc_offset_minutes":-300}
+```
+
+Reported approval requires decide permission, who approved, and 1–32 nonblank sources. Exact precision requires an offset-aware `occurred_at` plus matching `utc_offset_minutes`; date precision requires `occurred_date` plus offset; unknown precision forbids date/time/offset/timezone. Future occurrence is rejected. The reported approver is not authenticated. A generated event reference is stored in addition to submitted sources, so snapshots allow 33 references while caller `authority_refs` remains bounded at 32.
+
+Selecting a proposal on the structured path requires its `selected_option` ID and `expected_option_revision`. The answer must match the proposal description (or title when description is empty). A resolution edit can preserve an unchanged legacy mismatch. Other changes to the same decision cannot share a resolution batch. Structured approval cannot be combined with top-level `occurred_at`. Legacy explicit-reference requests remain supported without invented approval dates.
+
+Approval events count with the decision toward the 128 KiB aggregate limit. Events are immutable and linked across resolution edits and reopen/close cycles. Detail/as-of returns `latest_resolution_approval`; GET `.../decisions/{key}/approvals` returns paginated summaries, and GET `.../approvals/{event_id}` returns the full event with revision-pinned chunks for long text. Existing project identity and read permission requirements apply. GET `/api/v1/schema` advertises `approval_events_v1` and ledger schemas 1 and 2.
+
+CLI `decision close`, `decision edit-resolution` and `change apply` forward this object through existing JSON inputs. Bearer agents must report genuine external approval evidence and possess decide permission; this feature grants no new access.
+
+The browser retains the exact request after an uncertain response, retries it once, then offers Retry original save. Each changes request is bounded at 15 seconds. Definitive rejection permits correction with a new request ID. A failed refresh after a successful save is reported as a saved decision.
+
 ---
 
 <p align="center">Maintained by Polymath Global</p>

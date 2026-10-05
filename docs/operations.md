@@ -83,6 +83,23 @@ Legacy credential migration is explicit: `auth migrate --config OLD_CONFIG --dep
 
 Before real data adoption, create and verify a project-bound backup, download it to a new owner-controlled file and perform a restore check. Keep catalog and authentication recovery material separately. Synthetic proof does not establish a production backup schedule.
 
+## Explicit schema-1 to schema-2 upgrade
+
+New project ledgers use schema 2. Existing schema-1 ledgers remain readable, verifiable, exportable and recoverable; writes return UPGRADE_REQUIRED. No startup or import silently upgrades a ledger. Old binaries refuse schema 2. Native interchange retains its original schema: v1 stays v1; v2 includes approval events and the initialization/upgrade receipt.
+
+Use the project's existing binding and maintain credential:
+
+```text
+decision-tracker data upgrade-check --project PROJECT --binding BINDING --credential-principal agents --json
+decision-tracker data upgrade --project PROJECT --binding BINDING --credential-principal agents --expected-revision REVISION --request-id UUID --json
+```
+
+The check verifies history and reports version, compatibility, revision and backup-size estimates. It does not reserve the revision. The upgrade holds coordinated write exclusion, creates a native backup, independently restore-checks it, and changes schema in one transaction. UUID, ledger/decision revisions, historical snapshots and original request hashes are preserved. No historical approval is invented. The separate receipt identifies the backup. Retry the identical request ID and revision to recover a committed upgrade result.
+
+An active deployment upgrade requires an exact project/UUID/revision and backup plan authorized for that operational mutation. Source implementation or a test pass is not deployment acceptance. Do not roll back the running binary after schema 2 has been activated.
+
+Recovery is explicit and offline. Before any subsequent writes, stop the service through its safe-stop path, obtain instance exclusion, verify the pre-upgrade backup and exact live identity/revision, retain the current file, then restore only under recovery authorization. After subsequent writes, use forward repair or a compatible schema-2 backup with reconciliation of later transactions. Never automatically replace an active ledger or discard later writes.
+
 ---
 
 <p align="center">Maintained by Polymath Global</p>

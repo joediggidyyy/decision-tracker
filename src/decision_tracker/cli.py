@@ -52,7 +52,7 @@ def parser():
         "link":["add","list","unlink"],
         "query":["search","context","impact","deprecated"],
         "change":["apply"],
-        "data":["export","import-validate","import-new","backup","verify","restore-check","artifact-list","artifact-download"]}
+        "data":["export","import-validate","import-new","backup","verify","restore-check","artifact-list","artifact-download","upgrade-check","upgrade"]}
     for group,verbs in definitions.items():
         parent=groups.add_parser(group,help=group+" operations")
         children=parent.add_subparsers(dest="action",required=True)
@@ -176,6 +176,11 @@ def execute(args):
         if a=="deprecated":query["status"]="deprecated"
         return client.request("GET",path+"/decisions?"+urlencode(query),uuid=uuid)
     if g=="data":
+        if a in ('upgrade-check','upgrade'):
+            if a=='upgrade':
+                from .approval_api import Upgrade
+                data=Upgrade.model_validate({'expected_revision':args.expected_revision if args.expected_revision is not None else data.get('expected_revision'),'request_id':args.request_id or data.get('request_id')}).model_dump(mode='json')
+            return client.request('POST',path+'/schema-upgrade'+('/check' if a=='upgrade-check' else ''),data,uuid)
         if a=="artifact-list":
             return client.request("GET",path+"/artifacts?"+urlencode({k:v for k,v in query.items() if k in ("cursor","limit")}),uuid=uuid)
         if a=="artifact-download":
@@ -217,6 +222,7 @@ def exit_code(value):
     if value.get("ok"):return 0
     code=value.get("error",{}).get("code")
     if code in ("UNAUTHORIZED","FORBIDDEN","SETUP_REQUIRED"):return 4
+    if code in ('PROPOSAL_CHANGED','UPGRADE_REQUIRED','ALREADY_UPGRADED'):return 3
     if code in ("SERVICE_UNAVAILABLE","RETRY_LATER","DATABASE_UNAVAILABLE","SERVICE_STOPPING","PORT_CONFLICT"):return 5
     if code in ("STALE_REVISION","LEDGER_IDENTITY_MISMATCH","REQUEST_ID_REUSED","CURSOR_STALE","RELATION_CYCLE","DUPLICATE_LEDGER","PROJECT_DISABLED","LOCKED_BASELINE","SERVICE_BUSY","AUTH_STATE_CONFLICT"):return 3
     return 1 if code=="INTERNAL_ERROR" else 2
