@@ -26,7 +26,7 @@ def common(parser,suppress=True):
     parser.add_argument("--authority-ref",action="append",default=argparse.SUPPRESS if suppress else [])
     for name in ["key","id","name","relative-path","title","question","answer","rationale","owner-role","baseline",
                  "work-tag","resume-trigger","kind","replacement-key","target-key","type","impact","baseline-disposition",
-                 "selected-option","cursor","q","status","work","owner","artifact-id","output","bind","candidate-id","expected-candidate-digest"]:
+                 "selected-option","cursor","q","status","work","owner","artifact-id","output","bind","candidate-id","expected-candidate-digest","order"]:
         parser.add_argument("--"+name,default=default)
     parser.add_argument("--prompt-code",action="store_true",default=argparse.SUPPRESS if suppress else False)
     parser.add_argument("--store-local",action="store_true",default=argparse.SUPPRESS if suppress else False)
@@ -191,7 +191,10 @@ def execute(args):
                 data=Upgrade.model_validate({'expected_revision':args.expected_revision if args.expected_revision is not None else data.get('expected_revision'),'request_id':args.request_id or data.get('request_id')}).model_dump(mode='json')
             return client.request('POST',path+'/schema-upgrade'+('/check' if a=='upgrade-check' else ''),data,uuid)
         if a=="artifact-list":
-            return client.request("GET",path+"/artifacts?"+urlencode({k:v for k,v in query.items() if k in ("cursor","limit")}),uuid=uuid)
+            filters={k:v for k,v in query.items() if k in ('cursor','limit')}
+            for key in ('kind','order'):
+                if getattr(args,key,None) is not None:filters[key]=getattr(args,key)
+            return client.request("GET",path+"/artifacts?"+urlencode(filters),uuid=uuid)
         if a=="artifact-download":
             require(args.artifact_id and args.output,"VALIDATION_ERROR","Artifact download requires --artifact-id and --output.")
             return client.request("GET",path+"/artifacts/"+args.artifact_id+"/content",uuid=uuid,download=args.output)

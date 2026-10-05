@@ -79,3 +79,5 @@ A selected proposal requires expected_option_revision and matching answer text. 
 Register using the selected `candidate_id` and `logical_digest` as `--candidate-id` and `--expected-candidate-digest`, alongside the existing project/name/catalog-revision/request-ID fields. Preparation never approves imported decisions and registration never replaces or upgrades active data. Discovery does not authorize import or registration. No arbitrary filesystem browsing is exposed.
 
 Exact-request retries apply to catalog and decision mutations. Export and backup creation have no such replay guarantee: after a lost response inspect the file list and report uncertainty; do not automatically create a duplicate.
+
+Artifact manager reads: `data artifact-list --kind backup --order newest --limit 25` (or kind export) returns one kind with Previous/Next cursors, counts and inventory identity. Use returned cursors with the same kind/order/limit/project binding. Changed inventory returns CURSOR_STALE; restart the read without combining old and new pages. Omitting filters preserves legacy mixed forward listing.

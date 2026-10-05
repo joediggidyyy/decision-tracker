@@ -1,5 +1,6 @@
 // Projects & data shares the application shell; catalog drafts stay in memory.
 import {sendRetained,definitive} from './save-request.js';
+import {installFileManager} from './file-manager.js';
 export function projectSlug(name,used=[]){
  let base=name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'project';
  if(!/^[a-z]/.test(base))base='project-'+base;base=base.slice(0,48).replace(/-$/,'');
@@ -7,6 +8,10 @@ export function projectSlug(name,used=[]){
 }
 export function installProjects({$,state,node,button,api,projects,selectProject,show,detail,listing,message,readResponse}){
  let generation=0,draft=null,leave=null;
+ const manager=installFileManager({$,state,node,button,api});
+ $('backups-button').onclick=()=>manager.open('backup');$('exports-button').onclick=()=>manager.open('export');
+ $('verify-button').onclick=async()=>{const p=state.project,ticket=generation,b=$('verify-button');if(!p?.enabled)return;b.disabled=true;try{const r=await api(binding(p)+'/verify',{});if(current(p,ticket))manager.result($('data-result'),'Passed. Current project data is valid.',r.data);}catch(e){if(current(p,ticket))manager.result($('data-result'),e.message);}finally{b.disabled=false;}};
+ const help=$('admin-info'),tip=$('admin-help');function hideHelp(){tip.hidden=true;help.setAttribute('aria-expanded','false');}function showHelp(){tip.hidden=false;help.setAttribute('aria-expanded','true');const r=help.getBoundingClientRect(),b=tip.getBoundingClientRect();tip.style.left=Math.max(18,Math.min(r.left,innerWidth-b.width-18))+'px';tip.style.top=Math.max(18,Math.min(r.bottom+6,innerHeight-b.height-18))+'px';}help.onclick=()=>tip.hidden?showHelp():hideHelp();help.onpointerenter=showHelp;help.onpointerleave=()=>{if(document.activeElement!==help)hideHelp();};help.onfocus=showHelp;help.onblur=hideHelp;help.onkeydown=e=>{if(e.key==='Escape')hideHelp();};
  const capability=name=>state.caps.includes(name);
  const error=(target,e)=>{target.hidden=false;target.textContent=e.message||String(e);};
  const binding=p=>'/api/v1/projects/'+encodeURIComponent(p.project_id);
@@ -16,7 +21,7 @@ export function installProjects({$,state,node,button,api,projects,selectProject,
  function field(parent,label,name,attributes={}){const l=node('label',label),input=node('input');input.name=name;Object.assign(input,attributes);l.append(input);parent.append(l);return input;}
  function dirty(){return draft&&draft.initial!==new URLSearchParams(new FormData($('project-form'))).toString();}
  function close(){const invoker=draft?.invoker;draft=null;$('project-editor').close();invoker?.focus();}
- async function navigate(fn){if(draft){if(draft.saving||draft.pending){error($('project-form-error'),Error('Resolve the pending save before leaving.'));return;}if(dirty()){leave=fn;$('project-dirty').showModal();return;}close();}await fn();}
+ async function navigate(fn){if(manager.isBusy())return false;if(draft){if(draft.saving||draft.pending){error($('project-form-error'),Error('Resolve the pending save before leaving.'));return false;}if(dirty()){leave=fn;$('project-dirty').showModal();return false;}close();}manager.close();await fn();return true;}
  $('project-cancel').onclick=()=>navigate(async()=>{});
  $('project-editor').oncancel=e=>{e.preventDefault();navigate(async()=>{});};
  $('project-dirty-keep').onclick=()=>{leave=null;$('project-dirty').close();};
@@ -81,28 +86,15 @@ export function installProjects({$,state,node,button,api,projects,selectProject,
  }
  async function render(){
   const ticket=++generation,box=$('project-admin');box.replaceChildren();
-  try{const r=await api('/api/v1/service/lifecycle');if(ticket!==generation)return;$('service-controls').hidden=false;$('service-status').textContent=r.data.state==='RUNNING'?'Running':r.data.state;$('service-details').textContent=r.data.operation_count+' active operations · '+r.data.lease_count+' protected drafts';}catch{$('service-controls').hidden=true;}
   const [t,body]=table(['Name','State','']);box.append(t);
   for(const p of state.projects){const row=node('tr');row.dataset.project=p.project_id;const name=cell(row);const select=button(p.name,()=>navigate(()=>selectProject(p.project_id)),name);select.className='project-name';select.setAttribute('aria-pressed',String(state.project?.project_id===p.project_id));cell(row,p.enabled?'Enabled':'Disabled');const action=cell(row);if(capability('registry'))button(p.enabled?'Disable':'Enable',()=>stateChange(p),action);[...row.children].forEach((td,i)=>td.dataset.label=['Name','State','Actions'][i]);body.append(row);}
   if(!state.projects.length)box.append(node('p','No projects yet.'));
-  $('back-workspace').disabled=!state.project?.enabled;
-  $('back-workspace').title=state.project?.enabled?'':'Choose an enabled project to view decisions.';if(!state.project?.enabled)box.append(node('p','Choose an enabled project to view decisions.','muted'));
+  for(const [id,c] of [['backups-button','read'],['exports-button','read'],['verify-button','maintain']]){$(id).hidden=!capability(c);$(id).disabled=!state.project?.enabled;}
   const parent=$('maintenance');parent.replaceChildren(node('h2','Data','section-title'));
   const p=state.project;if(!p){parent.append(node('p','Choose a project to view its data.'));return;}
   parent.append(node('p',p.name,'data-project'));
   if(!p.enabled){parent.append(node('p','This project is disabled. Enable it to access its data.'));return;}
-  const actions=node('div',undefined,'admin-actions'),result=node('div'),files=node('div'),filesError=node('p',undefined,'error');filesError.hidden=true;parent.append(actions,result,node('h3','Files'),filesError,files);
-  let cursor=null,rows=new Map(),fileSerial=0;
-  function outcome(label,value){result.replaceChildren(node('p',label+' · '+p.name));const details=node('details');details.append(node('summary','Details'),node('pre',JSON.stringify(value,null,2)));result.append(details);}
-  async function operate(label,route,payload={},control){if(control)control.disabled=true;try{const r=await api(binding(p)+'/'+route,payload);if(!current(p,ticket))return;outcome(label+' complete',r.data);if(['exports','backups'].includes(route))await loadFiles();}catch(e){if(current(p,ticket))outcome(!e.code?'Outcome unknown; refresh files to inspect':e.message,{operation:label});}finally{if(control)control.disabled=false;}}
-  for(const [label,route,cap] of [['Export','exports','read'],['Backup','backups','maintain'],['Verify','verify','maintain']])if(capability(cap)){const b=button(label,()=>operate(label,route,{},b),actions);}
-  button('Refresh',()=>loadFiles(),actions);
-  async function loadFiles(more=false){const serial=++fileSerial;filesError.hidden=true;try{const r=await api(binding(p)+'/artifacts'+(more&&cursor?'?cursor='+encodeURIComponent(cursor):''));if(!current(p,ticket)||serial!==fileSerial)return;if(!more)rows=new Map();for(const a of r.data)rows.set(a.artifact_id,a);cursor=r.next_cursor;drawFiles();}catch(e){if(!current(p,ticket)||serial!==fileSerial)return;if(e.code==='CURSOR_STALE'&&more){await loadFiles();return;}error(filesError,e);}}
-  function drawFiles(){files.replaceChildren();if(!rows.size){files.append(node('p','No files yet.','muted'));return;}const [tableEl,bodyEl]=table(['Type','Created','Revision','State','Actions']);files.append(tableEl);for(const a of rows.values()){const row=node('tr');row.dataset.artifact=a.artifact_id;cell(row,a.kind==='backup'?'Backup':'Export');cell(row,new Date(a.created_at).toLocaleString());cell(row,String(a.revision));cell(row,a.state);const controls=cell(row);if(a.state==='complete'){
-   button('Download',async()=>{try{const response=await fetch(binding(p)+'/artifacts/'+a.artifact_id+'/content',{headers:{'X-Ledger-UUID':p.ledger_uuid}});if(!response.ok)throw Error('Download failed.');const blob=await response.blob();if(!current(p,ticket))return;const url=URL.createObjectURL(blob),anchor=node('a');anchor.href=url;anchor.download=a.artifact_id+(a.kind==='backup'?'.sqlite':'.json');anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){if(current(p,ticket))error(filesError,e);}},controls);
-   if(a.kind==='backup'&&capability('maintain')){const b=button('Check backup',()=>operate('Backup check','restore-check',{artifact_id:a.artifact_id},b),controls);}
-  }[...row.children].forEach((td,i)=>td.dataset.label=['Type','Created','Revision','State','Actions'][i]);bodyEl.append(row);}if(cursor)button('Load more',()=>loadFiles(true),files);}
-  await loadFiles();
+  const result=node('div');result.id='data-result';parent.append(result);
  }
- return {render,navigate,dirty};
+ return {render,navigate,dirty,manager};
 }

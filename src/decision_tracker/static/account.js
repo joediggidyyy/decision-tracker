@@ -1,5 +1,5 @@
 /* Human account controls and bounded draft leases. No secrets survive page memory. */
-export function installAccount({$,state,api,signedIn,show,message,dirty,live}){
+export function installAccount({$,state,api,signedIn,show,message,dirty,live,hasDraft=dirty,onReauthenticated=()=>{}}){
  let legacy=false,setup=false,precsrf=null,returnEditor=false,lease=null,leaseBusy=false,renewAt=0;
  const tabNonce=crypto.randomUUID();
  async function preauth(){
@@ -55,7 +55,7 @@ export function installAccount({$,state,api,signedIn,show,message,dirty,live}){
   catch(error){$('account-error').textContent=error.message;$('account-error').hidden=false;}
  };
  $('account-signin').onclick=async()=>{
-  try{const data=await authenticate($('current-password').value);state.csrf=data.csrf_token;state.caps=data.capabilities;$('current-password').value='';$('account-message').textContent='Signed in. Your draft is retained.';lease=null;await protectDraft();if(state.project)live.start(state.project,state.record?.key||null);}
+  try{const data=await authenticate($('current-password').value);state.csrf=data.csrf_token;state.caps=data.capabilities;$('current-password').value='';$('account-message').textContent='Signed in. Your draft is retained.';lease=null;await protectDraft();if(state.project)live.start(state.project,state.record?.key||null);onReauthenticated();}
   catch(error){$('account-error').textContent=error.message;$('account-error').hidden=false;}
  };
  async function protectDraft(){
@@ -76,7 +76,10 @@ export function installAccount({$,state,api,signedIn,show,message,dirty,live}){
  $('stop-service').onclick=async()=>{
   $('stop-service-confirm').hidden=false;
  };
- $('confirm-stop-service').onclick=async()=>{try{await api('/api/v1/service/stop',{});live.stop('Service stopped');$('service-status').textContent='Service stopped. Use Open tracker to start it again.';$('stop-service-confirm').hidden=true;}catch(error){$('service-status').textContent=error.message;}};
+ $('confirm-stop-service').onclick=async()=>{
+  const submit=$('confirm-stop-service');submit.disabled=true;
+  try{if(hasDraft())throw Error('Save or discard your unsaved changes before stopping the backend.');await api('/api/v1/service/stop',{});live.stop('Service stopped');$('service-status').textContent='Stopping. Start opens the application again.';$('service-details').textContent='Saved data is retained.';$('stop-service-confirm').hidden=true;$('stop-service').hidden=true;$('start-service').hidden=false;}catch(error){$('service-status').textContent=error.message;}finally{submit.disabled=false;}
+ };
  $('cancel-stop-service').onclick=()=>$('stop-service-confirm').hidden=true;
  loginView();api('/api/v1/account').then(()=>{$('account-toggle').hidden=false;}).catch(()=>{});
  return {authenticate,loginView};

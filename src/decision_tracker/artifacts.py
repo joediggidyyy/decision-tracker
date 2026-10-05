@@ -1,5 +1,6 @@
 """Contained immutable exports, verified backups and candidate-only imports."""
 from contextlib import closing
+import base64
 import hashlib
 import json
 import os
@@ -71,14 +72,59 @@ class Artifacts:
     def __init__(self,service):
         self.service=service;self.catalog=service.catalog;self.root=service.root
 
-    def list(self,project_id,uuid,principal,cursor=None,limit=50):
+    def list(self,project_id,uuid,principal,cursor=None,limit=50,kind=None,order='artifact_id'):
         principal.need("read")
+        require(kind in (None,'backup','export') and order in ('artifact_id','newest'),
+                'VALIDATION_ERROR','Unknown file filter or order.')
+        require(order!='newest' or kind is not None,'VALIDATION_ERROR','Newest order requires a file kind.')
+        require(type(limit) is int and 1<=limit<=200,'VALIDATION_ERROR','Page size must be 1–200.')
         with self.catalog.project(project_id,uuid,principal) as (db,project):
             meta=store.metadata(db,uuid)
+            if order=='newest':return self.manager_page(db,project,meta,kind,cursor,limit)
             rows=[dict(x) for x in db.execute("SELECT * FROM artifacts ORDER BY artifact_id")]
             for row in rows:row.pop("relative_path",None)
-            data,cur,complete=self.service.page([(x["artifact_id"],x) for x in rows],meta,{"kind":"artifacts"},cursor,limit)
+            if kind:rows=[r for r in rows if r['kind']==kind]
+            query={"kind":"artifacts"}
+            if kind:query['file_kind']=kind
+            data,cur,complete=self.service.page([(x["artifact_id"],x) for x in rows],meta,query,cursor,limit)
             return self.service.envelope(project,meta,data,next_cursor=cur,complete=complete)
+
+    def manager_page(self,db,project,meta,kind,cursor,limit):
+        # Stream public metadata twice: inventory/page boundaries, then just the requested page.
+        sql='SELECT * FROM artifacts WHERE kind=? ORDER BY created_at DESC, artifact_id DESC'
+        digest=hashlib.sha256();boundaries=[];count=0;size=1024;page_rows=0
+        for row in db.execute(sql,(kind,)):
+            item=dict(row);item.pop('relative_path',None);raw=store.encode(item).encode()
+            require(len(raw)<=60000,'LIMIT_EXCEEDED','File metadata exceeds response capacity.',413)
+            digest.update(len(raw).to_bytes(4,'big'));digest.update(raw)
+            if not page_rows or page_rows>=limit or size+len(raw)>62000:
+                boundaries.append(count);page_rows=0;size=1024
+            count+=1;page_rows+=1;size+=len(raw)
+        inventory=digest.hexdigest();index=0
+        binding={'v':2,'uuid':meta['ledger_uuid'],'revision':meta['ledger_revision'],
+                 'kind':kind,'order':'newest','limit':limit,'inventory':inventory}
+        if cursor:
+            require(isinstance(cursor,str) and len(cursor)<=2048,'VALIDATION_ERROR','Invalid cursor.')
+            try:parsed=json.loads(base64.b64decode(cursor.encode(),altchars=b'-_',validate=True))
+            except (ValueError,UnicodeError):raise Fault('VALIDATION_ERROR','Invalid cursor.') from None
+            require(isinstance(parsed,dict) and set(parsed)==set(binding)|{'page'} and parsed['v']==2
+                    and type(parsed['page']) is int and parsed['page']>=0,'VALIDATION_ERROR','Invalid manager cursor.')
+            require(all(parsed[k]==binding[k] for k in ('uuid','kind','order','limit')),
+                    'VALIDATION_ERROR','Cursor does not match this manager.')
+            require(parsed['revision']==binding['revision'] and parsed['inventory']==inventory,
+                    'CURSOR_STALE','Files changed; refresh the list.',409)
+            index=parsed['page']
+            require(index<len(boundaries),'VALIDATION_ERROR','Invalid page index.')
+        def token(page):return base64.urlsafe_b64encode(store.encode({**binding,'page':page}).encode()).decode()
+        data=[]
+        if boundaries:
+            start=boundaries[index];end=boundaries[index+1] if index+1<len(boundaries) else count
+            for row in db.execute(sql+' LIMIT ? OFFSET ?',(kind,end-start,start)):
+                item=dict(row);item.pop('relative_path',None);data.append(item)
+        following=token(index+1) if index+1<len(boundaries) else None
+        return self.service.envelope(project,meta,data,next_cursor=following,complete=following is None,
+            previous_cursor=token(index-1) if index else None,total_count=count,
+            page_index=index+1 if count else 0,page_count=len(boundaries),inventory_sha256=inventory)
 
     def create(self,project_id,uuid,principal,kind):
         principal.need("read" if kind=="export" else "maintain")
@@ -249,8 +295,8 @@ def mount(app):
     def restore(project_id:str,request:Request,data:ArtifactInput):
         return output(request,objects.restore_check(project_id,identity(request),principal(request),data.artifact_id))
     @app.get("/api/v1/projects/{project_id}/artifacts")
-    def listing(project_id:str,request:Request,cursor:str|None=None,limit:int=Query(50,ge=1,le=200)):
-        return output(request,objects.list(project_id,identity(request),principal(request),cursor,limit))
+    def listing(project_id:str,request:Request,cursor:str|None=None,limit:int=Query(50,ge=1,le=200),kind:str|None=None,order:str='artifact_id'):
+        return output(request,objects.list(project_id,identity(request),principal(request),cursor,limit,kind,order))
     @app.get("/api/v1/projects/{project_id}/artifacts/{artifact_id}/content")
     def download(project_id:str,artifact_id:str,request:Request):
         path,row=objects.download(project_id,identity(request),principal(request),artifact_id)

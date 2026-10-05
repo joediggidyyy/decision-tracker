@@ -38,3 +38,15 @@ def test_exit_codes_and_no_secret_echo(monkeypatch,capsys):
  assert json.loads(output)["error"]["code"]=="UNAUTHORIZED"
  assert cli.exit_code({"ok":False,"error":{"code":"STALE_REVISION"}})==3
  assert cli.exit_code({"ok":False,"error":{"code":"RETRY_LATER"}})==5
+
+def test_artifact_manager_cli_forwards_filters(monkeypatch,capsys):
+ from urllib.parse import parse_qs,urlsplit
+ monkeypatch.setenv('DT_OPERATOR_TOKEN','synthetic-cli-only-credential-123456789')
+ captured=[]
+ def request(self,method,path,data=None,uuid=None,download=None):
+  captured.append((method,path,uuid));return {'ok':True,'data':[]}
+ monkeypatch.setattr(cli.Client,'request',request);uuid=str(uuid4())
+ assert cli.main(['data','artifact-list','--project','alpha','--ledger-uuid',uuid,'--kind','backup','--order','newest','--limit','10','--cursor','synthetic','--json'])==0
+ capsys.readouterr();method,path,binding=captured[0]
+ assert method=='GET' and binding==uuid
+ assert parse_qs(urlsplit(path).query)=={'kind':['backup'],'order':['newest'],'limit':['10'],'cursor':['synthetic']}

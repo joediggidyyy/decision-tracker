@@ -6,8 +6,8 @@ import {LiveMonitor} from './live.js';
 import {installAccount} from './account.js';
 const $=id=>document.getElementById(id);
 const state={csrf:null,caps:[],projects:[],project:null,revision:0,record:null,cursor:null,edit:null,listRevision:null,contextFingerprint:null,view:null};
-let listGeneration=0,detailGeneration=0,searchTimer=null;
-function rememberView(key=null){if(state.project){const params=new URLSearchParams({project:state.project.project_id});if(state.view==='projects-view')params.set('view','projects');else if(key)params.set('decision',key);history.replaceState(null,'','#'+params);}else if(state.view==='projects-view')history.replaceState(null,'','#view=projects');}
+let listGeneration=0,detailGeneration=0,searchTimer=null,acceptedRoute=location.hash;
+function rememberView(key=null){if(state.project){const params=new URLSearchParams({project:state.project.project_id});if(state.view==='projects-view')params.set('view','projects');else if(key)params.set('decision',key);history.replaceState(null,'','#'+params);}else if(state.view==='projects-view')history.replaceState(null,'','#view=projects');acceptedRoute=location.hash;}
 const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
 function message(text,error=false){const e=$(error?'error':'notice');e.textContent=text;e.hidden=false;}
 function failure(e){message(e.message,true);}
@@ -23,7 +23,16 @@ async function api(path,body,method=body===undefined?'GET':'POST'){
 }
 const base=()=>'/api/v1/projects/'+encodeURIComponent(state.project.project_id);
 function button(label,fn,parent,disabled=false){const b=node('button',label);b.type='button';b.disabled=disabled;b.onclick=()=>Promise.resolve().then(fn).catch(failure);parent.append(b);return b;}
-function show(view){state.view=view;$('context').hidden=view!=='workspace';$('admin-watermark').hidden=view!=='projects-view';if(view==='projects-view'){document.querySelector('.local-shell').classList.remove('focus-view');rememberView();}$('focus-toggle').hidden=view!=='workspace';for(const id of ['login-view','workspace','projects-view'])$(id).hidden=id!==view;}
+function emptyDecisionControls(){const box=$('context');box.replaceChildren();
+ for(const [cls,labels] of [['control-primary',['Edit','Status']],['control-secondary',['def','chal','dep']],['control-supporting',['opt','ref','rel']]]){const grid=node('div',undefined,'control-grid '+cls);for(const label of labels){const cell=node('div',undefined,'compact-control');button(label,()=>{},cell,true);grid.append(cell);}box.append(grid);}
+ const help=button('ⓘ',()=>{tip.hidden=!tip.hidden;help.setAttribute('aria-expanded',String(!tip.hidden));if(!tip.hidden){const r=help.getBoundingClientRect(),b=tip.getBoundingClientRect();tip.style.left=Math.max(18,Math.min(r.left,innerWidth-b.width-18))+'px';tip.style.top=Math.max(18,Math.min(r.bottom+6,innerHeight-b.height-18))+'px';}},box);help.className='panel-info';help.setAttribute('aria-label','About these controls');help.setAttribute('aria-expanded','false');
+ const tip=node('div',undefined,'control-tooltip');tip.hidden=true;tip.id='empty-control-help';help.setAttribute('aria-controls',tip.id);for(const entries of [[['Edit','Change this record.'],['Status','Change work status.']],[['def','Defer: pause work.'],['chal','Challenge: flag a disagreement.'],['dep','Deprecate: end use.']],[['opt','Option: propose a solution.'],['ref','Reference: attach a source.'],['rel','Relationship: link decisions.']]]){const list=node('dl');for(const [label,text] of entries)list.append(node('dt',label),node('dd',text));tip.append(list);}tip.append(node('p','Select a decision to use these controls.'));box.append(tip);help.onblur=()=>{tip.hidden=true;help.setAttribute('aria-expanded','false');};help.onkeydown=e=>{if(e.key==='Escape'){tip.hidden=true;help.setAttribute('aria-expanded','false');}};
+}
+async function defaultDecision(){if(!state.project?.enabled||state.record||state.view!=='workspace')return;const generation=detailGeneration,project=state.project;
+ let r=await api(base()+'/decisions?status=open&limit=1');if(!r.data.length)r=await api(base()+'/decisions?limit=1');if(project!==state.project||generation!==detailGeneration||state.record||state.view!=='workspace')return;
+ if(r.data.length)await detail(r.data[0].key);else {emptyDecisionControls();$('detail').replaceChildren(node('p','No decisions yet.'));}
+}
+function show(view){state.view=view;document.body.classList.toggle('signed-out',view==='login-view');$('context').hidden=view!=='workspace';$('admin-watermark').hidden=view==='login-view';$('admin-controls').hidden=view!=='projects-view';for(const [id,target] of [['decisions-button','workspace'],['projects-button','projects-view']]){if(view===target)$(id).setAttribute('aria-current','page');else $(id).removeAttribute('aria-current');}if(view==='projects-view'){document.querySelector('.local-shell').classList.remove('focus-view');rememberView();}$('focus-toggle').hidden=view!=='workspace';for(const id of ['login-view','workspace','projects-view'])$(id).hidden=id!==view;if(view==='workspace'&&!state.record)emptyDecisionControls();}
 async function projects(){
  const r=await api('/api/v1/projects');state.catalogRevision=r.catalog_revision;state.projects=r.data;
  $('project').replaceChildren(new Option('Choose project',''));
@@ -33,7 +42,7 @@ async function projects(){
 }
 async function signedIn(data){state.csrf=data.csrf_token;state.caps=data.capabilities;$('signout').hidden=false;$('login-view').hidden=true;await projects();const saved=new URLSearchParams(location.hash.slice(1));if(state.projects.some(p=>p.enabled&&p.project_id===saved.get('project'))){await selectProject(saved.get('project'));if(saved.get('view')==='projects'){show('projects-view');await admin();}else if(/^D[0-9]{6}$/.test(saved.get('decision')||''))await detail(saved.get('decision'));}else{show('projects-view');await admin();}}
 $('login-form').onsubmit=async e=>{e.preventDefault();const token=$('token').value;$('token').value='';try{await signedIn((await api('/api/v1/session',{token})).data);}catch(err){failure(err);}};
-$('signout').onclick=async()=>{live.stop();try{await api('/api/v1/session',undefined,'DELETE');location.reload();}catch(e){failure(e);}};
+$('signout').onclick=()=>guardedNavigate(async()=>{live.stop();try{await api('/api/v1/session',undefined,'DELETE');location.reload();}catch(e){failure(e);}});
 async function selectProject(id){const adminView=state.view==='projects-view';live.stop();state.listRevision=null;state.contextFingerprint=null;listGeneration++;detailGeneration++;$('results').replaceChildren();$('result-count').textContent='';$('load-more').hidden=true;$('notice').textContent='';$('error').hidden=true;state.project=state.projects.find(p=>p.project_id===id)||null;state.record=null;$('context').replaceChildren();$('detail').replaceChildren(node('p','Choose a decision.'));if(!state.project||!state.project.enabled){$('project').value='';show('projects-view');rememberView();await admin();return;}show(adminView?'projects-view':'workspace');rememberView();$('project').value=state.project.project_id;$('workspace-title').textContent=state.project.name;$('new-decision').disabled=!state.caps.includes('write');await listing();live.start(state.project,null);if(adminView)await admin();}
 $('project').onchange=()=>projectUI.navigate(()=>selectProject($('project').value)).catch(failure);
 async function listing(more=false){
@@ -45,7 +54,7 @@ async function listing(more=false){
  for(const d of r.data){const b=button(d.key+' · '+d.title,()=>projectUI.navigate(async()=>{show('workspace');await detail(d.key);}),$('results'));b.className='decision-row';b.dataset.key=d.key;b.setAttribute('aria-current',state.record?.key===d.key?'true':'false');b.append(node('span',d.status+(d.locked?' · protected':'')+(d.work_tag?' · '+d.work_tag:''),'muted'));}
  if(state.record){let label=$('outside-filters');if(label)label.remove();if(![...$('results').querySelectorAll('button')].some(b=>b.dataset.key===state.record.key)&&!state.cursor){label=node('p','Outside current filters','muted');label.id='outside-filters';$('detail').prepend(label);}}
  if(!$('results').children.length)$('results').append(node('p','No decisions match these filters.','muted'));
- $('result-count').textContent=$('results').querySelectorAll('button').length+(state.cursor?' +':'');$('load-more').hidden=!state.cursor;live.update();if(!state.record)$('context').replaceChildren(node('p','Choose a decision to see its controls.'));
+ $('result-count').textContent=$('results').querySelectorAll('button').length+(state.cursor?' +':'');$('load-more').hidden=!state.cursor;live.update();if(!state.record&&state.view==='workspace')await defaultDecision();
 }
 $('filters').onsubmit=e=>{e.preventDefault();listing().catch(failure);};
 $('load-more').onclick=()=>listing(true).catch(failure);
@@ -157,8 +166,10 @@ $('edit-form').onsubmit=async event=>{
 };
 async function admin(){await projectUI.render();}
 const projectUI=installProjects({$,state,node,button,api,projects,selectProject,show,detail,listing,message,readResponse});
-$('projects-button').onclick=()=>{if(!state.csrf)return;show('projects-view');admin().catch(failure);};
-$('back-workspace').onclick=()=>projectUI.navigate(async()=>{if(state.project?.enabled){show('workspace');rememberView(state.record?.key);if(state.record)await detail(state.record.key);}}).catch(failure);
+function guardedNavigate(fn){if(state.edit?.saving||state.edit?.pending)return Promise.resolve(false);if(dirty()){state.edit.afterDiscard=()=>projectUI.navigate(fn).catch(failure);$('dirty-dialog').showModal();return Promise.resolve(false);}if(state.edit)closeEditor();return projectUI.navigate(fn).catch(e=>{failure(e);return false;});}
+$('projects-button').onclick=()=>{if(!state.csrf)return;guardedNavigate(async()=>{history.pushState(null,'','#'+new URLSearchParams({project:state.project?.project_id||'',view:'projects'}));show('projects-view');await admin();});};
+$('decisions-button').onclick=()=>guardedNavigate(async()=>{history.pushState(null,'','#'+new URLSearchParams({project:state.project?.project_id||''}));show('workspace');rememberView(state.record?.key);if(state.project?.enabled){if(state.record)await detail(state.record.key);else await listing();}else $('detail').replaceChildren(node('p','Choose an enabled project.'));});
+window.addEventListener('popstate',async()=>{const previous=acceptedRoute,params=new URLSearchParams(location.hash.slice(1));const moved=await guardedNavigate(async()=>{if(params.get('project')&&params.get('project')!==state.project?.project_id)await selectProject(params.get('project'));show(params.get('view')==='projects'?'projects-view':'workspace');if(state.view==='projects-view')await admin();else if(state.project?.enabled){if(params.get('decision'))await detail(params.get('decision'));else {state.record=null;await listing();rememberView();}}});if(!moved)history.pushState(null,'',previous||location.pathname);});
 new ResizeObserver(entries=>{document.documentElement.style.setProperty('--header-height',entries[0].target.offsetHeight+'px');}).observe(document.querySelector('.topbar'));
 api('/api/v1/session').then(r=>signedIn(r.data)).catch(()=>show('login-view'));
 
@@ -214,8 +225,12 @@ $('close-live-review').onclick=()=>$('live-review').close();
 $('freshness').onclick=async()=>{
  const content=$('live-review-content');content.replaceChildren();$('live-review').showModal();
  content.append(node('p',$('freshness').getAttribute('aria-label')));
- if(!live.connected&&live.label==='Service stopped'){const launch=node('a','Start service');launch.href='decision-tracker://open';content.append(launch);return;}
- if(!live.connected){button('Sign in again',()=>{if(content.querySelector('form'))return;const form=node('form'),label=node('label','Password'),input=node('input');input.type='password';input.autocomplete='current-password';input.required=true;input.maxLength=128;label.append(input);form.append(label);const submit=node('button','Sign in');submit.type='submit';form.append(submit);content.append(form);form.onsubmit=async event=>{event.preventDefault();const token=input.value;input.value='';try{const result=await account.authenticate(token);state.csrf=result.csrf_token;state.caps=result.capabilities;live.start(state.project,state.record?.key||null);$('live-review').close();}catch(error){content.append(node('p',error.message));}};},content);button('Retry connection',()=>{live.start(state.project,state.record?.key||null);$('live-review').close();},content);return;}
+ $('service-controls').hidden=true;$('stop-service-confirm').hidden=true;$('stop-service').disabled=false;$('stop-service').hidden=false;$('start-service').hidden=true;
+ if(live.label==='Service stopped'){$('service-controls').hidden=false;$('service-status').textContent='Stopped';$('service-details').textContent='The backend is not running.';$('stop-service').hidden=true;$('start-service').hidden=false;return;}
+ try{const r=await api('/api/v1/service/lifecycle');$('service-controls').hidden=false;$('service-status').textContent=r.data.state==='RUNNING'?'Running':'Stopping';$('service-details').textContent=r.data.operation_count+' active operations · '+r.data.lease_count+' protected drafts';$('stop-service').disabled=r.data.state!=='RUNNING';}catch{}
+
+ if(!live.connected&&state.project?.enabled){button('Sign in again',()=>{if(content.querySelector('form'))return;const form=node('form'),label=node('label','Password'),input=node('input');input.type='password';input.autocomplete='current-password';input.required=true;input.maxLength=128;label.append(input);form.append(label);const submit=node('button','Sign in');submit.type='submit';form.append(submit);content.append(form);form.onsubmit=async event=>{event.preventDefault();const token=input.value;input.value='';try{const result=await account.authenticate(token);state.csrf=result.csrf_token;state.caps=result.capabilities;live.start(state.project,state.record?.key||null);$('live-review').close();}catch(error){content.append(node('p',error.message));}};},content);button('Retry connection',()=>{live.start(state.project,state.record?.key||null);$('live-review').close();},content);return;}
+ if(!state.project?.enabled)return;
  button('Refresh results',async()=>{const scroll=$('results').scrollTop;await listing();$('results').scrollTop=scroll;live.update();$('live-review').close();},content);
  if(!state.record)return;
  button('Review changes',async()=>{
@@ -233,4 +248,4 @@ $('freshness').onclick=async()=>{
 
 button('Review workspace updates',()=>$('freshness').click(),$('edit-form'));
 
-const account=installAccount({$,state,api,signedIn,show,message,dirty,live});
+const account=installAccount({$,state,api,signedIn,show,message,dirty,live,hasDraft:()=>dirty()||projectUI.dirty(),onReauthenticated:()=>projectUI.manager.reauthenticated()});
