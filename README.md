@@ -2,31 +2,45 @@
 
 <p align="center"><img src="src/decision_tracker/static/logo.png" alt="Polymath Global" width="150" height="180"></p>
 
-> Project decisions, their reasoning, and their history in one local workspace.
+> A lasting decision record for human–agent collaboration on complex projects.
 
-Decision Tracker is a portable application for people and agents. Each project has its own SQLite decision ledger, selected through a central catalog. The browser, CLI and API share the same rules, revision checks and audit history.
+Complex projects depend on many critical, specific decisions. As plans evolve and people or agents join the work, you need to retrieve what was decided, why it was decided, and the evidence behind it—without losing or rewriting the history.
 
-**Local alpha · Python 3.14 · Public source repository**
+Decision Tracker gives you and your agents a shared project decision ledger. Capture questions, compare alternatives, record approvals and preserve immutable decision snapshots throughout the project lifecycle. When a decision changes, its earlier record remains available for review.
 
-The application supports creating and editing decisions, comparing alternatives, recording evidence and changing decision status. The operator accepted the earlier system-browser experience and launch from Polymath home. The decision-page layout and action forms are implemented and regression-tested, including isolated Chromium workflows and actual 200% browser zoom. The installed migration project is active on data format 2. Projects & data now uses separate bounded Backup/Export managers, configurable page sizes, horizontal navigation and persistent translucent control panes. The file-manager batch is implemented and verified; operator reassessment remains separate. Closed records now block ordinary edits and work-state changes in all interfaces; lifecycle actions and inspection remain available. See the [verification record](docs/verification.md) for automated evidence and remaining qualification limits.
+**Local-use alpha · Windows launcher · Python 3.14**
 
-## Site map
+## Keep the reasoning with the decision
 
-| I want to… | Start here |
-|---|---|
-| Open the application or test the CLI | [Quick start](#quick-start) |
-| Find a guide | [Documentation index](docs/README.md) |
-| Work through the CLI or API | [Interface guide](docs/interfaces.md) |
-| Give an agent access | [Agent-access skill](skills/decision-tracker/SKILL.md) |
-| Manage credentials, launch or recovery | [Operations guide](docs/operations.md) |
-| Understand the implementation | [Architecture](docs/architecture.md) |
-| Develop and verify changes | [Contributing](CONTRIBUTING.md) |
-| Report a security concern | [Private reporting instructions](SECURITY.md) |
-| Review what has changed | [Changelog](CHANGELOG.md) |
+A decision is more useful when you can recover its context. Each record brings together the question, answer, rationale, alternatives and supporting references. Relationships connect decisions so you can investigate dependencies and the impact of a proposed change.
+
+- **Investigate:** record an open question, compare options and attach evidence.
+- **Decide:** save the answer, reasoning and approval as a closed decision.
+- **Revisit:** explicitly reopen a decision when circumstances change, or amend a protected baseline.
+- **Retrieve:** search project records and inspect earlier revisions, approvals and relationships.
+- **Retire:** mark decisions as deprecated while preserving their history and replacement relationships.
+
+Decision approval, implementation and verification are recorded separately. Deciding what to do does not mean the work has been completed or tested.
+
+## Work together across sessions
+
+Use the browser to review and decide. Give your agents scoped access through the CLI or API to retrieve context, prepare proposals and make authorized changes. All three interfaces use the same decision rules and history.
+
+Each project has its own ledger within a central project catalog. Explicit project identity and revision checks help prevent changes to the wrong project and protect against overwriting work made by another participant. If a request is interrupted, retained request IDs support safe retries.
+
+The [agent-access guide](skills/decision-tracker/SKILL.md) explains credentials, project binding and conflict handling. Agent access does not replace your approval requirements. This version provides CLI and API access; it does not include an MCP server.
+
+## Preserve history as the project evolves
+
+You can edit an open decision, but you cannot silently rewrite a closed one. Reopening is an explicit, recorded step before further edits. Protected baselines require an amendment, and deprecated records remain available for inspection.
+
+Committed changes retain immutable snapshots of affected decisions. Earlier answers, rationale and approval records remain retrievable as the current record evolves. The application has no hard-delete operation for decisions.
+
+Backups and native exports preserve ledger history. Restore checks use isolated copies, and imports create candidates for review rather than overwriting active data. See the [operations guide](docs/operations.md) for backup and recovery procedures.
 
 ## Quick start
 
-The managed browser launcher currently targets **Windows** with **Python 3.14**. Download this repository or clone it, then open PowerShell in the repository folder. Install the application and its runtime dependencies into your own environment:
+The managed browser launcher currently supports **Windows with Python 3.14**. Download or clone this repository, then open PowerShell in its folder:
 
 ```powershell
 py -3.14 -m venv .venv
@@ -34,77 +48,63 @@ py -3.14 -m venv .venv
 .\.venv\Scripts\decision-tracker.exe --help
 ```
 
-This installs the `decision-tracker` CLI, web assets and runtime dependencies. Users do not need Polymath home, Calamum, development dependencies or the maintainer's local environment. Installation requires access to the Python package index unless you provide a compatible offline wheel collection. Contributors running tests should use the separate [development setup](CONTRIBUTING.md#development-environment).
+This installs the application, browser assets and CLI with their runtime dependencies. Installation requires access to the Python package index unless you supply compatible offline wheels.
 
-Initialize the current-user deployment and register its optional `decision-tracker://open` link handler once:
+Initialize your local deployment and register the `decision-tracker://open` application link:
 
 ```powershell
 .\.venv\Scripts\decision-tracker.exe service install-launcher --json
 ```
 
-For **first-time password setup**, run this in a private local terminal:
+For first-time password setup, run these commands in your private terminal:
 
 ```powershell
 .\.venv\Scripts\decision-tracker.exe auth setup-code
 .\.venv\Scripts\decision-tracker.exe service open
 ```
 
-The code expires after 15 minutes. Enter it in the browser and choose your private password, then sign in. Do not share the code or password with an agent or put it in a command argument. Existing users simply sign in; [password changes and CLI-only recovery](docs/operations.md) have separate procedures.
+Enter the setup code in the browser, choose your password and sign in. The code expires after 15 minutes. Keep your password and setup code private; agents use separate credentials.
 
-**Launch again:** run `.\.venv\Scripts\decision-tracker.exe service open` from this folder. It starts or reuses the backend and opens the browser. Keep the installed environment in place: the launcher records its location. You can activate `.venv` to use the shorter `decision-tracker` command; no global PATH change is required.
+**To launch again:**
 
-The Polymath home card uses the same registered handler, but is not needed by other users. Browsers may ask permission to open the local application. If a custom link leaves a blank tab, use the CLI launch command above. An agent can start the backend without opening a browser:
+```powershell
+.\.venv\Scripts\decision-tracker.exe service open
+```
+
+This starts or reuses the local backend and opens your browser. Keep the installed environment in place because the launcher records its location. If you activate `.venv`, you can use the shorter command `decision-tracker service open`.
+
+You can also open the registered application link from a browser that permits external applications. If the browser leaves a blank tab or blocks the link, use the CLI command above.
+
+For agent access without opening a browser:
 
 ```powershell
 .\.venv\Scripts\decision-tracker.exe service ensure-running --json
 ```
 
-The managed service stops after 90 minutes without useful activity when no operation or protected draft is active. No Windows startup task is installed.
+The backend normally stops after 90 minutes without useful activity when no operation or protected draft is active. It does not install a Windows startup task.
 
-## Three interfaces, one decision model
+## Your data stays local
 
-| Interface | What it provides |
+Project ledgers use SQLite in local, nonsynchronized storage. The application listens on your computer's loopback interface; this version is not intended for network hosting. Password credentials are separate from project ledgers, and stored agent tokens use Windows account protection.
+
+Keep active databases out of synchronized folders and source control. Use verified backups and exports for recovery. The [security guide](SECURITY.md) describes access controls, trust boundaries and how to report a concern privately.
+
+## Guides
+
+| You want to… | Read |
 |---|---|
-| Browser | Project selection, search, record creation and editing, alternatives, lifecycle changes and history. A resizable right panel places compact decision controls above results; administration replaces those controls with a decorative logo. Drafts survive validation errors and conflicts. |
-| CLI | Granular project, decision, option, reference, link, query, change and data commands. Structured input comes from a file or stdin. Data commands use the shared HTTP service. |
-| API | Versioned `/api/v1` routes, typed changes and durable request IDs. Authenticated `GET /api/v1/schema` exposes OpenAPI. |
+| Give an agent access | [Agent-access guide](skills/decision-tracker/SKILL.md) |
+| Use commands or integrate with the API | [CLI and API guide](docs/interfaces.md) |
+| Manage passwords, launch, backups or recovery | [Operations guide](docs/operations.md) |
+| Understand refresh and concurrent work | [Live updates](docs/live-updates.md) |
+| Understand how the application works | [Architecture](docs/architecture.md) |
+| Review tested behavior and current limitations | [Verification](docs/verification.md) |
+| Contribute code or run tests | [Contributing](CONTRIBUTING.md) |
+| Find all documentation | [Documentation index](docs/README.md) |
 
-The [portable agent skill](skills/decision-tracker/SKILL.md) explains explicit project binding, credential use and conflict recovery. Copy its folder into your agent's supported skill directory. An MCP server is not included in this alpha.
+## Availability
 
-Use **Decide** beside an open question to record the answer and approval. The resulting record has status `closed`; CLI `decision close` and API `decision.close` retain their existing names. Control-panel help appears above the pane dividers and workspace controls.
-
-[Quiet live updates](docs/live-updates.md) indicate when displayed data is stale. They do not move the reader's focus, reorder visible results or replace an open draft.
-
-## Integrity and data boundaries
-
-Decisions are open, closed or deprecated, with separate work, challenge and evidence states. Protected baselines require amendment. A rejected option is distinct from an unselected one. There is no hard-delete or silent-overwrite operation.
-
-A batch advances the ledger once and retains immutable snapshots of affected decisions. Backups and exports are contained, hashed artifacts. Imports create candidates and never replace active data. Restore checks use isolated copies.
-
-The app serves its packaged assets independently of Polymath home. Password verifiers are separate from project ledgers; retained agent tokens use current-user Windows DPAPI. The deployment descriptor at `%LOCALAPPDATA%/DecisionTracker/deployment/deployment.json` contains paths and identity, not secrets. See [security boundaries](SECURITY.md) and [operations](docs/operations.md).
-
-## Repository map
-
-```text
-decision-tracker/
-├── src/decision_tracker/     Shared service, CLI, domain rules and browser assets
-├── docs/                    Architecture, interface and operating guides
-├── skills/decision-tracker/ Portable agent-access instructions
-├── tests/                   Assertions and observed-workflow checks
-├── catalog/                 Native Calamum test definitions
-├── tools/                   Bounded proof and browser-observation helpers
-├── .calamum/project.json    Portable Calamum project descriptor
-├── pyproject.toml           Package metadata and CLI entry point
-└── requirements-dev.lock    Exact development dependency versions
-```
-
-Environment folders, credentials, project databases and generated evidence stay outside tracked source. The [tracking guide](docs/tracking-boundaries.md) explains the boundary. The [repository contract](docs/repository-contract.json) records ownership and implementation authority.
-
-## Status and rights
-
-Version `0.1.0.dev0` is a local-use alpha in a public source repository. The [verification record](docs/verification.md) distinguishes automated proof, browser observations and operator acceptance. The QA Engine and Polymath Ledger migrations are planned separately; neither has been executed. A packaged public release and broader platform qualification remain outside this checkpoint.
-
-No distribution license or public release has been selected. Third-party license terms still apply.
+Version `0.1.0.dev0` is a local-use alpha. Windows installation and managed CLI launch have been tested; broader platform support is not yet qualified. Source is available in this public repository. No distribution license or packaged release has been selected; third-party license terms still apply.
 
 ---
 
