@@ -4,6 +4,18 @@
 
 Internal alpha for local use. On 2026-10-05 the operator confirmed successful password setup, testing in the system browser and launch through the Polymath home card. This is operator-reported acceptance, separate from agent-observed and automated proof. No real source project has been migrated.
 
+## Reading this record
+
+The dated sections below preserve historical checkpoints. Statements about schema 1, revision 1, missing zoom evidence or pending activation describe their checkpoint, not current deployment state. Later sections supersede those specific limits where evidence is provided. Current project revisions and permissions must be read through the service; they are operational data and are not maintained in this portable document.
+
+The browser now labels the resolution action **Decide**. Earlier references to the Close button describe its former label. The CLI/API operation and the `closed` state are unchanged.
+
+## Tooltip and Decide wording — 2026-10-05
+
+Native integration `20261006T021525Z-dt-integration` passed **152 tests** with source unchanged during execution; retained proof is `.local/proofs/39d0207be1384583a3f009f2514e6814`. Focused native browser/form proof `.local/proofs/80ab35560ffd40c1b30fb307c945420d` verifies the Decide button and dialog title, visible-tooltip hit testing across its footprint, lifecycle workflows and actual 200% browser zoom. The tooltip screenshot was inspected and shows uninterrupted help above both pane dividers.
+
+An initial added coverage assertion ran with help hidden and was therefore insufficient. The corrected check explicitly waits for visible help before hit testing; both attempts remain retained. Installed-service reads returned matching bytes for the three changed UI assets. This establishes served-source correspondence, not operator acceptance. The final verification-note addition is documentation only; runtime, tests, tools and catalog remain identical to the integrated proof.
+
 ## Retained evidence
 
 | Checkpoint | Result |
@@ -82,7 +94,7 @@ Installed service restart is recorded in `.local/file-manager-activation/activat
 
 Retained failures: an API test expected 400 rather than the established 422 status; an action test selector included the hidden administration pane; zoom screenshot capture required separate geometry qualification. Canonical business evidence is under `planning/evidence/file-manager-implementation-20261005` in Polymath custody.
 
-## Closed-record policy checkpoint � 2026-10-05
+## Closed-record policy checkpoint — 2026-10-05
 
 Shared ordinary/content and work-state guards are implemented across browser, CLI and API. Reopening must commit separately before editing. Lifecycle transitions, generated lifecycle links, historical approval reads and exact committed-request replay remain valid. New edit-resolution requests are rejected; no data migration is required.
 

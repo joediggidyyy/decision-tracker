@@ -4,6 +4,12 @@
 
 Changes to the private local application are recorded here. This is a development history, not a public release announcement.
 
+## Unreleased — decision wording and tooltip layering
+
+- Rename the browser decision action and dialog title to Decide; retain CLI/API names and the closed lifecycle state.
+- Raise visible control-panel help above sibling pane dividers and workspace controls.
+- Refresh current interface guidance and distinguish historical verification checkpoints from current deployment state.
+
 ## Unreleased - decision page and action forms
 
 - Grouped Controls panel, blue primary headings, stable Close/Reopen placement and uniform Edit/Retire buttons.
@@ -16,7 +22,7 @@ Changes to the private local application are recorded here. This is a developmen
 - Visible proposal choices, generated decision/explanation/change note and protected edited text.
 - Automatic human approval identity/time; separate reported dates with exact/date-only/unknown precision.
 - Immutable schema2 approval events, guarded backup-first upgrades and versioned exchange/recovery.
-- Retained-request recovery, plain errors and approval readback. Automated integration: 104 tests passed. Live activation and revised-form owner acceptance remain pending; see Verification.
+- Retained-request recovery, plain errors and approval readback. Automated integration: 104 tests passed. At this historical checkpoint, live activation and revised-form owner acceptance remained pending; see later Verification entries for subsequent activation and evidence.
 
 ## 0.1.0.dev0 — internal alpha
 
@@ -58,7 +64,7 @@ Changes to the private local application are recorded here. This is a developmen
 - Replace accumulated data output with one summary and refreshed file rows; retain safe service stop.
 - Verify isolated browser recovery, responsive layouts and actual 200% zoom; activate the installed backend without changing migration decisions.
 
-## Closed-record controls � 2026-10-05
+## Closed-record controls — 2026-10-05
 
 - Enforce closed-record content/work restrictions in the shared service, API and CLI, including dry runs and atomic batches.
 - Preserve historical request replay and approval history; withdraw new edit-resolution writes.

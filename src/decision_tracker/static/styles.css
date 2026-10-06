@@ -168,3 +168,6 @@ dialog fieldset{min-width:0}dialog .toolbar{gap:8px}dialog button{min-height:44p
 @media(max-height:600px){#file-manager[open]{gap:6px}#file-list{min-height:24px}#file-manager{padding:14px}}
 
 .approval-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.approval-heading h3{margin-bottom:0}.approval-heading button{margin:0}
+
+/* Lift the isolated help container above sibling dividers and focus controls. */
+.sidebar-context:has(.control-tooltip:not([hidden])){z-index:30}

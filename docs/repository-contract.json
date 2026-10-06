@@ -15,7 +15,7 @@
   "source_authority": "Repository implementation; approved business planning retained separately in Polymath custody.",
   "data_boundary": "No runtime data, secrets, backups, exports or generated evidence in tracked source.",
   "proof": "Native Calamum, bounded supervision, source manifests, retained runs and aggregates.",
-  "publication": "Private GitHub push requested for session closeout; explicit final push authorization is required before transmission. No public release or remote-setting changes.",
-  "follow_up": "Next session: QA Engine and Polymath Ledger migration preparation and project-specific qualification. No migration executed in this session. MCP and distribution qualification remain separate.",
+  "publication": "Private GitHub push requires explicit final operator authorization after the current pre-push readiness report. No public release, force push or remote-setting changes.",
+  "follow_up": "QA Engine and Polymath Ledger source migration discovery and qualification follow the current planning decisions in the installed tracker. Neither source migration has executed. MCP and distribution qualification remain separate.",
   "owner_acceptance": "Operator confirmed password setup, system-browser testing and Polymath home launch on 2026-10-05; this does not substitute for native automated evidence."
 }

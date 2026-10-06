@@ -68,6 +68,8 @@ The managed service stops after 90 minutes without useful activity when no opera
 
 The [portable agent skill](skills/decision-tracker/SKILL.md) explains explicit project binding, credential use and conflict recovery. Copy its folder into your agent's supported skill directory. An MCP server is not included in this alpha.
 
+Use **Decide** beside an open question to record the answer and approval. The resulting record has status `closed`; CLI `decision close` and API `decision.close` retain their existing names. Control-panel help appears above the pane dividers and workspace controls.
+
 [Quiet live updates](docs/live-updates.md) indicate when displayed data is stale. They do not move the reader's focus, reorder visible results or replace an open draft.
 
 ## Integrity and data boundaries

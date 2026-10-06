@@ -94,7 +94,7 @@ async function detail(key){
  for(const [label,full,description,op] of [['opt','Add option','Propose a solution.','option.add'],['ref','Add reference','Attach a source.','reference.add'],['rel','Add relationship','Link open decisions.','link.add']])control(label,full,description,op,supporting,!writable);
  tip.dataset.availability=d.status==='closed'?'Reopen before editing content or work status.':d.status==='deprecated'?'Deprecated records cannot be changed.':!state.caps.includes('write')?'Editing requires write access.':'Unavailable actions require a different work status.';
  const closure=node('div',undefined,'closure-slot');question.append(closure);
- if(d.status==='open')button('Close',()=>edit('decision.close'),closure,!writable||!decide).className='primary';
+ if(d.status==='open')button('Decide',()=>edit('decision.close'),closure,!writable||!decide).className='primary';
  if(d.status==='closed'){
   button('Reopen',()=>edit('decision.reopen'),closure,d.locked||!decide).className='primary';
   if(d.locked)closure.append(node('small','Amend the protected baseline to make changes.'));

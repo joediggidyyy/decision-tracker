@@ -21,3 +21,9 @@ integration preserve independent app/data boundaries.
 
 The portable agent-access skill is skills/decision-tracker/SKILL.md. Keep it
 aligned with actual CLI/API behavior; do not advertise unimplemented MCP tools.
+
+For this operator's installed deployment, read `.local/agent-access.json` when
+present before service access. It records the persistent cross-project agent
+principal and names-only connection settings. Do not recreate credentials per
+session or narrow project visibility by default. Explicit project/UUID binding
+and authorization for each requested mutation still apply.
