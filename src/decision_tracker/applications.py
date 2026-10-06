@@ -100,12 +100,60 @@ def has_redirect(path):
         if p.is_symlink() or p.is_junction():return True
     return False
 
-def read_document(service,db,locator):
+def authorized_policy(service,db):
     p=policy(db);uuid=store.metadata(db)['ledger_uuid']
     binding=binding_path(service,uuid)
     try:local=json.loads(binding.read_text(encoding='utf-8')) if binding.stat().st_size<=4096 else None
     except (OSError,ValueError):local=None
     require(local=={'ledger_uuid':uuid,'policy_sha256':store.digest(p)},'PLANNING_ACCESS_REQUIRED','Register this project’s planning roots through CLI administration.',409)
+    return p
+
+def document_inventory(service,db,directory=None):
+    p=authorized_policy(service,db);roots=[Path(r) for r in p['planning_roots']]
+    folders=[];candidates=set();parent=None;count=0
+    if directory:
+        path=Path(directory)
+        require(path.is_absolute() and any(path.is_relative_to(r) for r in roots),'FORBIDDEN','Folder is outside this project’s registered planning roots.',403)
+        require(not has_redirect(path),'FORBIDDEN','Planning folders cannot traverse symbolic links or junctions.',403)
+        try:
+            path=path.resolve(strict=True)
+            require(path.is_dir() and any(path.is_relative_to(r) for r in roots),'FORBIDDEN','Folder is outside this project’s registered planning roots.',403)
+        except OSError:raise Fault('DOCUMENT_UNAVAILABLE','Cannot access this folder.',409) from None
+        directories=[path]
+        if any(path!=r and path.parent.is_relative_to(r) for r in roots):parent=str(path.parent)
+    else:
+        directories=roots
+        # Previously applied documents join the pool without creating another
+        # mutable registry. Authorization still comes only from current roots.
+        if store.metadata(db)['schema_version']==3:
+            candidates.update(Path(r[0]) for r in db.execute("SELECT DISTINCT json_extract(receipt_json,'$.anchor.path') FROM application_receipts WHERE json_extract(receipt_json,'$.anchor.path') IS NOT NULL LIMIT 1000"))
+    try:
+        for root in directories:
+            require(not has_redirect(root),'FORBIDDEN','Planning folders cannot traverse symbolic links or junctions.',403)
+            with os.scandir(root) as entries:
+                for entry in entries:
+                    count+=1;require(count<=1000,'LIMIT_EXCEEDED','Planning folder inventory exceeds 1000 entries.',413)
+                    child=Path(entry.path)
+                    if entry.name.startswith('.') or has_redirect(child):continue
+                    if directory and entry.is_dir(follow_symlinks=False):folders.append({'path':str(child),'name':entry.name})
+                    elif entry.is_file(follow_symlinks=False) and child.suffix.lower()=='.json':candidates.add(child)
+    except OSError:raise Fault('DOCUMENT_UNAVAILABLE','Cannot access this folder.',409) from None
+    docs=[];remaining=[16*1024*1024]
+    for path in sorted(candidates):
+        if not any(path.is_relative_to(r) for r in roots) or has_redirect(path):continue
+        try:
+            size=path.stat().st_size
+            if size>4*1024*1024:continue
+            doc=read_document(service,db,str(path),byte_budget=remaining)
+        except Fault as exc:
+            if exc.code in ('DOCUMENT_UNAVAILABLE','UNSUPPORTED_ANCHOR','DOCUMENT_CHANGED'):continue
+            raise
+        except OSError:continue
+        docs.append({k:doc[k] for k in ('path','document_id','version','sha256')})
+    return {'documents':docs,'folders':sorted(folders,key=lambda x:x['path']),'roots':[{'path':str(r),'name':r.name} for r in roots],'directory':str(directories[0]) if directory else None,'parent':parent}
+
+def read_document(service,db,locator,byte_budget=None):
+    p=authorized_policy(service,db)
     try:
         path=Path(locator)
         require(path.is_absolute() and path.suffix.lower() in ('.json','.md'),'UNSUPPORTED_ANCHOR','Use a local canonical planning document (.json or .md).')
@@ -117,7 +165,11 @@ def read_document(service,db,locator):
         source=source.resolve(strict=True)
         require(any(source.is_relative_to(root.resolve(strict=True)) for root in roots),'FORBIDDEN','Document is outside this project’s registered planning roots.',403)
         with source.open('rb') as stream:
-            before=os.fstat(stream.fileno());raw=stream.read(4*1024*1024+1);after=os.fstat(stream.fileno())
+            limit=min(4*1024*1024,byte_budget[0]) if byte_budget is not None else 4*1024*1024
+            before=os.fstat(stream.fileno());raw=stream.read(limit+1);after=os.fstat(stream.fileno())
+        if byte_budget is not None:
+            require(len(raw)<=limit,'LIMIT_EXCEEDED','Planning document inventory exceeds 16 MiB. Browse a specific folder.',413)
+            byte_budget[0]-=len(raw)
         require(len(raw)<=4*1024*1024,'LIMIT_EXCEEDED','Planning document exceeds 4 MiB.',413)
         require((before.st_size,before.st_mtime_ns,before.st_ino)==(after.st_size,after.st_mtime_ns,after.st_ino),'DOCUMENT_CHANGED','Document changed. Refresh sections and retry.',409)
         value=json.loads(raw)
@@ -269,6 +321,16 @@ def mount(app):
         p=principal(request);p.need('read')
         with service.catalog.project(project_id,identity(request),p) as (db,project):
             return output(request,service.envelope(project,store.metadata(db),policy(db)))
+    @app.get('/api/v1/projects/{project_id}/planning-documents')
+    def documents(project_id:str,request:Request,directory:str|None=Query(None,min_length=1,max_length=1024),cursor:str|None=None,limit:int=Query(50,ge=1,le=200)):
+        p=principal(request);p.need('read')
+        with service.catalog.project(project_id,identity(request),p) as (db,project):
+            inventory=document_inventory(service,db,directory);meta=store.metadata(db)
+            items=[('document:'+store.digest(d['path']),{'kind':'document',**d}) for d in inventory['documents']]+[('folder:'+store.digest(f['path']),{'kind':'folder',**f}) for f in inventory['folders']]
+            context={k:v for k,v in inventory.items() if k not in ('documents','folders')}
+            reserve=len(store.encode(service.envelope(project,meta,context)).encode())+2048
+            data,cur,complete=service.page(items,meta,{'kind':'planning-documents','directory':directory,'inventory':store.digest(inventory),'policy':store.digest(policy(db))},cursor,limit,budget=62000-reserve)
+            return output(request,service.envelope(project,meta,context|{'entries':data},next_cursor=cur,complete=complete))
     @app.get('/api/v1/projects/{project_id}/planning-document')
     def document(project_id:str,request:Request,locator:str=Query(min_length=1,max_length=1024),cursor:str|None=None,limit:int=Query(50,ge=1,le=200)):
         p=principal(request);p.need('read')

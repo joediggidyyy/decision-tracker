@@ -117,6 +117,8 @@ To permit an omitted anchor, use the same `project policy set` command with `--a
 
 Filesystem authorization is a separate local binding under the deployment data root. Backups/native imports preserve policy provenance but do not transfer this permission. After an import or recovery, register the reviewed planning roots locally before resolving documents. A failed local-binding publication denies file access; retry the identical current policy request to complete it. Replaying an older superseded policy does not activate its roots.
 
+The browser's document pool discovers canonical JSON in the registered folders and includes previously applied documents that remain authorized. Add document browses subfolders or accepts a pasted source/companion path. It does not copy files, upload content, broaden roots or create a separate document registry. If inventory exceeds its bounds, use Add document to browse a narrower folder or paste the known path. Section and Apply wait for a valid selection; missing files cannot produce an applied receipt.
+
 ---
 
 <p align="center">Maintained by Polymath Global</p>

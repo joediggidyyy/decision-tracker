@@ -28,6 +28,8 @@ def run_browser(tmp_path, script="action_browser.cjs", folder="action-browser"):
         upgrade(app.state.artifacts,'alpha',u,p,Upgrade(expected_revision=2,request_id=uuid4()))
         planning=tmp_path/'planning';planning.mkdir()
         (planning/'plan.json').write_text(json.dumps({'schema_version':'codesentinel.canonical-document/v1','document_id':'test-plan','metadata':[{'label':'Version','value':'1.0'}],'sections':[{'id':'execution','heading':'Execution plan','blocks':[{'id':'execution-p0','type':'paragraph','text':'Approved approach'}]}]}),encoding='utf-8')
+        nested=planning/'details';nested.mkdir();shutil.copy2(planning/'plan.json',nested/'detail.json')
+        (planning/'unsupported.json').write_text('{}',encoding='utf-8')
         set_policy(s,'alpha',u,p,PolicyChange(expected_policy_revision=0,request_id=uuid4(),reason='Owner registers fixture planning root',planning_roots=[str(planning)]))
     if folder=='projects-browser':
         from decision_tracker import store

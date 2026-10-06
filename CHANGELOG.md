@@ -4,6 +4,12 @@
 
 Changes to the local application are recorded here. This is a development history, not a packaged release announcement.
 
+## Unreleased — planning document selection
+
+- Replace path-only entry with the planning document pool dropdown and Add document folder browsing/paste option.
+- Load sections automatically and disable application until a valid selection is ready; retain existing root permissions and file custody.
+- Add bounded, paginated read-only document discovery; no new CLI group or mutable document registry.
+
 ## Unreleased — planning application
 
 - Add the closed/apply/applied tag cycle, a two-field planning-anchor form and immutable application receipts. Reopen resets current application while preserving history.

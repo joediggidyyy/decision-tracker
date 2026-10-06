@@ -145,9 +145,9 @@ function edit(op,child=null){
  $('edit-title').textContent=op==='decision.apply'?'Apply to planning':titles[op];$('edit-project').textContent=state.project.name+(d.key&&op!=='decision.create'?' · '+d.key:'');
  const fields=$('edit-fields');fields.replaceChildren();$('form-error').hidden=true;$('conflict').hidden=true;
  if(op==='decision.close')state.edit.resolution=installDecisionForm(fields,d,false);
- else if(op==='decision.apply')state.edit.action=installApplicationForm(fields,d,{api,base,onPrefilled:()=>{if(state.edit?.op==='decision.apply')state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();},prefill:applicationPrefill.get('project')===state.project.project_id&&applicationPrefill.get('decision')===d.key?{document:applicationPrefill.get('planning-document'),section:applicationPrefill.get('planning-section'),sha256:applicationPrefill.get('planning-sha256')}:null});
+ else if(op==='decision.apply')state.edit.action=installApplicationForm(fields,d,{api,base,onReady:ready=>{if(state.edit?.op==='decision.apply'&&!state.edit.saving)$('save-edit').disabled=!ready;},onPrefilled:()=>{if(state.edit?.op==='decision.apply')state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();},prefill:applicationPrefill.get('project')===state.project.project_id&&applicationPrefill.get('decision')===d.key?{document:applicationPrefill.get('planning-document'),section:applicationPrefill.get('planning-section'),sha256:applicationPrefill.get('planning-sha256')}:null});
  else state.edit.action=installActionForm(fields,op,d,child,{decide:state.caps.includes('decide'),findDecisions:async q=>{const items=await all(base()+'/decisions?q='+encodeURIComponent(q));return op==='link.add'?items.filter(item=>item.status==='open'&&!item.locked):items;}});
- $('save-edit').textContent=state.edit.action?.submit||'Save decision';state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();
+ $('save-edit').textContent=state.edit.action?.submit||'Save decision';$('save-edit').disabled=state.edit.action?.ready?!state.edit.action.ready():false;state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();
  if(!$('editor').open)$('editor').showModal();fields.querySelector('input:not([disabled]),textarea,select')?.focus();
 }
 $('new-decision').onclick=()=>edit('decision.create');
@@ -183,7 +183,7 @@ $('edit-form').onsubmit=async event=>{
    const c=$('conflict');c.hidden=false;c.replaceChildren(node('p','The save outcome is unknown. Your original request is retained. Retry it before changing the draft.'));
    button('Retry original save',async()=>{const result=await api(base()+'/changes',JSON.parse(editState.pending));const key=result.data[0]?.key;closeEditor();message('Saved successfully.');try{await listing();if(key)await detail(key);}catch{message('Saved successfully. Refresh the view to see current data.');}},c);
   }else editState.pending=null;
- }finally{save.disabled=false;editState.saving=false;}
+ }finally{editState.saving=false;save.disabled=editState.action?.ready?!editState.action.ready():false;}
 };
 async function admin(){await projectUI.render();}
 const projectUI=installProjects({$,state,node,button,api,projects,selectProject,show,detail,listing,message,readResponse});

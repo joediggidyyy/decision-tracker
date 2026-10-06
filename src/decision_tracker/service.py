@@ -97,7 +97,7 @@ class Service:
         obj={"v":1,"uuid":uuid,"revision":revision,"query_hash":store.digest(query),"last_key":last}
         return base64.urlsafe_b64encode(store.encode(obj).encode()).decode()
 
-    def page(self, items, meta, query, cursor=None, limit=50):
+    def page(self, items, meta, query, cursor=None, limit=50, budget=62000):
         require(1<=limit<=200,"VALIDATION_ERROR","Page size must be1–200.")
         last=None
         if cursor:
@@ -115,8 +115,8 @@ class Service:
         output=[];size=1024;index=0
         for key,item in items:
             item_size=len(store.encode(item).encode())
-            require(item_size<=60000,"LIMIT_EXCEEDED","Item requires field chunk retrieval.",413)
-            if len(output)>=limit or size+item_size>62000:break
+            require(item_size<=min(60000,budget-1024),"LIMIT_EXCEEDED","Item requires field chunk retrieval.",413)
+            if len(output)>=limit or size+item_size>budget:break
             output.append(item);size+=item_size;index+=1
         next_cursor=self._cursor(meta["ledger_uuid"],meta["ledger_revision"],query,items[index-1][0]) if index<len(items) and index else None
         return output,next_cursor,index==len(items)

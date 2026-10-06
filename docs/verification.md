@@ -1,5 +1,15 @@
 # Verification state
 
+## Planning document dropdown and browsing — 2026-10-06
+
+Final resource-bound proof `20261006T053207Z-dt-applications` passed **97 tests**, including a changing-file test that underreports stat sizes while actual reads exceed the aggregate budget. Inventory now charges actual bytes. Source remains unchanged in `.local/proofs/55639220522a4730a2610911f92903eb`; the thirteen browser checks remain passing. Final safe activation is instance `d6ef6fa0-7d33-422a-9550-16110d1d31b8`, recorded in `.local/document-browse-final-activation-20261006/activation.json`. The same 16-document discovery, migration section preview, unchanged records and matching served assets were rechecked. This supersedes the intermediate source/activation state below.
+
+Native `20261006T052355Z-dt-applications` passed **96 tests**, including document discovery, retained-path pool membership, nested navigation, denied outside/redirected roots, missing local permissions, enumeration bounds, changed-inventory cursors and Unicode response-size limits. The browser recorded **13 checks** with no page errors: pool selection, Add document navigation/Cancel, pasted missing paths, disabled Section/Apply, late section responses, changed files, application lifecycle, prefill and 320-pixel horizontal layout. Narrow selector and applied-state screenshots were inspected. Final action-form proof `.local/proofs/45b6fb8feaf049d0aed0aed6a6350361` passed four tests. Runtime, tests and public skill match the retained source manifests. The supplied skill validator passed and the installed skill is synchronized.
+
+The failed first run `.local/proofs/f0ea0d1d49174fde924bc16d434eaf0c` remains retained: the test removed an intercepted request before releasing it, causing a Playwright double-handling error. The corrected test preserves its late-response assertion. Final application proof is `.local/proofs/b270001100124af3a2b308d3fe191485`.
+
+Safe restart activated instance `807ec91e-543c-42f3-abb9-c5f2815f2c5a`. Read-only live checks discovered 16 canonical documents, including the migration plan, verified its section preview and registered-root navigation, and matched three served assets byte-for-byte. The pilot remains schema 3, revision 12 with ten unchanged decisions. Required-anchor policy revision 1 is unchanged. Activation evidence is `.local/document-browse-activation-20261006/activation.json`. No decision/application/policy/credential write, import or remote push occurred. Operator browser testing remains separate from these native and installed-service observations.
+
 ## Planning application and browser sessions — 2026-10-06
 
 Schema 3 planning applications are implemented and enabled for the migration pilot. The status row uses lowercase `apply`, matching `closed` and `applied`. Both browser authentication paths expire after 90 minutes idle or 8 hours absolute; passive events and draft leases do not extend browser idle time.

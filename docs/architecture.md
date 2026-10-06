@@ -20,6 +20,8 @@ The owner CLI registers project planning roots and optional-anchor policy throug
 
 The detailed approved business execution contract remains in Polymath planning custody. This implementation record describes actual technical boundaries. The portable agent-access skill is included; MCP remains a follow-up. Both agent and browser use the shared API.
 
+Read-only planning document discovery reuses the same deployment-local root binding as anchor resolution. The pool derives from immediate registered-folder sources and retained application paths; no second registry is stored. Add document navigates contained directories. Every inventory request rejects redirections and bounds enumeration/source bytes; cursors bind the complete observed inventory and policy. File selection does not grant new permissions or move data.
+
 Managed Windows deployments use an open-only URI handler, nonce/HMAC readiness, owner-local administration, DPAPI and a separate auth.sqlite. Human password sessions and agent bearer credentials have independent lifecycles. Idle admission and draft leases share a mutex; polling and notifications cannot keep a managed service alive. Foreground operation remains available with idle shutdown disabled.
 
 ---

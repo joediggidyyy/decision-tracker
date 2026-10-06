@@ -178,3 +178,10 @@ dialog fieldset{min-width:0}dialog .toolbar{gap:8px}dialog button{min-height:44p
 .decision-badges .apply-button:hover:not(:disabled){background:rgba(80,139,185,.12);border-color:var(--accent)}
 .decision-badges .apply-button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .decision-badges .applied-tag{color:#9bd7b4;border-color:rgba(116,181,142,.5);background:rgba(74,139,99,.09)}
+.planning-browser{border:1px solid #456281;border-radius:6px;padding:10px;min-width:0}
+.planning-browser h3{margin:0 0 8px;font-size:1rem}
+.planning-browser-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.planning-browser-toolbar select{min-width:0;flex:1 1 140px}
+.planning-files{max-height:200px;overflow:auto;margin-bottom:10px}
+.planning-files p{font-size:.8rem;overflow-wrap:anywhere}
+.planning-files button{display:block;width:100%;text-align:left;overflow-wrap:anywhere;margin:4px 0}

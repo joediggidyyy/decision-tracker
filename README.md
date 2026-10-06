@@ -73,7 +73,7 @@ The [portable agent skill](skills/decision-tracker/SKILL.md) explains explicit p
 
 Use **Decide** beside an open question to record the answer and approval. The resulting record has status `closed`; CLI `decision close` and API `decision.close` retain their existing names. The decision is recorded without marking its implementation or verification complete.
 
-Once you incorporate a closed decision into authoritative planning, use **apply** beside its status. Choose the planning document and section in the form. A successful application leaves a soft green `applied` tag and an immutable receipt in History. Reopening starts a fresh cycle while preserving earlier receipts. Application records planning incorporation; implementation and verification remain separate. The [interface guide](docs/interfaces.md#planning-application) explains the CLI equivalent and the explicit ledger upgrade this feature requires.
+Once you incorporate a closed decision into authoritative planning, use **apply** beside its status. Choose a planning document from the dropdown, or use **Add document…** to browse the project's planning folders or paste a path. Its sections load automatically; select the section and apply. A successful application leaves a soft green `applied` tag and an immutable receipt in History. Reopening starts a fresh cycle while preserving earlier receipts. Application records planning incorporation; implementation and verification remain separate. The [interface guide](docs/interfaces.md#planning-application) explains the CLI equivalent and the explicit ledger upgrade this feature requires.
 
 [Live updates](docs/live-updates.md) tell you when another participant has changed the data without moving your focus or replacing your draft.
 

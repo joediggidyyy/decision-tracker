@@ -1,5 +1,5 @@
 """Application lifecycle, confinement and recovery using disposable ledgers."""
-import json
+import json,os,subprocess
 import sqlite3
 from dataclasses import replace
 from pathlib import Path
@@ -183,6 +183,74 @@ def test_http_policy_is_read_only_and_anchor_discovery_is_bound(client,tmp_path)
     assert c.post('/api/v1/projects/alpha/policy',headers=headers,json={'anchor_required':False}).status_code==405
     preview=c.get('/api/v1/projects/alpha/planning-document',headers=headers,params={'locator':str(path)}).json()['data'];assert preview['anchors'][0]['id']=='execution'
     assert c.get('/api/v1/projects/alpha/planning-document',headers={'X-Ledger-UUID':str(uuid4())},params={'locator':str(path)}).status_code==409
+    docs=c.get('/api/v1/projects/alpha/planning-documents',headers=headers).json()['data'];assert docs['entries'][0]['path']==str(path)
+    assert c.get('/api/v1/projects/alpha/planning-documents',headers={'X-Ledger-UUID':str(uuid4())}).status_code==409
+
+def test_document_pool_and_nested_browse_preserve_custody(ready,tmp_path):
+    s,p,u,path=ready;nested=path.parent/'details';nested.mkdir();other=document(nested/'detail.json')
+    (path.parent/'ordinary.json').write_text('{}');(path.parent/'private.txt').write_text('Synthetic unrelated text')
+    with s.catalog.project('alpha',u,p) as (db,_):
+        pool=applications.document_inventory(s,db);assert [d['path'] for d in pool['documents']]==[str(path)]
+        listing=applications.document_inventory(s,db,str(path.parent));assert listing['folders']==[{'path':str(nested),'name':'details'}] and listing['parent'] is None
+        listing=applications.document_inventory(s,db,str(nested));assert listing['parent']==str(path.parent) and listing['documents'][0]['path']==str(other)
+        with pytest.raises(Fault,match='outside'):applications.document_inventory(s,db,str(tmp_path))
+    s.change('alpha',p,request(s,p,u,other))
+    with s.catalog.project('alpha',u,p) as (db,_):assert {d['path'] for d in applications.document_inventory(s,db)['documents']}=={str(path),str(other)}
+    assert path.exists() and other.exists() and s.detail('alpha',u,p,'D000001')['revision']==3
+    applications.binding_path(s,u).unlink()
+    with s.catalog.project('alpha',u,p) as (db,_):
+        with pytest.raises(Fault,match='CLI administration'):applications.document_inventory(s,db)
+
+def test_document_browse_rejects_redirects_and_bounds_enumeration(ready,tmp_path):
+    s,p,u,path=ready;root=path.parent
+    for n in range(1001):(root/f'.entry-{n}').touch()
+    with s.catalog.project('alpha',u,p) as (db,_):
+        with pytest.raises(Fault,match='1000 entries'):applications.document_inventory(s,db)
+    if os.name=='nt':
+        link=root/'redirect';outside=tmp_path/'outside';outside.mkdir()
+        subprocess.run(['cmd','/c','mklink','/J',str(link),str(outside)],capture_output=True,check=True)
+        try:
+            with s.catalog.project('alpha',u,p) as (db,_):
+                with pytest.raises(Fault,match='junctions'):applications.document_inventory(s,db,str(link))
+        finally:link.rmdir()
+
+def test_document_inventory_cursor_rejects_file_changes(client,tmp_path):
+    c=client;project=c.post('/api/v1/projects',json={'project_id':'alpha','name':'Alpha','request_id':str(uuid4()),'expected_catalog_revision':0}).json()['data'];u=project['ledger_uuid'];headers={'X-Ledger-UUID':u};p=c.app.state.auth.bearer(c.token)
+    upgrade(c.app.state.artifacts,'alpha',u,p,Upgrade(expected_revision=0,request_id=uuid4()))
+    root=tmp_path/'plans';root.mkdir();one=document(root/'one.json');document(root/'two.json');policy(c.app.state.service,p,u,[str(root)])
+    first=c.get('/api/v1/projects/alpha/planning-documents',headers=headers,params={'limit':1}).json();assert not first['complete'] and first['next_cursor']
+    v=json.loads(one.read_text());v['metadata'][0]['value']='2.0';one.write_text(json.dumps(v))
+    response=c.get('/api/v1/projects/alpha/planning-documents',headers=headers,params={'limit':1,'cursor':first['next_cursor']});assert response.status_code==409
+
+def test_document_pool_pages_fit_response_with_unicode_roots(client,tmp_path):
+    c=client;project=c.post('/api/v1/projects',json={'project_id':'alpha','name':'Alpha','request_id':str(uuid4()),'expected_catalog_revision':0}).json()['data'];u=project['ledger_uuid'];headers={'X-Ledger-UUID':u};p=c.app.state.auth.bearer(c.token)
+    upgrade(c.app.state.artifacts,'alpha',u,p,Upgrade(expected_revision=0,request_id=uuid4()))
+    roots=[]
+    for n in range(8):
+        root=tmp_path/(str(n)+'计划'*25);root.mkdir();roots.append(str(root))
+        for m in range(8):
+            path=document(root/(str(m)+'.json'));v=json.loads(path.read_text());v['document_id']='计划'*80;v['metadata'][0]['value']='版本'*80;path.write_text(json.dumps(v),encoding='utf-8')
+    policy(c.app.state.service,p,u,roots);cursor=None;seen=set();pages=0
+    while True:
+        response=c.get('/api/v1/projects/alpha/planning-documents',headers=headers,params={'limit':200,**({'cursor':cursor} if cursor else {})});assert response.status_code==200 and len(response.content)<=65536
+        value=response.json();seen.update(x['path'] for x in value['data']['entries']);pages+=1;cursor=value['next_cursor']
+        if value['complete']:break
+        assert pages<10
+    assert len(seen)==64 and pages>1
+
+def test_inventory_counts_actual_bytes_when_stat_underreports(ready,monkeypatch):
+    s,p,u,path=ready
+    for n in range(6):
+        large=document(path.parent/(str(n)+'.json'));value=json.loads(large.read_text());value['sections'][0]['blocks'][0]['text']='x'*(3*1024*1024);large.write_text(json.dumps(value),encoding='utf-8')
+    real=Path.stat
+    def small(self,*a,**kw):
+        result=real(self,*a,**kw)
+        if self.suffix=='.json' and self.parent==path.parent:
+            values=list(result);values[6]=1;return os.stat_result(values)
+        return result
+    monkeypatch.setattr(Path,'stat',small)
+    with s.catalog.project('alpha',u,p) as (db,_):
+        with pytest.raises(Fault,match='inventory exceeds 16 MiB'):applications.document_inventory(s,db)
 
 def test_commit_rechecks_document_and_protect_preserves_application(ready,monkeypatch):
     s,p,u,path=ready;req=request(s,p,u,path)
