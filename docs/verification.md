@@ -1,5 +1,9 @@
 # Verification state
 
+## Wider planning file selector — 2026-10-06
+
+Native `20261006T054324Z-dt-applications` passed **97 tests** with source unchanged in `.local/proofs/9c747df93ee345abae711489d038adad`. Fourteen browser checks passed with no page errors. The dialog expands to 900 CSS pixels while browsing; a long planning filename fits on one line on desktop. Cancel restores the compact 480-pixel form, and the 320-pixel viewport remains free of horizontal overflow. Desktop and narrow screenshots were inspected. The installed service serves the exact updated stylesheet without a backend restart. This presentation change leaves CLI, data and application rules unchanged. Operator browser acceptance remains separate; remote push is held until pilot completion.
+
 ## Planning document dropdown and browsing — 2026-10-06
 
 Final resource-bound proof `20261006T053207Z-dt-applications` passed **97 tests**, including a changing-file test that underreports stat sizes while actual reads exceed the aggregate budget. Inventory now charges actual bytes. Source remains unchanged in `.local/proofs/55639220522a4730a2610911f92903eb`; the thirteen browser checks remain passing. Final safe activation is instance `d6ef6fa0-7d33-422a-9550-16110d1d31b8`, recorded in `.local/document-browse-final-activation-20261006/activation.json`. The same 16-document discovery, migration section preview, unchanged records and matching served assets were rechecked. This supersedes the intermediate source/activation state below.

@@ -172,6 +172,7 @@ dialog fieldset{min-width:0}dialog .toolbar{gap:8px}dialog button{min-height:44p
 /* Lift the isolated help container above sibling dividers and focus controls. */
 .sidebar-context:has(.control-tooltip:not([hidden])){z-index:30}
 #editor.application-editor{max-width:480px}
+#editor.application-editor:has(.planning-browser:not([hidden])){width:min(900px,calc(100vw - 28px));max-width:900px}
 .decision-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .decision-badges .badge{margin:4px 0;line-height:1.4;font-weight:400;font-size:.8rem;padding:2px 7px;border:1px solid #456281;border-radius:5px;background:transparent;color:var(--text)}
 .decision-badges .apply-button{cursor:pointer;min-height:0}
