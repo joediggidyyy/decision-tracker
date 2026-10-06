@@ -26,5 +26,5 @@ def test_portable_project_descriptor_and_roots():
 def test_repository_contract_and_cli_entry_point():
     contract = json.loads((ROOT / "docs/repository-contract.json").read_text())
     assert contract["visibility"] == "public"
-    assert contract["license"] == "not-selected"
+    assert contract["license"] == "Apache-2.0"
     assert tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["scripts"]["decision-tracker"] == "decision_tracker.cli:main"

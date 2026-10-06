@@ -7,6 +7,8 @@ name = "decision-tracker"
 version = "0.1.0.dev0"
 description = "Portable project-aware decision tracking with SQLite, browser, CLI and API interfaces."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.14"
 authors = [{name = "Polymath Global"}]
 dependencies = ["fastapi==0.121.3", "uvicorn==0.38.0"]

@@ -4,6 +4,11 @@
 
 Changes to the local application are recorded here. This is a development history, not a packaged release announcement.
 
+## Unreleased — Apache licensing
+
+- Add Apache License 2.0 and Polymath Global attribution, replacing the earlier unselected-license status.
+- Declare the SPDX license expression and include LICENSE and NOTICE in package artifacts.
+
 ## Unreleased — planning document selection
 
 - Define the decision-registration threshold in the public skill and user guidance, including agent-owned engineering choices and separate approval escalation.

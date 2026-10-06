@@ -4,6 +4,8 @@
 
 This guide is for authorized collaborators maintaining Decision Tracker. Propose changes within the approved project scope, retain evidence of their behavior, and obtain owner authorization before pushing or publishing.
 
+Contributions are provided under the repository's [Apache License 2.0](LICENSE), unless explicitly stated otherwise. Retain applicable copyright and attribution notices.
+
 Keep decision semantics in a shared service. Browser, CLI and agent interfaces
 must not bypass authorization, revision checks or history.
 

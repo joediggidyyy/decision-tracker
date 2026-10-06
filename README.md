@@ -109,7 +109,7 @@ Keep your environment, credentials, project databases and generated evidence out
 
 Version `0.1.0.dev0` is a local-use alpha in a public source repository. Windows installation and managed CLI launch have been tested; broader platform support is not yet qualified. See the [verification record](docs/verification.md) for tested behavior and current limitations.
 
-No distribution license or public release has been selected. Third-party license terms still apply.
+Copyright 2026 Polymath Global. Licensed under the [Apache License 2.0](LICENSE); see [NOTICE](NOTICE) for attribution. Third-party components retain their own license terms. No packaged release has been selected.
 
 ---
 

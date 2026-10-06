@@ -1,5 +1,11 @@
 # Verification state
 
+## Apache licensing checkpoint — 2026-10-06
+
+Native package proof `20261006T063421Z-dt-package` passed four checks with source correspondence. The fresh wheel installed with runtime dependencies only; the installed CLI started, reused and stopped its isolated managed service. Wheel inspection confirmed `License-Expression: Apache-2.0` and byte-identical LICENSE and NOTICE files. The proof copier now retains both root files. Evidence is under `.local/proofs/e4971d87bef64f8d826a9fde497657a4` and `.local/apache-license-package-inspection.json`. This verification note was added after that proof; runtime, tests and package inputs remain unchanged.
+
+Earlier attempts are retained: a stale unselected-license assertion failed, a follow-up was interrupted to correct it, and a sandboxed isolated startup failed. The final native proof ran outside the sandbox; the earlier startup cause is unconfirmed. Canonical product documents record the license selection as DT-D064, with twelve projection/Doctor checks and prior versions retained. This does not qualify a packaged release or authorize a remote push.
+
 ## Decision registration guidance — 2026-10-06
 
 The public skill and decision workflow guide now define durable consequential choices as the registration threshold, including agent-owned engineering choices within delegated scope. Registration is separate from approval escalation; the existing capability and approval contracts remain. The supplied skill metadata validator passed through native Calamum (`dt-decision-registration-skill`); the installed skill matches the validated source and its prior bytes are retained. Wording, examples and documentation links were reviewed. This is a documentation-only change: no runtime test rerun or new behavioral proof is claimed. Remote push remains held.

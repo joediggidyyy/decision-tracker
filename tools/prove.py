@@ -16,7 +16,7 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 def source_files(root):
-    names = ["pyproject.toml", "README.md", "CONTRIBUTING.md", "SECURITY.md",
+    names = ["pyproject.toml", "README.md", "LICENSE", "NOTICE", "CONTRIBUTING.md", "SECURITY.md",
              "CHANGELOG.md", "AGENTS.md", ".gitignore", ".gitattributes",
              "requirements-dev.lock", ".calamum/project.json"]
     files = [root / p for p in names if (root / p).is_file()]
