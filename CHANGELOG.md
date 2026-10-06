@@ -6,6 +6,7 @@ Changes to the local application are recorded here. This is a development histor
 
 ## Unreleased — planning document selection
 
+- Define the decision-registration threshold in the public skill and user guidance, including agent-owned engineering choices and separate approval escalation.
 - Expand the popup to 900 pixels while file selection is open; retain compact selection/section entry and responsive wrapping on small screens.
 - Replace path-only entry with the planning document pool dropdown and Add document folder browsing/paste option.
 - Load sections automatically and disable application until a valid selection is ready; retain existing root permissions and file custody.

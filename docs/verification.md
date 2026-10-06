@@ -1,5 +1,9 @@
 # Verification state
 
+## Decision registration guidance — 2026-10-06
+
+The public skill and decision workflow guide now define durable consequential choices as the registration threshold, including agent-owned engineering choices within delegated scope. Registration is separate from approval escalation; the existing capability and approval contracts remain. The supplied skill metadata validator passed through native Calamum (`dt-decision-registration-skill`); the installed skill matches the validated source and its prior bytes are retained. Wording, examples and documentation links were reviewed. This is a documentation-only change: no runtime test rerun or new behavioral proof is claimed. Remote push remains held.
+
 ## Wider planning file selector — 2026-10-06
 
 Native `20261006T054324Z-dt-applications` passed **97 tests** with source unchanged in `.local/proofs/9c747df93ee345abae711489d038adad`. Fourteen browser checks passed with no page errors. The dialog expands to 900 CSS pixels while browsing; a long planning filename fits on one line on desktop. Cancel restores the compact 480-pixel form, and the 320-pixel viewport remains free of horizontal overflow. Desktop and narrow screenshots were inspected. The installed service serves the exact updated stylesheet without a backend restart. This presentation change leaves CLI, data and application rules unchanged. Operator browser acceptance remains separate; remote push is held until pilot completion.

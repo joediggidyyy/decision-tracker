@@ -16,6 +16,7 @@ Capture open questions, compare alternatives, record approvals and connect relat
 |---|---|
 | Install and launch the application | [Quick start](#quick-start) |
 | Find a guide | [Documentation index](docs/README.md) |
+| Know which choices to record | [Decision workflow](docs/decision-workflow.md) |
 | Work through the CLI or API | [Interface guide](docs/interfaces.md) |
 | Give your agents access | [Agent-access skill](skills/decision-tracker/SKILL.md) |
 | Manage credentials, launch or recovery | [Operations guide](docs/operations.md) |
@@ -70,6 +71,8 @@ The managed service stops after 90 minutes without useful activity when no opera
 | API | Integrate decision tracking with your tools through versioned `/api/v1` routes. Revision checks and durable request IDs protect concurrent changes and retries. Authenticated `GET /api/v1/schema` provides the API specification. |
 
 The [portable agent skill](skills/decision-tracker/SKILL.md) explains explicit project binding, credential use and conflict recovery. Copy its folder into your agent's supported skill directory. An MCP server is not included in this alpha.
+
+Record choices whose durable consequences need an explicit, retrievable rationale, including engineering choices owned by agents within delegated scope. Registration and approval escalation are separate: seek human judgment when a choice exceeds delegation or changes settled requirements. The [decision workflow](docs/decision-workflow.md) gives the threshold and examples.
 
 Use **Decide** beside an open question to record the answer and approval. The resulting record has status `closed`; CLI `decision close` and API `decision.close` retain their existing names. The decision is recorded without marking its implementation or verification complete.
 

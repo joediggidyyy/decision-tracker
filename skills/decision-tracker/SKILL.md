@@ -5,6 +5,14 @@ description: Read, propose, and apply project decisions through the Decision Tra
 
 # Decision Tracker access
 
+## When to record a decision
+
+Record a choice or unresolved question when its durable consequence needs an explicit, retrievable rationale: data meaning/fidelity; identity, schema, interface or compatibility contracts; authority, permissions, custody or retention; failure, retry, recovery or integrity guarantees; or a substantial tradeoff, dependency or commitment that later work must respect. This includes agent-owned engineering decisions within delegated scope. Admit a consequential unresolved choice before dependent implementation; retain alternatives, evidence, owner, affected scope and what must be settled.
+
+Registration and approval escalation are separate. Resolve agent-owned choices only within actual delegated authority and the existing service capability/approval contract; assigning owner_role=agent grants no authority. Escalate choices that exceed delegation, change settled requirements or need the human's judgment. Never invent human approval. Record an authorized resolution and its rationale even when no new human approval is required.
+
+Routine mechanics can remain in execution documentation when they implement an already defined contract without introducing a consequential choice. Formatting and private variable names usually qualify; public names or formats that create a compatibility commitment can require a decision. Search existing decisions first. Cite settled requirements and record only the new choice; do not reopen an approved requirement merely to choose its engineering representation. Use the existing decision/options/references/link operations, not a second editable register or a new CLI root. The repository's docs/decision-workflow.md gives human-facing examples; these instructions remain self-contained when installed alone.
+
 ## Planning application
 
 Apply records that an authorized closed resolution has been incorporated into one designated authoritative planning section. It does not mark implementation, verification or acceptance complete. Confirm the cited planning content against the approved answer before recording this attestation; anchor/hash checks alone do not establish meaning. Do not mark every closed decision applied merely because the feature is available.
