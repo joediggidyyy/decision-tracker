@@ -47,8 +47,8 @@ class Service:
             transaction_id=str(uuid4())
             require(not any(k.startswith('dt_') for k in request.attribution),'VALIDATION_ERROR','Server attribution fields cannot be supplied.')
             events=approvals.prepare(db,principal,request,stamp)
-            from . import applications
-            receipts=applications.prepare(self,db,principal,request,stamp,transaction_id)
+            from . import planning_links
+            receipts=planning_links.prepare(self,db,principal,request,stamp,transaction_id)
             effective=request.model_copy(deep=True)
             mutation=Mutator(db,principal,effective)
             for ordinal,op in enumerate(effective.operations):
@@ -69,20 +69,22 @@ class Service:
             meta["ledger_revision"]=rev
             result=self.envelope(project,meta,summaries,request_id=str(request.request_id),
                                  replayed=False,aliases=mutation.aliases,validated=request.validate_only)
-            if receipts:result['application_receipts']=list(receipts.values())
+            if receipts:
+                result['planning_link_receipts']=list(receipts.values())
+                result['application_receipts']=list(receipts.values())  # Compatibility alias.
             require(len(store.encode(result).encode())<=60000,'LIMIT_EXCEEDED','Change outcome exceeds response capacity.',413)
             if request.validate_only:
                 result["revision"]=request.expected_revision
                 result["planned_revision"]=rev
                 db.rollback()
                 return result
-            applications.confirm(self,db,receipts)
+            planning_links.confirm(self,db,receipts)
             db.execute("INSERT INTO transactions VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
                        (rev,transaction_id,principal.id,str(request.request_id),digest,store.encode(request.attribution),
                         request.reason,store.encode(request.authority_refs),stamp,
                         request.occurred_at.isoformat() if request.occurred_at else None,store.encode(result),store.encode(payload)))
             for event in events.values():approvals.insert(db,event)
-            for receipt in receipts.values():applications.insert(db,receipt)
+            for receipt in receipts.values():planning_links.insert(db,receipt)
             for key,old in mutation.original.items():
                 snapshot=store.snapshot(db,key)
                 db.execute("INSERT INTO revisions VALUES(?,?,?,?,?)",
@@ -135,9 +137,11 @@ class Service:
                 if owner and obj["owner_role"]!=owner:continue
                 if q and q.casefold() not in " ".join(str(obj[k] or "") for k in ("key","title","question","answer","rationale")).casefold():continue
                 item={k:obj[k] for k in ("key","title","status","locked","work_tag","contested","owner_role","revision","updated_at")}
-                from .applications import current
-                application=current(db,obj['key'],meta['ledger_revision'])
-                item['applied']=bool(application and application['applied'])
+                from .planning_links import current
+                planning_link=current(db,obj['key'],meta['ledger_revision'])
+                item['linked']=bool(planning_link and planning_link['linked'])
+                item['planning_link_recorded']=bool(planning_link and planning_link['recorded'])
+                item['applied']=item['planning_link_recorded']  # Compatibility alias.
                 items.append((obj['key'],item))
             data,next_cursor,complete=self.page(items,meta,query,cursor,limit)
             return self.envelope(project,meta,data,next_cursor=next_cursor,complete=complete)
@@ -172,9 +176,11 @@ class Service:
             data=self.compact(snapshot,base,snaprev);data["collections"]=collections
             from .approvals import latest
             data['latest_resolution_approval']=latest(db,key,snaprev)
-            from .applications import current,policy
-            data['planning_application']=current(db,key,snaprev)
-            data['application_policy_revision']=policy(db)['policy_revision']
+            from .planning_links import current,policy,legacy_current
+            data['planning_link']=current(db,key,snaprev)
+            data['planning_link_policy_revision']=policy(db)['policy_revision']
+            data['planning_application']=legacy_current(data['planning_link'])
+            data['application_policy_revision']=data['planning_link_policy_revision']
             return self.envelope(project,meta,data,as_of_revision=revision)
 
     def children(self,project_id,uuid,principal,key,family,cursor=None,limit=50,revision=None):

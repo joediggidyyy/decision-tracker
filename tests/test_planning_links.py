@@ -1,4 +1,4 @@
-"""Application lifecycle, confinement and recovery using disposable ledgers."""
+"""Planning-link lifecycle, confinement and recovery using disposable ledgers."""
 import json,os,subprocess
 import sqlite3
 from dataclasses import replace
@@ -7,7 +7,7 @@ from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 import pytest
 from conftest import change
-from decision_tracker import store,cli,applications
+from decision_tracker import store,cli,planning_links
 from decision_tracker.models import Change,ProjectChange
 from decision_tracker.service import Service
 from decision_tracker.artifacts import Artifacts,bundle
@@ -20,8 +20,8 @@ def document(path):
     path.write_text(json.dumps(value),encoding='utf-8');return path
 
 def policy(s,p,u,roots=None,required=None,revision=0,request_id=None):
-    req=applications.PolicyChange(expected_policy_revision=revision,request_id=request_id or uuid4(),reason='Owner registers planning custody',planning_roots=roots,anchor_required=required)
-    return applications.set_policy(s,'alpha',u,replace(p,id='local-owner',auth_method='os_owner'),req)
+    req=planning_links.PolicyChange(expected_policy_revision=revision,request_id=request_id or uuid4(),reason='Owner registers planning custody',planning_roots=roots,anchor_required=required)
+    return planning_links.set_policy(s,'alpha',u,replace(p,id='local-owner',auth_method='os_owner'),req)
 
 @pytest.fixture
 def ready(ledger,tmp_path):
@@ -35,27 +35,27 @@ def ready(ledger,tmp_path):
 
 def request(s,p,u,path=None,section='execution',**data):
     detail=s.detail('alpha',u,p,'D000001');d=detail['data']
-    fields={'expected_policy_revision':d['application_policy_revision'],'expected_resolution_id':d['planning_application']['resolution_id'],**data}
+    fields={'expected_policy_revision':d['planning_link_policy_revision'],'expected_resolution_id':d['planning_link']['resolution_id'],**data}
     if path:fields.update(planning_document=str(path),planning_section=section)
-    return Change(expected_ledger_uuid=u,expected_revision=detail['revision'],expected_decision_revisions={'D000001':d['revision']},request_id=uuid4(),reason='Applied approved resolution to execution plan',operations=[{'op':'decision.apply','key':'D000001','data':fields}])
+    return Change(expected_ledger_uuid=u,expected_revision=detail['revision'],expected_decision_revisions={'D000001':d['revision']},request_id=uuid4(),reason='Linked incorporated resolution to execution plan',operations=[{'op':'decision.link','key':'D000001','data':fields}])
 
-def test_apply_replay_reopen_reclose_history_and_recovery(ready):
+def test_link_replay_reopen_reclose_history_and_recovery(ready):
     s,p,u,path=ready;req=request(s,p,u,path);before=s.detail('alpha',u,p,'D000001')['data']
-    result=s.change('alpha',p,req);receipt=result['application_receipts'][0]
+    result=s.change('alpha',p,req);receipt=result['planning_link_receipts'][0]
     assert result['revision']==3 and receipt['anchor']['document_id']=='execution-plan' and receipt['anchor']['version']=='1.0'
     assert receipt['anchor_status']=='found' and receipt['anchor']['generator_verification']=='not_checked'
     assert s.change('alpha',p,req)['replayed']
-    applied=s.detail('alpha',u,p,'D000001')['data'];assert applied['planning_application']['applied']
+    applied=s.detail('alpha',u,p,'D000001')['data'];assert applied['planning_link']['recorded']
     for k in ('answer','rationale','authority_refs','latest_resolution_approval','status','locked'):assert applied[k]==before[k]
-    assert s.list_decisions('alpha',u,p)['data'][0]['applied']
-    with pytest.raises(Fault,match='already applied'):s.change('alpha',p,request(s,p,u,path))
+    assert s.list_decisions('alpha',u,p)['data'][0]['linked']
+    with pytest.raises(Fault,match='already has a planning-link record'):s.change('alpha',p,request(s,p,u,path))
     change(s,p,u,[{'op':'decision.reopen','key':'D000001','data':{'impact':'Reconsider'}}],3,{'D000001':3},authority_refs=['Owner authorization'])
-    assert s.detail('alpha',u,p,'D000001')['data']['planning_application'] is None
+    assert s.detail('alpha',u,p,'D000001')['data']['planning_link'] is None
     change(s,p,u,[{'op':'decision.close','key':'D000001','data':{}}],4,{'D000001':4},authority_refs=['Owner reapproves'])
-    fresh=s.detail('alpha',u,p,'D000001')['data']['planning_application'];assert not fresh['applied'] and fresh['resolution_id']!=receipt['resolution_id']
+    fresh=s.detail('alpha',u,p,'D000001')['data']['planning_link'];assert not fresh['recorded'] and fresh['resolution_id']!=receipt['resolution_id']
     s.change('alpha',p,request(s,p,u,path,'execution-p0'))
-    assert s.detail('alpha',u,p,'D000001',3)['data']['planning_application']['receipt']==receipt
-    assert s.detail('alpha',u,p,'D000001',4)['data']['planning_application'] is None
+    assert s.detail('alpha',u,p,'D000001',3)['data']['planning_link']['receipt']==receipt
+    assert s.detail('alpha',u,p,'D000001',4)['data']['planning_link'] is None
     objects=Artifacts(s);assert objects.verify('alpha',u,p)['ok']
     backup=objects.create('alpha',u,p,'backup')['data'];assert not objects.restore_check('alpha',u,p,backup['artifact_id'])['data']['activated']
     with s.catalog.project('alpha',u,p) as (db,_):native=bundle(db)
@@ -63,13 +63,13 @@ def test_apply_replay_reopen_reclose_history_and_recovery(ready):
     other=Service(s.root.parent/'restored');objects=Artifacts(other);candidate=objects.import_native(p,native,True)['data']
     other.catalog.mutate(p,ProjectChange(kind='register',project_id='alpha',name='Restored',relative_path=candidate['relative_path'],expected_catalog_revision=0,request_id=uuid4()))
     assert objects.verify('alpha',u,p)['ok']
-    assert other.detail('alpha',u,p,'D000001')['data']['planning_application']['applied']
+    assert other.detail('alpha',u,p,'D000001')['data']['planning_link']['recorded']
     with other.catalog.project('alpha',u,p) as (db,_):
-        with pytest.raises(Fault,match='CLI administration'):applications.read_document(other,db,str(path))
+        with pytest.raises(Fault,match='CLI administration'):planning_links.read_document(other,db,str(path))
     path.unlink();assert objects.verify('alpha',u,p)['ok']  # Historical receipt does not depend on live files.
 
 @pytest.mark.parametrize('failure',['missing','unavailable','outside','unsupported','changed','resolution','policy'])
-def test_failed_application_never_advances_revision(ready,tmp_path,failure):
+def test_failed_planning_link_never_advances_revision(ready,tmp_path,failure):
     s,p,u,path=ready;req=request(s,p,u,path);data=req.operations[0].data
     if failure=='missing':data['planning_section']='absent';code='ANCHOR_NOT_FOUND'
     elif failure=='unavailable':data['planning_document']=str(path.parent/'absent.json');code='DOCUMENT_UNAVAILABLE'
@@ -80,7 +80,7 @@ def test_failed_application_never_advances_revision(ready,tmp_path,failure):
     else:policy(s,p,u,required=False,revision=1);code='POLICY_CHANGED'
     with pytest.raises(Fault) as error:s.change('alpha',p,req)
     assert error.value.code==code
-    detail=s.detail('alpha',u,p,'D000001');assert detail['revision']==2 and detail['data']['revision']==2 and not detail['data']['planning_application']['applied']
+    detail=s.detail('alpha',u,p,'D000001');assert detail['revision']==2 and detail['data']['revision']==2 and not detail['data']['planning_link']['recorded']
     with s.catalog.project('alpha',u,p) as (db,_):assert db.execute('SELECT count(*) FROM application_receipts').fetchone()[0]==0
     change(s,p,u,[{'op':'decision.create','data':{'title':'Independent progress','question':'Next?'}}],2)
     assert Artifacts(s).verify('alpha',u,p)['ok']
@@ -93,15 +93,21 @@ def test_required_optional_and_policy_replay(ready):
     with pytest.raises(Fault,match='different content'):policy(s,p,u,required=True,revision=1,request_id=id)
     assert first['data']['recorded_by']=='local-owner'
     with pytest.raises(Fault,match='not found'):s.change('alpha',p,request(s,p,u,path,'missing'))
-    receipt=s.change('alpha',p,request(s,p,u))['application_receipts'][0]
+    receipt=s.change('alpha',p,request(s,p,u))['planning_link_receipts'][0]
     assert receipt['anchor_status']=='omitted' and receipt['anchor'] is None and receipt['policy_revision']==2
+    detail=s.detail('alpha',u,p,'D000001')['data']
+    assert detail['planning_link']['recorded'] and not detail['planning_link']['linked']
+    row=s.list_decisions('alpha',u,p)['data'][0]
+    assert row['planning_link_recorded'] and not row['linked'] and row['applied']
+    with pytest.raises(Fault) as error:s.change('alpha',p,request(s,p,u,path))
+    assert error.value.code=='ALREADY_RECORDED'
     assert Artifacts(s).verify('alpha',u,p)['ok']
 
-def test_protected_apply_dry_run_permissions_and_concurrency(ready):
+def test_protected_link_dry_run_permissions_and_concurrency(ready):
     s,p,u,path=ready
     change(s,p,u,[{'op':'decision.lock','key':'D000001','data':{'baseline':'v1'}}],2,{'D000001':2},authority_refs=['Protect approved baseline'])
     req=request(s,p,u,path);req.validate_only=True
-    assert s.change('alpha',p,req)['validated'];assert not s.detail('alpha',u,p,'D000001')['data']['planning_application']['applied']
+    assert s.change('alpha',p,req)['validated'];assert not s.detail('alpha',u,p,'D000001')['data']['planning_link']['recorded']
     req.validate_only=False
     with pytest.raises(Fault,match='capability'):s.change('alpha',replace(p,capabilities=frozenset({'read'})),req)
     with ThreadPoolExecutor(2) as pool:results=list(pool.map(lambda _:s.change('alpha',p,req),range(2)))
@@ -153,16 +159,86 @@ def test_open_replacement_supersedes_question_without_resolution(ledger):
     assert s.detail('alpha',u,p,'D000002')['data']['status']=='open'
     assert Artifacts(s).verify('alpha',u,p)['ok']
 
-def test_cli_stays_compact_and_apply_builds_form_fields(monkeypatch,capsys):
+def test_cli_stays_compact_and_link_builds_form_fields(monkeypatch,capsys):
     root=cli.parser();groups=next(a for a in root._actions if isinstance(a,__import__('argparse')._SubParsersAction))
     assert set(groups.choices)=={'service','auth','project','decision','option','reference','link','query','change','data'}
     monkeypatch.setenv('DT_OPERATOR_TOKEN','synthetic-application-cli-credential-12345');seen=[]
     def send(self,method,path,data=None,uuid=None,download=None):seen.append((method,path,data));return {'ok':True,'data':[]}
     monkeypatch.setattr(cli.Client,'request',send)
-    assert cli.main(['decision','apply','--project','alpha','--ledger-uuid',str(uuid4()),'--key','D000001','--record-revision','2','--expected-revision','2','--expected-policy-revision','1','--request-id',str(uuid4()),'--reason','Apply approved resolution','--planning-document','C:/planning/plan.json','--planning-section','execution','--json'])==0
+    assert cli.main(['decision','link','--project','alpha','--ledger-uuid',str(uuid4()),'--key','D000001','--record-revision','2','--expected-revision','2','--expected-policy-revision','1','--request-id',str(uuid4()),'--reason','Link incorporated resolution','--planning-document','C:/planning/plan.json','--planning-section','execution','--json'])==0
     capsys.readouterr();assert seen[0][2]['operations'][0]['data']=={'expected_policy_revision':1,'planning_document':'C:/planning/plan.json','planning_section':'execution'}
-    assert cli.main(['decision','applications','--project','alpha','--ledger-uuid',str(uuid4()),'--key','D000001','--json'])==0
-    assert seen[-1][0]=='GET' and '/applications?' in seen[-1][1]
+    assert cli.main(['decision','planning-links','--project','alpha','--ledger-uuid',str(uuid4()),'--key','D000001','--json'])==0
+    assert seen[-1][0]=='GET' and '/planning-links?' in seen[-1][1]
+
+def test_legacy_apply_retry_receipts_and_mixed_history_remain_valid(ready):
+    from decision_tracker import applications
+    s,p,u,path=ready
+    assert applications is planning_links
+    req=request(s,p,u,path);req.operations[0].op='decision.apply'
+    first=s.change('alpha',p,req);receipt=first['application_receipts'][0]
+    assert first['planning_link_receipts']==first['application_receipts']
+    old=s.detail('alpha',u,p,'D000001')['data']
+    assert old['planning_application']['applied'] and old['planning_link']['linked']
+    assert old['planning_application']['receipt']==old['planning_link']['receipt']==receipt
+    change(s,p,u,[{'op':'decision.reopen','key':'D000001','data':{'impact':'Fresh cycle'}}],3,{'D000001':3},authority_refs=['Owner'])
+    change(s,p,u,[{'op':'decision.close','key':'D000001','data':{}}],4,{'D000001':4},authority_refs=['Owner'])
+    s.change('alpha',p,request(s,p,u,path))
+    replay=s.change('alpha',p,req)
+    assert replay==first|{'replayed':True}
+    assert s.detail('alpha',u,p,'D000001',3)['data']['planning_link']['receipt']==receipt
+    assert Artifacts(s).verify('alpha',u,p)['ok']
+    with s.catalog.project('alpha',u,p) as (db,_):native=bundle(db)
+    assert native['application_receipts'][0]['receipt_json']==receipt
+    assert [t['request_json']['operations'][0]['op'] for t in native['transactions'] if t['request_json']['operations'][0]['op'] in ('decision.link','decision.apply')]==['decision.apply','decision.link']
+    other=Service(s.root.parent/'mixed-restored');objects=Artifacts(other)
+    candidate=objects.import_native(p,native,True)['data']
+    other.catalog.mutate(p,ProjectChange(kind='register',project_id='alpha',name='Mixed history',relative_path=candidate['relative_path'],expected_catalog_revision=0,request_id=uuid4()))
+    assert objects.verify('alpha',u,p)['ok']
+    assert other.change('alpha',p,req)==first|{'replayed':True}
+    assert other.detail('alpha',u,p,'D000001',3)['data']['planning_link']['receipt']==receipt
+    with other.catalog.project('alpha',u,p) as (db,_):assert bundle(db)==native
+
+def test_api_discovery_and_cross_alias_history_cursor(client,tmp_path):
+    c=client;s=c.app.state.service;p=c.app.state.auth.bearer(c.token)
+    project=c.post('/api/v1/projects',json={'project_id':'alpha','name':'Alpha','request_id':str(uuid4()),'expected_catalog_revision':0}).json()['data']
+    u=project['ledger_uuid'];headers={'X-Ledger-UUID':u}
+    change(s,p,u,[{'op':'decision.create','data':{'title':'Approach','question':'Which?'}}])
+    change(s,p,u,[{'op':'decision.close','key':'D000001','data':{'answer':'A','rationale':'R'}}],1,{'D000001':1},authority_refs=['Owner'])
+    upgrade(c.app.state.artifacts,'alpha',u,p,Upgrade(expected_revision=2,request_id=uuid4()))
+    root=tmp_path/'planning';root.mkdir();path=document(root/'plan.json');policy(s,p,u,[str(root)])
+    old=request(s,p,u,path);old.operations[0].op='decision.apply'
+    response=c.post('/api/v1/projects/alpha/changes',headers=headers,json=old.model_dump(mode='json'))
+    assert response.status_code==200
+    change(s,p,u,[{'op':'decision.reopen','key':'D000001','data':{'impact':'Review'}}],3,{'D000001':3},authority_refs=['Owner'])
+    change(s,p,u,[{'op':'decision.close','key':'D000001','data':{}}],4,{'D000001':4},authority_refs=['Owner'])
+    fresh=request(s,p,u,path)
+    response=c.post('/api/v1/projects/alpha/changes',headers=headers,json=fresh.model_dump(mode='json'))
+    assert response.status_code==200 and response.json()['planning_link_receipts']==response.json()['application_receipts']
+    url='/api/v1/projects/alpha/decisions/D000001/'
+    first=c.get(url+'applications',headers=headers,params={'limit':1}).json()
+    assert not first['complete']
+    second=c.get(url+'planning-links',headers=headers,params={'limit':1,'cursor':first['next_cursor']}).json()
+    assert second['complete'] and first['data'][0]['receipt_id']!=second['data'][0]['receipt_id']
+    canonical=c.get(url+'planning-links',headers=headers).json();legacy=c.get(url+'applications',headers=headers).json()
+    assert {k:v for k,v in canonical.items() if k!='request_id'}=={k:v for k,v in legacy.items() if k!='request_id'}
+    schema=c.get('/api/v1/schema').json();cap=schema['x-decision-tracker']
+    assert 'planning_links_v1' in cap['capabilities'] and 'planning_applications_v1' in cap['capabilities']
+    assert cap['planning_link_input']==cap['application_input']
+    assert cap['planning_link_policy_write']=='os_owner_cli_only'
+    assert schema['paths'][url.replace('alpha','{project_id}').replace('D000001','{key}')+'applications']['get']['deprecated']
+
+def test_cli_old_names_remain_explicit_compatibility_calls(monkeypatch,capsys):
+    monkeypatch.setenv('DT_OPERATOR_TOKEN','synthetic-link-compatibility-token');seen=[]
+    def send(self,method,path,data=None,uuid=None,download=None):seen.append((method,path,data));return {'ok':True,'data':[]}
+    monkeypatch.setattr(cli.Client,'request',send)
+    u=str(uuid4());flags=['--project','alpha','--ledger-uuid',u,'--key','D000001','--json']
+    assert cli.main(['decision','apply',*flags,'--record-revision','2','--expected-revision','2','--expected-policy-revision','1','--request-id',str(uuid4()),'--reason','Retry legacy planning receipt','--planning-document','C:/plan.json','--planning-section','execution'])==0
+    assert seen[-1][2]['operations'][0]['op']=='decision.apply'
+    assert cli.main(['decision','applications',*flags])==0
+    assert '/applications?' in seen[-1][1]
+    assert cli.exit_code({'ok':False,'error':{'code':'ALREADY_LINKED'}})==3
+    assert cli.exit_code({'ok':False,'error':{'code':'ALREADY_RECORDED'}})==3
+    capsys.readouterr()
 
 def test_policy_set_routes_only_to_owner_administration(monkeypatch,tmp_path,capsys):
     from decision_tracker import local_cli
@@ -190,28 +266,28 @@ def test_document_pool_and_nested_browse_preserve_custody(ready,tmp_path):
     s,p,u,path=ready;nested=path.parent/'details';nested.mkdir();other=document(nested/'detail.json')
     (path.parent/'ordinary.json').write_text('{}');(path.parent/'private.txt').write_text('Synthetic unrelated text')
     with s.catalog.project('alpha',u,p) as (db,_):
-        pool=applications.document_inventory(s,db);assert [d['path'] for d in pool['documents']]==[str(path)]
-        listing=applications.document_inventory(s,db,str(path.parent));assert listing['folders']==[{'path':str(nested),'name':'details'}] and listing['parent'] is None
-        listing=applications.document_inventory(s,db,str(nested));assert listing['parent']==str(path.parent) and listing['documents'][0]['path']==str(other)
-        with pytest.raises(Fault,match='outside'):applications.document_inventory(s,db,str(tmp_path))
+        pool=planning_links.document_inventory(s,db);assert [d['path'] for d in pool['documents']]==[str(path)]
+        listing=planning_links.document_inventory(s,db,str(path.parent));assert listing['folders']==[{'path':str(nested),'name':'details'}] and listing['parent'] is None
+        listing=planning_links.document_inventory(s,db,str(nested));assert listing['parent']==str(path.parent) and listing['documents'][0]['path']==str(other)
+        with pytest.raises(Fault,match='outside'):planning_links.document_inventory(s,db,str(tmp_path))
     s.change('alpha',p,request(s,p,u,other))
-    with s.catalog.project('alpha',u,p) as (db,_):assert {d['path'] for d in applications.document_inventory(s,db)['documents']}=={str(path),str(other)}
+    with s.catalog.project('alpha',u,p) as (db,_):assert {d['path'] for d in planning_links.document_inventory(s,db)['documents']}=={str(path),str(other)}
     assert path.exists() and other.exists() and s.detail('alpha',u,p,'D000001')['revision']==3
-    applications.binding_path(s,u).unlink()
+    planning_links.binding_path(s,u).unlink()
     with s.catalog.project('alpha',u,p) as (db,_):
-        with pytest.raises(Fault,match='CLI administration'):applications.document_inventory(s,db)
+        with pytest.raises(Fault,match='CLI administration'):planning_links.document_inventory(s,db)
 
 def test_document_browse_rejects_redirects_and_bounds_enumeration(ready,tmp_path):
     s,p,u,path=ready;root=path.parent
     for n in range(1001):(root/f'.entry-{n}').touch()
     with s.catalog.project('alpha',u,p) as (db,_):
-        with pytest.raises(Fault,match='1000 entries'):applications.document_inventory(s,db)
+        with pytest.raises(Fault,match='1000 entries'):planning_links.document_inventory(s,db)
     if os.name=='nt':
         link=root/'redirect';outside=tmp_path/'outside';outside.mkdir()
         subprocess.run(['cmd','/c','mklink','/J',str(link),str(outside)],capture_output=True,check=True)
         try:
             with s.catalog.project('alpha',u,p) as (db,_):
-                with pytest.raises(Fault,match='junctions'):applications.document_inventory(s,db,str(link))
+                with pytest.raises(Fault,match='junctions'):planning_links.document_inventory(s,db,str(link))
         finally:link.rmdir()
 
 def test_document_inventory_cursor_rejects_file_changes(client,tmp_path):
@@ -250,20 +326,20 @@ def test_inventory_counts_actual_bytes_when_stat_underreports(ready,monkeypatch)
         return result
     monkeypatch.setattr(Path,'stat',small)
     with s.catalog.project('alpha',u,p) as (db,_):
-        with pytest.raises(Fault,match='inventory exceeds 16 MiB'):applications.document_inventory(s,db)
+        with pytest.raises(Fault,match='inventory exceeds 16 MiB'):planning_links.document_inventory(s,db)
 
-def test_commit_rechecks_document_and_protect_preserves_application(ready,monkeypatch):
+def test_commit_rechecks_document_and_protect_preserves_planning_link(ready,monkeypatch):
     s,p,u,path=ready;req=request(s,p,u,path)
-    real=applications.prepare
+    real=planning_links.prepare
     def raced(*args):
         receipts=real(*args);path.write_text(path.read_text()+'\n',encoding='utf-8');return receipts
-    monkeypatch.setattr(applications,'prepare',raced)
+    monkeypatch.setattr(planning_links,'prepare',raced)
     with pytest.raises(Fault,match='Document changed'):s.change('alpha',p,req)
     assert s.detail('alpha',u,p,'D000001')['revision']==2
-    monkeypatch.setattr(applications,'prepare',real);s.change('alpha',p,request(s,p,u,path))
-    receipt=s.detail('alpha',u,p,'D000001')['data']['planning_application']['receipt']
+    monkeypatch.setattr(planning_links,'prepare',real);s.change('alpha',p,request(s,p,u,path))
+    receipt=s.detail('alpha',u,p,'D000001')['data']['planning_link']['receipt']
     change(s,p,u,[{'op':'decision.lock','key':'D000001','data':{'baseline':'v1'}}],3,{'D000001':3},authority_refs=['Protect baseline'])
-    assert s.detail('alpha',u,p,'D000001')['data']['planning_application']['receipt']==receipt
+    assert s.detail('alpha',u,p,'D000001')['data']['planning_link']['receipt']==receipt
     assert Artifacts(s).verify('alpha',u,p)['ok']
 
 def test_generated_markdown_companion_and_stale_projection(ready):
@@ -271,13 +347,13 @@ def test_generated_markdown_companion_and_stale_projection(ready):
     s,p,u,path=ready;md=path.with_suffix('.md')
     sha=hashlib.sha256(json.dumps(json.loads(path.read_text()),ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
     md.write_text('<!-- CODESENTINEL-GENERATED: canonical-markdown/v1\nsource-sha256: '+sha+'\nschema: codesentinel.canonical-document/v1\n-->\n## Execution\nApproved approach\n',encoding='utf-8')
-    with s.catalog.project('alpha',u,p) as (db,_):preview=applications.read_document(s,db,str(md))
+    with s.catalog.project('alpha',u,p) as (db,_):preview=planning_links.read_document(s,db,str(md))
     req=request(s,p,u,md,expected_document_sha256=preview['sha256'],expected_projection_sha256=preview['projection']['sha256'])
-    receipt=s.change('alpha',p,req)['application_receipts'][0];assert receipt['anchor']['projection']['source_marker_sha256']==sha
+    receipt=s.change('alpha',p,req)['planning_link_receipts'][0];assert receipt['anchor']['projection']['source_marker_sha256']==sha
     assert receipt['anchor']['generator_verification']=='not_checked' and Artifacts(s).verify('alpha',u,p)['ok']
     path.write_text(path.read_text().replace('1.0','2.0'),encoding='utf-8')
     with s.catalog.project('alpha',u,p) as (db,_):
-        with pytest.raises(Fault,match='Regenerate'):applications.read_document(s,db,str(md))
+        with pytest.raises(Fault,match='Regenerate'):planning_links.read_document(s,db,str(md))
 
 def test_junction_escape_and_oversized_document(ready,tmp_path):
     import subprocess
@@ -286,32 +362,32 @@ def test_junction_escape_and_oversized_document(ready,tmp_path):
     result=subprocess.run(['cmd','/c','mklink','/J',str(junction),str(outside)],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stderr
     with s.catalog.project('alpha',u,p) as (db,_):
-        with pytest.raises(Fault,match='symbolic links'):applications.read_document(s,db,str(junction/'secret.json'))
+        with pytest.raises(Fault,match='symbolic links'):planning_links.read_document(s,db,str(junction/'secret.json'))
         oversized=path.parent/'large.json';oversized.write_bytes(b' '*(4*1024*1024+1))
-        with pytest.raises(Fault,match='4 MiB'):applications.read_document(s,db,str(oversized))
+        with pytest.raises(Fault,match='4 MiB'):planning_links.read_document(s,db,str(oversized))
     # Retain the contained junction as test evidence; no recursive deletion of it.
 
-def test_schema2_reads_unapplied_and_apply_requires_upgrade(ledger):
+def test_schema2_reads_unlinked_and_link_requires_upgrade(ledger):
     s,p,u=ledger;change(s,p,u,[{'op':'decision.create','data':{'title':'Closed legacy','question':'Which?'}}])
     change(s,p,u,[{'op':'decision.close','key':'D000001','data':{'answer':'A','rationale':'R'}}],1,{'D000001':1},authority_refs=['Owner'])
-    assert not s.detail('alpha',u,p,'D000001')['data']['planning_application']['applied']
+    assert not s.detail('alpha',u,p,'D000001')['data']['planning_link']['recorded']
     with pytest.raises(Fault,match='Upgrade'):s.change('alpha',p,request(s,p,u))
 
-def test_same_record_application_batch_rejects_atomically(ready):
+def test_same_record_planning_link_batch_rejects_atomically(ready):
     s,p,u,path=ready;req=request(s,p,u,path);req.operations.append(__import__('decision_tracker.models',fromlist=['Operation']).Operation(op='decision.reopen',key='D000001',data={'impact':'Review'}));req.authority_refs=['Owner']
     with pytest.raises(Fault,match='separately'):s.change('alpha',p,req)
     assert s.detail('alpha',u,p,'D000001')['revision']==2
 
 def test_policy_frame_bound_rejects_before_commit(ready):
-    s,p,u,path=ready;req=applications.PolicyChange(expected_policy_revision=1,request_id=uuid4(),reason='x'*8192)
-    with pytest.raises(Fault,match='administration capacity'):applications.set_policy(s,'alpha',u,p,req)
-    with s.catalog.project('alpha',u,p) as (db,_):assert applications.policy(db)['policy_revision']==1
+    s,p,u,path=ready;req=planning_links.PolicyChange(expected_policy_revision=1,request_id=uuid4(),reason='x'*8192)
+    with pytest.raises(Fault,match='administration capacity'):planning_links.set_policy(s,'alpha',u,p,req)
+    with s.catalog.project('alpha',u,p) as (db,_):assert planning_links.policy(db)['policy_revision']==1
 
 def test_policy_superseded_replay_cannot_activate_imported_access(ready):
     s,p,u,path=ready;id=uuid4();policy(s,p,u,required=False,revision=1,request_id=id);policy(s,p,u,required=True,revision=2)
-    applications.binding_path(s,u).unlink()
+    planning_links.binding_path(s,u).unlink()
     assert policy(s,p,u,required=False,revision=1,request_id=id)['data']['replayed']
-    assert not applications.binding_path(s,u).exists()
+    assert not planning_links.binding_path(s,u).exists()
 
 @pytest.mark.parametrize('boundary',['before-commit','after-commit'])
 def test_schema3_process_exit_and_upgrade_replay(ledger,boundary):

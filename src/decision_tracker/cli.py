@@ -12,7 +12,7 @@ from .errors import Fault, require
 from .store import encode
 
 DECISIONS=["list","get","create","edit","edit-resolution","close","reopen","lock","amend","deprecate",
-           "defer","resume","challenge","resolve-challenge","set-work","history","as-of","field","apply","applications"]
+           "defer","resume","challenge","resolve-challenge","set-work","history","as-of","field","link","planning-links","apply","applications"]
 
 def common(parser,suppress=True):
     default=argparse.SUPPRESS if suppress else None
@@ -62,6 +62,10 @@ def parser():
         children=parent.add_subparsers(dest="action",required=True)
         for verb in verbs:
             description = "Withdrawn for new writes. Reopen, edit the open decision, then Close. Historical receipts still replay." if group=="decision" and verb=="edit-resolution" else f"{group} {verb}; use the shared versioned API. Closed records require reopening before ordinary edits. Reopening must commit separately."
+            if group=='decision' and verb in ('apply','applications'):
+                description='Compatibility alias; use decision '+('link' if verb=='apply' else 'planning-links')+'. Existing request IDs and payloads must remain unchanged for retries.'
+            if group=='decision' and verb=='link':
+                description='Link an already incorporated closed resolution to authoritative planning. Records evidence; does not edit planning or mark implementation complete.'
             child=children.add_parser(verb,description=description)
             common(child)
             if group=='project' and verb=='policy':
@@ -115,7 +119,7 @@ class Client:
         finally:connection.close()
 
 def execute(args):
-    is_change=args.group=="change" or (args.group in ("decision","option","reference","link") and args.action not in ("list","get","history","as-of","field","applications"))
+    is_change=args.group=="change" or (args.group in ("decision","option","reference","link") and args.action not in ("list","get","history","as-of","field","planning-links","applications"))
     require(not args.dry_run or is_change,"VALIDATION_ERROR","Dry-run is supported only for decision change operations.")
     if args.group=='auth' or args.group=='service' and args.action in ('ensure-running','open','install-launcher','uninstall-launcher','configure-credentials','stop') or args.group=='project' and args.action=='policy' and args.policy_action=='set':
         from .local_cli import execute as local_execute
@@ -216,14 +220,14 @@ def execute(args):
         value=Change.model_validate({**data,"validate_only":args.dry_run or data.get("validate_only",False)})
         require(str(value.expected_ledger_uuid)==uuid,"LEDGER_IDENTITY_MISMATCH","Input UUID differs from binding.",409)
         return client.request("POST",path+"/changes",value.model_dump(mode="json"),uuid)
-    read=(g=="decision" and a in ("get","history","as-of","field","applications")) or (g=="query" and a in ("context","impact")) or a=="list"
+    read=(g=="decision" and a in ("get","history","as-of","field","planning-links","applications")) or (g=="query" and a in ("context","impact")) or a=="list"
     if read:
         require(args.key,"VALIDATION_ERROR","Supply --key.")
         endpoint=path+"/decisions/"+args.key
         params={}
         if a=="list":endpoint+="/"+{"option":"options","reference":"references","link":"links"}[g];params={"limit":args.limit}
         elif a!="get":endpoint+="/"+("fields/"+(args.field or "") if a=="field" else a)
-        if a in ('history','applications'):params["limit"]=args.limit
+        if a in ('history','planning-links','applications'):params["limit"]=args.limit
         if args.cursor:params["cursor"]=args.cursor
         if a in ("as-of","field"):
             require(args.revision is not None,"VALIDATION_ERROR","Supply --revision.")
@@ -232,7 +236,7 @@ def execute(args):
         return client.request("GET",endpoint+("?"+urlencode(params) if params else ""),uuid=uuid)
     fields=("title","question","answer","rationale","owner_role","baseline","work_tag","resume_trigger",
             "kind","replacement_key","target_key","type","impact","baseline_disposition","selected_option")
-    if g=='decision' and a=='apply':fields=('planning_document','planning_section','expected_document_sha256','expected_projection_sha256','expected_policy_revision','expected_resolution_id')
+    if g=='decision' and a in ('link','apply'):fields=('planning_document','planning_section','expected_document_sha256','expected_projection_sha256','expected_policy_revision','expected_resolution_id')
     opdata={**data,**{k:getattr(args,k) for k in fields if getattr(args,k) is not None}}
     expected=read_input(args.expected_decision_revisions) if args.expected_decision_revisions else {}
     if args.key and args.record_revision is not None:expected[args.key]=args.record_revision
@@ -246,7 +250,7 @@ def exit_code(value):
     if value.get("ok"):return 0
     code=value.get("error",{}).get("code")
     if code in ("UNAUTHORIZED","FORBIDDEN","SETUP_REQUIRED"):return 4
-    if code in ('PROPOSAL_CHANGED','UPGRADE_REQUIRED','ALREADY_UPGRADED','POLICY_CHANGED','DOCUMENT_CHANGED','RESOLUTION_CHANGED','ALREADY_APPLIED'):return 3
+    if code in ('PROPOSAL_CHANGED','UPGRADE_REQUIRED','ALREADY_UPGRADED','POLICY_CHANGED','DOCUMENT_CHANGED','RESOLUTION_CHANGED','ALREADY_LINKED','ALREADY_RECORDED','ALREADY_APPLIED'):return 3
     if code in ("SERVICE_UNAVAILABLE","RETRY_LATER","DATABASE_UNAVAILABLE","SERVICE_STOPPING","PORT_CONFLICT"):return 5
     if code in ("STALE_REVISION","LEDGER_IDENTITY_MISMATCH","REQUEST_ID_REUSED","CURSOR_STALE","RELATION_CYCLE","DUPLICATE_LEDGER","PROJECT_DISABLED","LOCKED_BASELINE","SERVICE_BUSY","AUTH_STATE_CONFLICT"):return 3
     return 1 if code=="INTERNAL_ERROR" else 2

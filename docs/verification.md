@@ -1,5 +1,15 @@
 # Verification state
 
+## Planning-link terminology — 2026-10-06
+
+Native integration `20261006T084108Z-dt-integration` passed **192 tests** with source unchanged in `.local/proofs/1e1337d24a2141098c1c24059e02a817`. Coverage includes old/new operation names, exact legacy-request replay after a new cycle, mixed-history native recovery, API discovery and route/cursor aliases, required/optional anchors, policy confinement and the complete isolated browser suite. The planning-link browser retained fifteen observations with no page errors; wide/narrow screenshots were inspected. The button/form/results/History use link/linked; owner-authorized anchor omission displays recorded. Existing schema-3 storage and immutable historical names remain stable compatibility evidence.
+
+Three earlier runs are retained: `442390d2efb34a81a7d51de7fe3ba5e3` expected encoded JSON instead of the existing decoded export shape; `0a7240de83644afeb2e7b51cd19e99d3` compared different per-read request IDs; `1e48d05b93dc46eb8c1fb85373d67031` contained a misplaced historical-read block in the new API test. These new assertions were corrected without changing runtime behavior or removing the intended checks. The final integration checkpoint passed all checks.
+
+The public skill passed the supplied metadata validator through native Calamum and matches its installed copy. The supported safe restart activated the verified service; read-only comparison preserved thirteen pilot decisions and eleven receipts at ledger revision 19. Integrity passed and three served assets matched source bytes. Two newer closed decisions remain unlinked. Readback evidence is `.local/planning-link-activation-20261006/activation-receipt.json`; a child-output encoding failure and an initial asset URL error are retained separately. Neither was a decision write, and the successful restart was not repeated.
+
+Canonical product planning records the terminology as DT-D065. Current contracts, guidance and the migration handoff were regenerated and checked, with prior sources retained in business custody. This verification note was added after the passing proof; runtime, tests, catalog, packaging inputs and skill bytes still match that proof. Earlier entries below preserve their historical terminology. Human browser acceptance remains separate; remote push stays held until pilot completion.
+
 ## Apache licensing checkpoint — 2026-10-06
 
 Native package proof `20261006T063421Z-dt-package` passed four checks with source correspondence. The fresh wheel installed with runtime dependencies only; the installed CLI started, reused and stopped its isolated managed service. Wheel inspection confirmed `License-Expression: Apache-2.0` and byte-identical LICENSE and NOTICE files. The proof copier now retains both root files. Evidence is under `.local/proofs/e4971d87bef64f8d826a9fde497657a4` and `.local/apache-license-package-inspection.json`. This verification note was added after that proof; runtime, tests and package inputs remain unchanged.

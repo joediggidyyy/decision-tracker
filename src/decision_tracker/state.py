@@ -32,8 +32,8 @@ def check_new_request(db, request):
     require(not any(op.op == "decision.edit-resolution" for op in request.operations),
             "INVALID_TRANSITION", "Resolution correction is withdrawn. Reopen, edit the open decision, then Close.")
     for key, operations in affected.items():
-        require(not ('decision.apply' in operations and len(operations)>1),'INVALID_TRANSITION',
-                'Application must commit separately from other changes to this decision.',key=key)
+        require(not (any(op in ('decision.link','decision.apply') for op in operations) and len(operations)>1),'INVALID_TRANSITION',
+                'Planning-link recording must commit separately from other changes to this decision.',key=key)
         obj = store.get(db, "decisions", key)
         if any(op in ORDINARY for op in operations):
             require(not obj["locked"], "LOCKED_BASELINE", "Amend the protected baseline instead.", 409)
@@ -110,10 +110,10 @@ class Mutator:
                 require(operation.client_ref not in self.aliases, "VALIDATION_ERROR", "Duplicate batch reference.")
                 self.aliases[operation.client_ref] = key
             return
-        obj = self.touch(operation.key, protected=op in {"decision.amend","decision.deprecate","decision.apply"})
+        obj = self.touch(operation.key, protected=op in {"decision.amend","decision.deprecate","decision.link","decision.apply"})
         key = obj["key"]
-        if op == 'decision.apply':
-            require(obj['status']=='closed','INVALID_TRANSITION','Only closed decisions can be applied.')
+        if op in ('decision.link','decision.apply'):
+            require(obj['status']=='closed','INVALID_TRANSITION','Only closed decisions can be linked to planning.')
             return  # Receipt validation and insertion are owned by the shared service.
         if op in ORDINARY:
             require(obj["status"] == "open", "INVALID_TRANSITION", "Reopen this decision before changing its content.", key=key)

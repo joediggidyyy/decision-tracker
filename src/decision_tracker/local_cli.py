@@ -12,7 +12,7 @@ def execute(args):
     path=Path(args.deployment or default_path())
     if args.group=='project' and args.action=='policy' and args.policy_action=='set':
         from .cli import read_input
-        from .applications import PolicyChange
+        from .planning_links import PolicyChange
         uuid=args.ledger_uuid
         if args.binding:
             binding=read_input(args.binding)

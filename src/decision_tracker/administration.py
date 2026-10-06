@@ -29,7 +29,7 @@ def dispatch(value,cfg,store,life,operation,args,service=None):
         if operation=='project-policy-set':
             from .service import Service
             from .auth import Principal
-            from .applications import PolicyChange,set_policy
+            from .planning_links import PolicyChange,set_policy
             from uuid import UUID
             uuid=str(UUID(args['ledger_uuid']))
             return set_policy(service or Service(cfg.root),args['project_id'],uuid,

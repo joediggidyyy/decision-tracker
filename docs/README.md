@@ -9,7 +9,7 @@ Use this map to find the guide for your task. These documents describe the local
 | Guide | Purpose |
 |---|---|
 | [Decision workflow](decision-workflow.md) | When to record a decision, agent-owned choices and approval escalation. |
-| [Interfaces](interfaces.md) | CLI and API commands, authentication, project binding and change envelopes. |
+| [Interfaces](interfaces.md) | Planning links, CLI and API commands, authentication, project binding and change envelopes. |
 | [Operations](operations.md) | Start and stop the service, manage credentials, back up data and recover safely. |
 | [Live updates](live-updates.md) | Freshness colors, explicit refresh, draft preservation and panel behavior. |
 | [Agent-access skill](../skills/decision-tracker/SKILL.md) | Portable instructions for agents using the CLI or API. |

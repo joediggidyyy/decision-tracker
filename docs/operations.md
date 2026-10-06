@@ -87,7 +87,7 @@ Before real data adoption, create and verify a project-bound backup, download it
 
 ## Explicit data-format upgrades
 
-New project ledgers initialize at schema 2 for compatibility. Schema 1 remains readable, verifiable, exportable and recoverable; writes require upgrading to schema 2. Planning application requires schema 3. Each explicit upgrade advances one supported step: 1 to 2, then 2 to 3, with separate request IDs and backups. No startup or import silently upgrades a ledger. Older binaries refuse newer unsupported schemas. Native interchange retains its format: v2 includes approval events and upgrade evidence; v3 also preserves application receipts and policy history.
+New project ledgers initialize at schema 2 for compatibility. Schema 1 remains readable, verifiable, exportable and recoverable; writes require upgrading to schema 2. Planning links require schema 3. Each explicit upgrade advances one supported step: 1 to 2, then 2 to 3, with separate request IDs and backups. No startup or import silently upgrades a ledger. Older binaries refuse newer unsupported schemas. Native interchange retains its format: v2 includes approval events and upgrade evidence; v3 also preserves planning-link receipts and policy history.
 
 Use the project's existing binding and maintain credential:
 
@@ -102,9 +102,13 @@ An active deployment upgrade requires an exact project/UUID/revision and backup 
 
 Recovery is explicit and offline. Before any subsequent writes, stop the service through its safe-stop path, obtain instance exclusion, verify the pre-upgrade backup and exact live identity/revision, retain the current file, then restore only under recovery authorization. After subsequent writes, use forward repair or a compatible current-schema backup with reconciliation of later transactions. Never automatically replace an active ledger or discard later writes.
 
-## Planning application policy
+<a id="planning-application-policy"></a>
 
-Application anchors are required by default. Register project planning directories through the owner-local CLI after the explicit schema-3 upgrade:
+This terminology update does not migrate schema-3 storage or rewrite history. Earlier commands remain compatibility aliases. After a new `decision.link` write, retain a binary that understands it; older binaries can reject its history even at schema 3. See [planning-link compatibility](interfaces.md#compatibility-with-earlier-planning-names).
+
+## Planning-link policy
+
+Planning anchors are required by default. Register project planning directories through the owner-local CLI after the explicit schema-3 upgrade:
 
 ```powershell
 decision-tracker project policy set --project PROJECT --binding BINDING --expected-policy-revision 0 --planning-root C:/Project/planning --request-id UUID --reason "Register authoritative planning custody" --json
@@ -113,11 +117,11 @@ decision-tracker project policy show --project PROJECT --binding BINDING --crede
 
 `set` uses the existing Windows owner administration channel and needs no bearer credential. It has no HTTP or browser equivalent. `show` is an ordinary authorized read. Use the returned policy revision for later changes. Repeated `--planning-root` values replace the registered set; omitting the flag preserves it. Roots must be existing absolute directories, with no symbolic-link/junction traversal or drive-root registration. Supply only the selected project's planning directories.
 
-To permit an omitted anchor, use the same `project policy set` command with `--anchor-required false`, current `--expected-policy-revision`, a new request ID and an honest reason. Use `true` to restore the requirement. A supplied invalid anchor fails under either policy. Each change records the local-owner actor, reason, time and policy revision independently of decision revisions.
+An omitted-anchor receipt displays `recorded`; it does not claim a planning section is linked. To permit an omitted anchor, use the same `project policy set` command with `--anchor-required false`, current `--expected-policy-revision`, a new request ID and an honest reason. Use `true` to restore the requirement. A supplied invalid anchor fails under either policy. Each change records the local-owner actor, reason, time and policy revision independently of decision revisions.
 
 Filesystem authorization is a separate local binding under the deployment data root. Backups/native imports preserve policy provenance but do not transfer this permission. After an import or recovery, register the reviewed planning roots locally before resolving documents. A failed local-binding publication denies file access; retry the identical current policy request to complete it. Replaying an older superseded policy does not activate its roots.
 
-The browser's document pool discovers canonical JSON in the registered folders and includes previously applied documents that remain authorized. Add document browses subfolders or accepts a pasted source/companion path. It does not copy files, upload content, broaden roots or create a separate document registry. If inventory exceeds its bounds, use Add document to browse a narrower folder or paste the known path. Section and Apply wait for a valid selection; missing files cannot produce an applied receipt.
+The browser's document pool discovers canonical JSON in the registered folders and includes previously linked documents that remain authorized. Add document browses subfolders or accepts a pasted source/companion path. It does not copy files, upload content, broaden roots or create a separate document registry. If inventory exceeds its bounds, use Add document to browse a narrower folder or paste the known path. Section and Link wait for a valid selection; missing files cannot produce a linked receipt.
 
 ---
 

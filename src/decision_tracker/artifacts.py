@@ -67,7 +67,7 @@ def validate_history(db):
         from .approval_history import validate
         validate(db,meta)
     if meta['schema_version']==3:
-        from .applications import validate
+        from .planning_links import validate
         validate(db,meta)
     return {"integrity":"ok","ledger_uuid":meta["ledger_uuid"],"revision":meta["ledger_revision"],
             "logical_sha256":store.digest(bundle(db))}

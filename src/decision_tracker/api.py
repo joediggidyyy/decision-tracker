@@ -241,10 +241,12 @@ def create_app(config:Config,environment=None):
         principal(request)
         schema=app.openapi().copy()
         from .approvals import Approval
-        from .applications import Application
-        schema['x-decision-tracker']={'capabilities':['approval_events_v1','planning_applications_v1'],'ledger_schemas':[1,2,3],
+        from .planning_links import PlanningLink
+        schema['x-decision-tracker']={'capabilities':['approval_events_v1','planning_links_v1','planning_applications_v1'],'ledger_schemas':[1,2,3],
                                      'approval_input':Approval.model_json_schema(),
-                                     'application_input':Application.model_json_schema(),
+                                     'planning_link_input':PlanningLink.model_json_schema(),
+                                     'planning_link_policy_write':'os_owner_cli_only',
+                                     'application_input':PlanningLink.model_json_schema(),
                                      'application_policy_write':'os_owner_cli_only',
                                      'mutation_policy':{'ordinary_requires':'open_unlocked','relationship_endpoints':'both_open_unlocked',
                                                         'reopen':'separate_committed_request','edit_resolution':'withdrawn_for_new_writes',
@@ -325,8 +327,8 @@ def create_app(config:Config,environment=None):
     mount(app)
     from .approval_api import mount as mount_approvals
     mount_approvals(app)
-    from .applications import mount as mount_applications
-    mount_applications(app)
+    from .planning_links import mount as mount_planning_links
+    mount_planning_links(app)
     @app.get("/api/v1/projects/{project_id}/decisions/{key}/{collection}")
     def children(project_id:str,key:str,collection:str,request:Request,cursor:str|None=None,
                  limit:int=Query(50,ge=1,le=200),revision:int|None=None):

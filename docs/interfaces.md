@@ -55,7 +55,7 @@ Retry an uncertain write with the identical body and request ID. A committed mat
 | service | serve, status, catalog-backup, ensure-running, open, install-launcher, uninstall-launcher, configure-credentials, stop |
 | auth | setup-code, recover, reset-password, migrate; token create, rotate, revoke, list |
 | project | list, show, create, register, disable, enable; policy show, set |
-| decision | list, get, create, edit, edit-resolution, close, reopen, lock, amend, deprecate, defer, resume, challenge, resolve-challenge, set-work, history, as-of, field, apply, applications |
+| decision | list, get, create, edit, edit-resolution, close, reopen, lock, amend, deprecate, defer, resume, challenge, resolve-challenge, set-work, history, as-of, field, link, planning-links |
 | option | list, add, edit, retire |
 | reference | list, add, edit, retire |
 | link | list, add, unlink |
@@ -88,37 +88,47 @@ Project create/register use expected catalog revision and request ID. Register a
 | GET .../artifacts/{id}/content | Verified artifact download |
 | POST /api/v1/imports/validate, /new | Validate native candidate / retain registerable candidate |
 | POST /api/v1/catalog/backups | Separate catalog backup |
-| GET /api/v1/projects/{project}/policy | Inspect application policy; no HTTP write route |
+| GET /api/v1/projects/{project}/policy | Inspect planning-link policy; no HTTP write route |
 | GET /api/v1/projects/{project}/planning-document?locator=PATH | Bounded canonical section choices; follow returned cursors |
-| GET .../{key}/applications | Paginated immutable planning application receipts |
+| GET .../{key}/planning-links | Paginated immutable planning-link receipts |
 
 Project-bound routes require `X-Ledger-UUID`; changes also require matching `expected_ledger_uuid`. API JSON is UTF-8. Unknown model fields are rejected. Optional authority is evidence text, not proof of external approval.
 
-## Planning application
+<a id="planning-application"></a>
 
-An open record displays only `open`. A closed record displays `closed` and **apply**. In the form, **Planning document** is a dropdown of canonical documents from the registered planning folders and previously applied documents still within those folders. **Add document…** opens a bounded file selector: choose a registered folder, navigate subfolders with Up, select a document, or paste its full path and use **Use path**. Cancel returns to the prior selection. Selection reads the existing file without copying, uploading or registering another folder. Section stays disabled until a valid document loads; Apply stays disabled until a section is selected. The form constructs API input from those selections.
+## Planning links
 
-Success replaces the button with a noninteractive `applied` tag. Reopen clears current application state; reclosure requires a new application even when the answer is unchanged. Earlier receipts remain in History and `decision applications`. Deprecated records have no apply action. Protected closed baselines can append application evidence without changing their approved content.
+An open record displays only `open`. A closed record displays `closed` and **link**. In the form, **Planning document** is a dropdown of canonical documents from the registered planning folders and previously linked documents still within those folders. **Add document…** opens a bounded file selector: choose a registered folder, navigate subfolders with Up, select a document, or paste its full path and use **Use path**. Cancel returns to the prior selection. Selection reads the existing file without copying, uploading or registering another folder. Section stays disabled until a valid document loads; Link stays disabled until a section is selected. The form constructs API input from those selections.
+
+Success replaces the button with a noninteractive `linked` tag. Reopen clears current planning-link state; reclosure requires a new link even when the answer is unchanged. Earlier receipts remain in History and `decision planning-links`. Deprecated records have no link action. Protected closed baselines can append planning-link evidence without changing their approved content.
 
 The popup expands to 900 CSS pixels while Add document is open, bounded by the viewport. It returns to the compact 480-pixel width after selection or Cancel. Long filenames retain their full text and can wrap on smaller screens.
 
-Use a local native `codesentinel.canonical-document/v1` JSON document or its generated Markdown companion within this project's registered planning roots. The pool/file selector lists canonical JSON sources; a pasted generated Markdown path resolves its same-stem JSON companion. Readable headings select stable section/block IDs. No arbitrary URL fetch or browsing outside registered roots is provided. Missing sections report **Section not found in this document.** Unavailable files report **Cannot access this document.** These failures preserve the form and leave the decision unapplied; other work can continue. If the observed document bytes change, review the refreshed section choices and retry. A stale Markdown source marker requires regenerating that companion.
+Use a local native `codesentinel.canonical-document/v1` JSON document or its generated Markdown companion within this project's registered planning roots. The pool/file selector lists canonical JSON sources; a pasted generated Markdown path resolves its same-stem JSON companion. Readable headings select stable section/block IDs. No arbitrary URL fetch or browsing outside registered roots is provided. Missing sections report **Section not found in this document.** Unavailable files report **Cannot access this document.** These failures preserve the form and leave the decision unlinked; other work can continue. If the observed document bytes change, review the refreshed section choices and retry. A stale Markdown source marker requires regenerating that companion.
 
 Authorized GET `/api/v1/projects/{project}/planning-documents` returns a paginated document pool. Supplying `directory=PATH` lists eligible documents and immediate subfolders in a registered directory, with root and parent navigation. Follow cursors with the same directory; changed inventory or policy requires restarting pagination. Inventory is bounded to 1000 directory entries and 16 MiB of source inspection per request; individual sources retain the 4 MiB limit. Folder registration and permission remain owner-local policy. No new top-level CLI or document-registry mutation is introduced.
 
 ```powershell
 decision-tracker project policy show --project PROJECT --binding BINDING --credential-principal agents --json
-decision-tracker decision apply --project PROJECT --binding BINDING --credential-principal agents --key KEY --expected-revision REVISION --record-revision RECORD_REVISION --expected-policy-revision POLICY_REVISION --planning-document C:/Project/planning/plan.json --planning-section SECTION_ID --request-id UUID --reason "Incorporated approved resolution into planning" --json
-decision-tracker decision applications --project PROJECT --binding BINDING --credential-principal agents --key KEY --json
+decision-tracker decision link --project PROJECT --binding BINDING --credential-principal agents --key KEY --expected-revision REVISION --record-revision RECORD_REVISION --expected-policy-revision POLICY_REVISION --planning-document C:/Project/planning/plan.json --planning-section SECTION_ID --request-id UUID --reason "Incorporated approved resolution into planning" --json
+decision-tracker decision planning-links --project PROJECT --binding BINDING --credential-principal agents --key KEY --json
 ```
 
-Replace uppercase placeholders with read values. `decision apply` needs write access and schema 3. `change apply` accepts the same `decision.apply` operation. Required operation data: `expected_policy_revision`; anchor fields: `planning_document` and `planning_section`. Optional `expected_resolution_id`, `expected_document_sha256` and `expected_projection_sha256` pin prior observations. Ledger and record preconditions remain mandatory. Save Apply separately from any other mutation of that decision. The browser pins resolution and observed hashes automatically; CLI flags can do the same. Retry uncertain outcomes with exactly the original values and request ID.
+Replace uppercase placeholders with read values. `decision link` needs write access and schema 3. `change apply` accepts the same `decision.link` operation. Required operation data: `expected_policy_revision`; anchor fields: `planning_document` and `planning_section`. Optional `expected_resolution_id`, `expected_document_sha256` and `expected_projection_sha256` pin prior observations. Ledger and record preconditions remain mandatory. Save Link separately from any other mutation of that decision. The browser pins resolution and observed hashes automatically; CLI flags can do the same. Retry uncertain outcomes with exactly the original values and request ID.
 
-Anchor requirement defaults to true. Only owner-local `project policy set` can change it or register planning roots; see [operations](operations.md#planning-application-policy). If disabled, a blank anchor records `omitted`; a supplied invalid anchor still fails. Policy conflicts require review rather than silently accepting a different requirement.
+Anchor requirement defaults to true. Only owner-local `project policy set` can change it or register planning roots; see [operations](operations.md#planning-link-policy). If disabled, a blank anchor records `omitted` and displays `recorded`, not `linked`; a supplied invalid anchor still fails. The receipt attests planning incorporation without identifying a section. Reopen resets this current-cycle record too. Policy conflicts require review rather than silently accepting a different requirement.
 
-Receipts identify the closure/approval, transaction/request, actor and recording time, policy, planning document/version/file hash and selected section content digest. `planning_application` on detail and `applied` on list expose current status. Application attests incorporation into one designated planning section. Anchor/hash checks do not prove semantic incorporation, implementation or acceptance. `generator_verification: not_checked` is explicit: Apply does not run the canonical generator or claim a Doctor/render-check result. A Markdown source-marker match is recorded with its projection bytes; it is not full generator verification.
+Receipts identify the closure/approval, transaction/request, actor and recording time, policy, planning document/version/file hash and selected section content digest. `planning_link` on detail exposes `recorded`, `linked` and its receipt. Lists expose `linked` and `planning_link_recorded`; successful writes return `planning_link_receipts`. Linking attests incorporation into one designated planning section. Anchor/hash checks do not prove semantic incorporation, implementation or acceptance. `generator_verification: not_checked` is explicit: Link does not run the canonical generator or claim a Doctor/render-check result. A Markdown source-marker match is recorded with its projection bytes; it is not full generator verification.
 
-A generator workflow can prefill the form through the decision URL's fragment: `#project=PROJECT&decision=KEY&planning-document=ENCODED_PATH&planning-section=SECTION_ID&planning-sha256=FILE_SHA256`. Values must be URL encoded. The project/decision must match, choices are reloaded through the service, and the user still presses Apply. A stale supplied hash is surfaced for review. No application is recorded by opening the link.
+A generator workflow can prefill the form through the decision URL's fragment: `#project=PROJECT&decision=KEY&planning-document=ENCODED_PATH&planning-section=SECTION_ID&planning-sha256=FILE_SHA256`. Values must be URL encoded. The project/decision must match, choices are reloaded through the service, and the user still presses Link. A stale supplied hash is surfaced for review. No planning link is recorded by opening the link.
+
+### Compatibility with earlier planning names
+
+New work uses `decision link`, `decision planning-links`, operation `decision.link` and GET `.../{key}/planning-links`. CLI `decision apply` / `decision applications`, operation `decision.apply` and GET `.../{key}/applications` remain compatibility aliases. They do not add a CLI root or change the separate `link` family for relationships. Existing request-ID retries must retain the original operation name and entire body; changing `decision.apply` to `decision.link` during replay changes the intent and is rejected. History cursors can continue through either read route.
+
+API discovery advertises `planning_links_v1`, `planning_link_input` and `planning_link_policy_write`. Earlier discovery names remain available. Detail also retains `planning_application` and `application_policy_revision`; lists retain `applied`; mutation results retain `application_receipts`. Those legacy status fields indicate a receipt exists, including an omitted anchor, so use the new `linked` field to distinguish an actual anchor.
+
+Schema-3 table names, native export keys and receipt marker `decision-tracker.application/v1` stay unchanged. Historical requests, outcomes, receipts and hashes are not rewritten. This rename needs no database-format upgrade. Use this binary or a compatible newer one after new `decision.link` writes: an older binary may not recognize that operation even though the ledger is still schema 3. Generic batch `change apply` is unchanged.
 
 ## Bounds and output
 
@@ -156,7 +166,7 @@ Reported approval requires decide permission, who approved, and 1–32 nonblank 
 
 Selecting a proposal on the structured path requires its `selected_option` ID and `expected_option_revision`. The answer must match the proposal description (or title when description is empty). A resolution edit can preserve an unchanged legacy mismatch. Other changes to the same decision cannot share a resolution batch. Structured approval cannot be combined with top-level `occurred_at`. Legacy explicit-reference requests remain supported without invented approval dates.
 
-Approval events count with the decision toward the 128 KiB aggregate limit. Events are immutable and linked across resolution edits and reopen/close cycles. Detail/as-of returns `latest_resolution_approval`; GET `.../decisions/{key}/approvals` returns paginated summaries, and GET `.../approvals/{event_id}` returns the full event with revision-pinned chunks for long text. Existing project identity and read permission requirements apply. GET `/api/v1/schema` advertises `approval_events_v1` and ledger schemas 1 and 2.
+Approval events count with the decision toward the 128 KiB aggregate limit. Events are immutable and linked across resolution edits and reopen/close cycles. Detail/as-of returns `latest_resolution_approval`; GET `.../decisions/{key}/approvals` returns paginated summaries, and GET `.../approvals/{event_id}` returns the full event with revision-pinned chunks for long text. Existing project identity and read permission requirements apply. GET `/api/v1/schema` advertises `approval_events_v1`, `planning_links_v1` and ledger schemas 1, 2 and 3.
 
 CLI `decision close` and `change apply` forward this object through existing JSON inputs. Bearer agents must report genuine external approval evidence and possess decide permission; this feature grants no new access.
 

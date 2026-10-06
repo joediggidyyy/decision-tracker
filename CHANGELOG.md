@@ -4,6 +4,13 @@
 
 Changes to the local application are recorded here. This is a development history, not a packaged release announcement.
 
+## Unreleased — planning-link terminology
+
+- Rename the browser cycle to closed/link/linked, including the form, result rows and History. An owner-authorized omitted anchor displays recorded.
+- Make `decision link`, `decision planning-links`, `decision.link`, `/planning-links` and anchor-aware API fields primary. Keep previous commands, routes and fields as compatibility aliases; no CLI root is added.
+- Preserve schema-3 storage, immutable receipts and exact old-request retries. New operation histories require a compatible binary.
+- Update current user/agent guidance and product planning. Earlier entries below retain their recorded terminology and are superseded for current usage.
+
 ## Unreleased — Apache licensing
 
 - Add Apache License 2.0 and Polymath Global attribution, replacing the earlier unselected-license status.
