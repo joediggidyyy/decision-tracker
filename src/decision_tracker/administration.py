@@ -16,8 +16,9 @@ def recover_token_journal(value,store):
         else:db.execute("UPDATE tokens SET state='revoked',revoked=? WHERE id=? AND state='pending'",(store.now(db),item['new_id']))
     journal.replace(journal.with_name('token-journal-completed.json'))
 
-def dispatch(value,cfg,store,life,operation,args):
+def dispatch(value,cfg,store,life,operation,args,service=None):
     allowed={'setup-code':{'supplied'},'recover':set(),'reset-password':{'code','password','confirmation'},'token-create':{'principal','store_local'},'token-rotate':{'token_id','store_local'},'token-revoke':{'token_id'},'token-list':set(),'status':set(),'stop':set()}
+    allowed['project-policy-set']={'project_id','ledger_uuid','request'}
     require(operation in allowed and set(args)<=allowed[operation],'VALIDATION_ERROR','Unknown local operation or field.')
     if operation=='status':return life.status() if life else {'state':'STOPPED'}
     if operation=='stop':
@@ -25,6 +26,14 @@ def dispatch(value,cfg,store,life,operation,args):
         return {'state':'DRAINING' if life else 'STOPPED'}
     if life:life.enter()
     try:
+        if operation=='project-policy-set':
+            from .service import Service
+            from .auth import Principal
+            from .applications import PolicyChange,set_policy
+            from uuid import UUID
+            uuid=str(UUID(args['ledger_uuid']))
+            return set_policy(service or Service(cfg.root),args['project_id'],uuid,
+                Principal('local-owner',frozenset({'*'}),frozenset({'maintain'}),'os_owner'),PolicyChange.model_validate(args['request']))
         if operation=='setup-code':return {'code':store.issue('bootstrap',args.get('supplied')),'expires_in_seconds':900}
         if operation=='recover':return {'code':store.issue('recovery'),'expires_in_seconds':900}
         if operation=='reset-password':store.redeem('recovery',args['code'],args['password'],args['confirmation']);return {'password_reset':True}

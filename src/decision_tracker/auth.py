@@ -8,6 +8,9 @@ import threading
 import time
 from .errors import Fault, require
 
+SESSION_IDLE_SECONDS = 90 * 60
+SESSION_MAX_SECONDS = 8 * 60 * 60
+
 @dataclass(frozen=True)
 class Principal:
     id: str
@@ -56,7 +59,7 @@ class Auth:
             except Fault:
                 self.failures.append(tick)
                 raise
-            self.sessions = {k:v for k,v in self.sessions.items() if tick-v["seen"] < 1800 and tick-v["created"] < 28800}
+            self.sessions = {k:v for k,v in self.sessions.items() if tick-v["seen"] < SESSION_IDLE_SECONDS and tick-v["created"] < SESSION_MAX_SECONDS}
             require(len(self.sessions) < 256, "RETRY_LATER", "Session capacity reached.", 503)
             sid, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
             self.sessions[sid] = {"principal": principal, "csrf": csrf, "created": tick, "seen": tick}
@@ -66,7 +69,7 @@ class Auth:
         with self.lock:
             value = self.sessions.get(sid)
             tick = time.monotonic()
-            if not value or tick-value["seen"] >= 1800 or tick-value["created"] >= 28800:
+            if not value or tick-value["seen"] >= SESSION_IDLE_SECONDS or tick-value["created"] >= SESSION_MAX_SECONDS:
                 self.sessions.pop(sid, None)
                 raise Fault("UNAUTHORIZED", "Your session expired. Sign in again.", 401)
             if touch:value["seen"] = tick

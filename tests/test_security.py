@@ -14,12 +14,36 @@ def test_config_and_expired_sessions(tmp_path):
  cfg=Config(data_root=str(tmp_path/"data"),local_storage_confirmed=True)
  with pytest.raises(Fault):Auth(cfg,{"DT_OPERATOR_TOKEN":"short"})
  auth=Auth(cfg,{"DT_OPERATOR_TOKEN":token})
- sid,session=auth.login(token);session["seen"]-=1801
+ sid,session=auth.login(token);session["seen"]-=5401
  with pytest.raises(Fault):auth.session(sid)
  for _ in range(5):
   with pytest.raises(Fault):auth.login("invalid")
  with pytest.raises(Fault,match="Too many"):auth.login(token)
  with pytest.raises(Fault):Config(data_root=str(tmp_path/"OneDrive"/"data"),local_storage_confirmed=True).root
+
+@pytest.mark.parametrize('password',[False,True])
+def test_browser_session_idle_and_absolute_boundaries(tmp_path,monkeypatch,password):
+ from decision_tracker.password_auth import PasswordAuth
+ from decision_tracker.auth import SESSION_IDLE_SECONDS,SESSION_MAX_SECONDS
+ from types import SimpleNamespace
+ assert SESSION_IDLE_SECONDS==5400 and SESSION_MAX_SECONDS==28800
+ tick=[100000.0];monkeypatch.setattr(time,'monotonic',lambda:tick[0])
+ cfg=Config(data_root=str(tmp_path/'data'),local_storage_confirmed=True)
+ token='synthetic-session-boundaries-'+('x'*32)
+ auth=PasswordAuth(cfg,SimpleNamespace(state=lambda:{'state':'active','epoch':1})) if password else Auth(cfg,{'DT_OPERATOR_TOKEN':token})
+ create=lambda:auth.new_session(1) if password else auth.login(token)
+ sid,value=create();start=tick[0]
+ tick[0]=start+5399;assert auth.session(sid,touch=False)['seen']==start
+ tick[0]=start+5400
+ with pytest.raises(Fault):auth.session(sid,touch=False)
+ sid,value=create();start=tick[0]
+ tick[0]=start+5399;auth.session(sid)
+ tick[0]=start+5401;assert auth.session(sid,touch=False)['seen']==start+5399
+ for elapsed in range(10000,28800,4000):
+  tick[0]=start+elapsed;auth.session(sid)
+ tick[0]=start+28799;auth.session(sid)
+ tick[0]=start+28800
+ with pytest.raises(Fault):auth.session(sid)
 
 def test_containment_and_junction(tmp_path):
  root=tmp_path/"root";root.mkdir()

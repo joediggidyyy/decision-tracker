@@ -48,7 +48,7 @@ def test_hub_latest_state_caps_and_cleanup(ledger):
 def test_stream_session_checks_do_not_extend_idle(client):
  auth=client.app.state.auth;sid,session=auth.login(client.token);before=session['seen']
  assert auth.session(sid,touch=False)['seen']==before
- session['seen']-=1801
+ session['seen']-=5401
  with pytest.raises(Fault):auth.session(sid,touch=False)
 
 def test_event_endpoint_rejects_missing_identity_and_invalid_key(client):

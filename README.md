@@ -66,12 +66,14 @@ The managed service stops after 90 minutes without useful activity when no opera
 | Interface | What it provides |
 |---|---|
 | Browser | Review questions and alternatives, record decisions, search project records and inspect their history. Your drafts are retained when validation fails or another participant changes the record. |
-| CLI | Let agents retrieve decision context and apply authorized changes. Manage projects, decisions, alternatives, references, relationships and backups through structured commands. |
+| CLI | An interface for humans and agents, offering granular control and authorized administrative access through structured commands. Manage projects, decisions, alternatives, references, relationships, credentials, backups and service operations. |
 | API | Integrate decision tracking with your tools through versioned `/api/v1` routes. Revision checks and durable request IDs protect concurrent changes and retries. Authenticated `GET /api/v1/schema` provides the API specification. |
 
 The [portable agent skill](skills/decision-tracker/SKILL.md) explains explicit project binding, credential use and conflict recovery. Copy its folder into your agent's supported skill directory. An MCP server is not included in this alpha.
 
 Use **Decide** beside an open question to record the answer and approval. The resulting record has status `closed`; CLI `decision close` and API `decision.close` retain their existing names. The decision is recorded without marking its implementation or verification complete.
+
+Once you incorporate a closed decision into authoritative planning, use **apply** beside its status. Choose the planning document and section in the form. A successful application leaves a soft green `applied` tag and an immutable receipt in History. Reopening starts a fresh cycle while preserving earlier receipts. Application records planning incorporation; implementation and verification remain separate. The [interface guide](docs/interfaces.md#planning-application) explains the CLI equivalent and the explicit ledger upgrade this feature requires.
 
 [Live updates](docs/live-updates.md) tell you when another participant has changed the data without moving your focus or replacing your draft.
 

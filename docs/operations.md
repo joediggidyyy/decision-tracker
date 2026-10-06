@@ -14,7 +14,7 @@ For a new user installation, follow the [Quick start](../README.md#quick-start).
 
 Use local nonsynchronized storage, separate from source and OneDrive. The managed deployment lives under `%LOCALAPPDATA%/DecisionTracker/`. Configuration contains principal scopes and file paths; auth.sqlite holds password/token verifiers. secrets.bin uses current-user DPAPI for the launcher key and explicitly stored agent tokens. These files are not project exports or transferable ledger backups. OS account ownership remains the local trust boundary.
 
-The browser's small footer key opens Account & access. Changing the password requires the current password, rotates this session and revokes other human sessions. Agent tokens remain active. Passwords require 15–128 characters; spaces and password managers are supported. Browser sessions expire after 30 minutes idle or 8 hours absolute. No password is needed to start the service.
+The browser's small footer key opens Account & access. Changing the password requires the current password, rotates this session and revokes other human sessions. Agent tokens remain active. Passwords require 15–128 characters; spaces and password managers are supported. Browser sessions expire after 90 minutes idle or 8 hours absolute. No password is needed to start the service.
 
 Recovery is entirely CLI-only, in a private interactive owner terminal:
 
@@ -85,9 +85,9 @@ Legacy credential migration is explicit: `auth migrate --config OLD_CONFIG --dep
 
 Before real data adoption, create and verify a project-bound backup, download it to a new owner-controlled file and perform a restore check. Keep catalog and authentication recovery material separately. Synthetic proof does not establish a production backup schedule.
 
-## Explicit schema-1 to schema-2 upgrade
+## Explicit data-format upgrades
 
-New project ledgers use schema 2. Existing schema-1 ledgers remain readable, verifiable, exportable and recoverable; writes return UPGRADE_REQUIRED. No startup or import silently upgrades a ledger. Old binaries refuse schema 2. Native interchange retains its original schema: v1 stays v1; v2 includes approval events and the initialization/upgrade receipt.
+New project ledgers initialize at schema 2 for compatibility. Schema 1 remains readable, verifiable, exportable and recoverable; writes require upgrading to schema 2. Planning application requires schema 3. Each explicit upgrade advances one supported step: 1 to 2, then 2 to 3, with separate request IDs and backups. No startup or import silently upgrades a ledger. Older binaries refuse newer unsupported schemas. Native interchange retains its format: v2 includes approval events and upgrade evidence; v3 also preserves application receipts and policy history.
 
 Use the project's existing binding and maintain credential:
 
@@ -98,9 +98,24 @@ decision-tracker data upgrade --project PROJECT --binding BINDING --credential-p
 
 The check verifies history and reports version, compatibility, revision and backup-size estimates. It does not reserve the revision. The upgrade holds coordinated write exclusion, creates a native backup, independently restore-checks it, and changes schema in one transaction. UUID, ledger/decision revisions, historical snapshots and original request hashes are preserved. No historical approval is invented. The separate receipt identifies the backup. Retry the identical request ID and revision to recover a committed upgrade result.
 
-An active deployment upgrade requires an exact project/UUID/revision and backup plan authorized for that operational mutation. Source implementation or a test pass is not deployment acceptance. Do not roll back the running binary after schema 2 has been activated.
+An active deployment upgrade requires an exact project/UUID/revision and backup plan authorized for that operational mutation. Source implementation or a test pass is not deployment acceptance. Do not roll back to an incompatible binary after schema 2 or 3 has been activated. Replaying an earlier upgrade request returns its earlier receipt, even if the ledger has since advanced another schema step.
 
-Recovery is explicit and offline. Before any subsequent writes, stop the service through its safe-stop path, obtain instance exclusion, verify the pre-upgrade backup and exact live identity/revision, retain the current file, then restore only under recovery authorization. After subsequent writes, use forward repair or a compatible schema-2 backup with reconciliation of later transactions. Never automatically replace an active ledger or discard later writes.
+Recovery is explicit and offline. Before any subsequent writes, stop the service through its safe-stop path, obtain instance exclusion, verify the pre-upgrade backup and exact live identity/revision, retain the current file, then restore only under recovery authorization. After subsequent writes, use forward repair or a compatible current-schema backup with reconciliation of later transactions. Never automatically replace an active ledger or discard later writes.
+
+## Planning application policy
+
+Application anchors are required by default. Register project planning directories through the owner-local CLI after the explicit schema-3 upgrade:
+
+```powershell
+decision-tracker project policy set --project PROJECT --binding BINDING --expected-policy-revision 0 --planning-root C:/Project/planning --request-id UUID --reason "Register authoritative planning custody" --json
+decision-tracker project policy show --project PROJECT --binding BINDING --credential-principal agents --json
+```
+
+`set` uses the existing Windows owner administration channel and needs no bearer credential. It has no HTTP or browser equivalent. `show` is an ordinary authorized read. Use the returned policy revision for later changes. Repeated `--planning-root` values replace the registered set; omitting the flag preserves it. Roots must be existing absolute directories, with no symbolic-link/junction traversal or drive-root registration. Supply only the selected project's planning directories.
+
+To permit an omitted anchor, use the same `project policy set` command with `--anchor-required false`, current `--expected-policy-revision`, a new request ID and an honest reason. Use `true` to restore the requirement. A supplied invalid anchor fails under either policy. Each change records the local-owner actor, reason, time and policy revision independently of decision revisions.
+
+Filesystem authorization is a separate local binding under the deployment data root. Backups/native imports preserve policy provenance but do not transfer this permission. After an import or recovery, register the reviewed planning roots locally before resolving documents. A failed local-binding publication denies file access; retry the identical current policy request to complete it. Replaying an older superseded policy does not activate its roots.
 
 ---
 

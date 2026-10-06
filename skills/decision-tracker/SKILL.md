@@ -5,6 +5,22 @@ description: Read, propose, and apply project decisions through the Decision Tra
 
 # Decision Tracker access
 
+## Planning application
+
+Apply records that an authorized closed resolution has been incorporated into one designated authoritative planning section. It does not mark implementation, verification or acceptance complete. Confirm the cited planning content against the approved answer before recording this attestation; anchor/hash checks alone do not establish meaning. Do not mark every closed decision applied merely because the feature is available.
+
+Read `planning_application` and `application_policy_revision` from `decision get`. `decision list` exposes `applied`. Open and deprecated records cannot be applied; protected closed baselines may append application evidence without changing their answer or approval. Reopen starts a fresh cycle, preserving old receipts. Reclosing the same answer requires fresh application. Read `decision applications --key KEY` and follow cursors for full historical receipts.
+
+Use existing `decision apply` with project/binding/credential, key, expected ledger/record revisions, request ID and reason, plus `--expected-policy-revision`, `--planning-document PATH` and `--planning-section STABLE_ID`. The structured operation is `decision.apply` through `change apply`; save it separately from other mutations of that decision. Pin observations with `--expected-resolution-id`, `--expected-document-sha256` and, for Markdown input, `--expected-projection-sha256`. Preserve exact values for uncertain-outcome replay.
+
+Anchors require a local native `codesentinel.canonical-document/v1` source or its generated Markdown companion inside explicitly registered project planning roots. GET `/api/v1/projects/{project}/planning-document?locator=PATH` returns readable headings and stable section/block IDs; follow returned cursors with the same locator. Source/projection changes invalidate pagination. The service rechecks bytes before commit. Missing/unavailable anchors reject only application recording, leave the decision unapplied and preserve form work; other project work can continue.
+
+`project policy show` reads the policy. Only owner-local CLI `project policy set` can register roots or change `--anchor-required true/false`, with expected policy revision, request ID and reason. No browser/HTTP policy write exists. Existing agent credentials do not grant this owner administration permission. Do not loosen the requirement to bypass a failure without the user's explicit intent. Optional policy permits omission, recorded honestly as `omitted`; supplied invalid anchors still fail. Imports preserve policy history without granting local file access.
+
+Schema 3 is required for application writes. `data upgrade-check/upgrade` extend the existing backup/restore-checked flow; schema 1 first advances to 2, then 2 to 3 under a new request ID. Existing ledgers do not upgrade silently, and unrelated live-ledger upgrades require their own authorized scope. Receipts retain actor/time, closure/approval, transaction/request, document version/hash, section content digest and policy. `generator_verification: not_checked` means no canonical generator verification ran; a matching Markdown source marker is narrower evidence.
+
+Humans use the Planning document/Section/Apply form or plain CLI flags; never ask them to compose JSON. Generator workflows may prefill a decision link with URL-encoded `planning-document`, `planning-section` and optional observed-file `planning-sha256` fragment fields. The selected project/decision must match, the service reloads sections, and Apply remains explicit. Do not invent MCP tools, a new top-level CLI group, automatic generator execution or automatic planning incorporation.
+
 Use the application service as the sole ledger writer. The installed `decision-tracker` CLI and HTTP API enforce the same rules. This skill does not grant authority to change decisions, project registrations, credentials, or data custody. Continue within the user's existing authorization; read and prepare a concrete proposal when mutation authority is missing.
 
 ## Start or reuse the local service
@@ -89,3 +105,11 @@ Closed records reject ordinary content and work-state changes in the browser, CL
 `decision edit-resolution` remains recognized for compatibility but is withdrawn for new writes (`INVALID_TRANSITION`, HTTP 422). Reopen, use `decision edit` on the open record, then Close. Exact historical committed requests still replay their original receipt after permission and payload checks; no history is rewritten. Reusing a request ID with different content still fails.
 
 A batch cannot reopen and mutate or reclose the same closed-at-start decision. Retain a stale browser draft after remote closure; review current state and obtain authorized reopening instead of automatically advancing revisions. Disabled pane controls keep the fixed grid. Outside the pane, unavailable child mutation controls are hidden; Protect/Amend is beside Approval and Decide/Reopen stays beside Question. The browser label Decide invokes the existing `decision.close` operation; CLI `decision close` and status `closed` are unchanged.
+
+## Challenges during investigation
+
+Use a challenge to record investigation feedback that questions a premise, proposal or answer. When a decision is contested, read `decision history --key KEY` with the same project, binding and credential flags before continuing the investigation, proposing a resolution or applying one. Follow history cursors until complete. The ordinary record exposes the contested flag; the challenge message is recorded as the transaction reason in history. Review subsequent messages and source evidence rather than treating the flag alone as sufficient context. Address the challenge in the next investigation response. Live notifications indicate changed data; they do not automatically start an agent or convey the complete conversation. Do not resolve a challenge merely because it has been read.
+
+## Browser resolution choices
+
+Explicitly switching the resolution radio choice replaces the Decision, Why this choice and Change note fields. Selecting a proposal fills these fields from that proposal; selecting Write a different answer clears the answer and rationale and resets the generated change note. Drafts are not cached per choice and there is no additional preservation prompt. Editing a proposal answer converts it to a written answer while retaining the text being edited. Approval details remain independent of the solution choice.

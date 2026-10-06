@@ -1,10 +1,22 @@
 # Verification state
 
+## Planning application and browser sessions — 2026-10-06
+
+Schema 3 planning applications are implemented and enabled for the migration pilot. The status row uses lowercase `apply`, matching `closed` and `applied`. Both browser authentication paths expire after 90 minutes idle or 8 hours absolute; passive events and draft leases do not extend browser idle time.
+
+Native integration `20261006T045522Z-dt-integration` passed **182 tests**. After the final label and timeout changes, `20261006T050144Z-dt-applications` passed **92 tests**, including exact idle/absolute boundaries, application lifecycle, anchor/policy conflicts, immutable provenance, upgrade rollback/crash recovery and the isolated browser workflow. Final action-form proof `20261006T050256Z-dt-action-forms` passed **4 tests**. Each run retained source manifests and unchanged proof-copy evidence. Final runtime and portable-skill bytes were checked against the focused proofs. The application browser recorded ten checks with no page errors; inspected screenshots cover matching translucent tags and the soft green noninteractive applied state.
+
+The managed backend restarted safely as instance `66ff2d4e-f362-41e9-af55-d90c9fbf97fb`. Explicit schema 2-to-3 upgrade retained backup `fa4f6f31-9d01-4803-8376-6214be7f7b72` after independent restore verification. The pilot remains ledger revision 12 with ten unchanged decisions and unchanged transaction history. Owner-local policy revision 1 registers the existing authoritative planning directory and keeps anchors required. Three served application assets match local bytes. Activation evidence is `.local/application-activation-20261006/activation.json`; no application receipts or source-project imports were created.
+
+The supplied skill metadata validator passed through native Calamum after its missing YAML dependency was installed in the ignored development environment. The installed skill matches the public skill; previous bytes are retained. Failed integration timing assertions, missing-validator-dependency output and activation evidence-collection attempts remain retained. The browser timing guard was corrected before the passing integration run. These observations do not establish full assistive-technology qualification or operator acceptance. Anchor/hash checks do not prove semantic incorporation or generator verification. Remote push remains held until pilot completion.
+
 [Documentation](README.md) · [Home](../README.md)
 
 Internal alpha for local use. On 2026-10-05 the operator confirmed successful password setup, testing in the system browser and launch through the Polymath home card. This is operator-reported acceptance, separate from agent-observed and automated proof. No real source project has been migrated.
 
 ## Reading this record
+
+The latest resolution-choice proof is native `dt-action-forms`, retained at `.local/proofs/b0162b559d8d4816a27cebd0a1e4de40`. Isolated Chromium recorded 30 checks with no page errors. It verified switching to a written answer clears answer and rationale and resets an edited change note; switching to another proposal replaces all three fields, including when a benefit is absent. The extra preservation prompt is removed and selection does not pull the dialog downward. Saving the selected proposal, session-expiry recovery and conflicting-update draft retention also passed. Runtime and browser-test hashes match the proof copy. This supersedes earlier descriptions of edited-text protection when explicitly switching solution choices.
 
 Public source visibility was verified after the operator changed the repository setting. User-installation proof `.local/proofs/a892b22b0b844caeae24da6e02b703d8` passed through native `dt-package` with source unchanged: a new wheel installation used runtime dependencies only (no Calamum or test runner), the installed console script started and reused an isolated managed service, HTTP served the sign-in page, and safe shutdown completed. The `service open` command was exercised with only browser dispatch stubbed. This is Windows package/CLI launch evidence, not a cross-platform or real-browser external-protocol qualification. Subsequent changes document these results without changing tested runtime or package behavior.
 

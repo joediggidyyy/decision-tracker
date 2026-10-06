@@ -108,7 +108,7 @@ OperationName = Literal[
     "decision.create", "decision.edit", "decision.edit-resolution", "decision.close",
     "decision.reopen", "decision.lock", "decision.amend", "decision.deprecate",
     "decision.defer", "decision.resume", "decision.challenge", "decision.resolve-challenge",
-    "decision.set-work", "option.add", "option.edit", "option.retire",
+    "decision.set-work", "decision.apply", "option.add", "option.edit", "option.retire",
     "reference.add", "reference.edit", "reference.retire", "link.add", "link.unlink"]
 
 class Operation(Model):

@@ -70,3 +70,7 @@ Browser screenshots and `observations.json` are retained under each proof copy's
 ## Projects & data proof
 
 `tools/prove.py --definition dt-projects-data --budget-seconds 240` runs candidate service/API checks and isolated Chromium administration workflows through native Calamum. It retains screenshots at wide/320-pixel layouts and actual 200% browser zoom, plus named observations. The integrated catalog includes these tests. No production registry or decision mutations are used by this proof.
+
+## Planning application proof
+
+`tools/prove.py --definition dt-applications --budget-seconds 240` exercises application receipts, anchor and policy failures, schema-3 upgrade/rollback, backup/native round-trips, protected baselines, reopen cycles, owner-only policy routing and the compact CLI. An isolated Chromium test retains tag/form/history observations and wide/320-pixel screenshots under the proof copy's `.local/application-browser`. `dt-integration` includes these tests. Source-correspondence manifests distinguish tested code from later documentation-only changes; no production ledger is a fixture.

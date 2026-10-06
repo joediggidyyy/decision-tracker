@@ -848,6 +848,74 @@
       }
     },
     {
+      "id": "dt-applications",
+      "title": "Decision Tracker planning application",
+      "summary": "Planning anchors, policy administration, immutable application lifecycle and browser observations.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "integrated-application"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "application-assertions",
+            "title": "Planning application and browser lifecycle",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_applications.py",
+              "tests/test_application_browser.py",
+              "tests/test_cli.py",
+              "tests/test_approvals.py",
+              "tests/test_security.py",
+              "tests/test_live.py",
+              "tests/test_account_api.py",
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
+    },
+    {
       "id": "dt-package",
       "title": "Decision Tracker independent user installation",
       "summary": "Install a wheel with runtime dependencies only and verify the installed CLI managed launch and shutdown.",

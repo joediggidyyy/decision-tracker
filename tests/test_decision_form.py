@@ -53,4 +53,4 @@ def test_password_session_approval_through_http(tmp_path):
         valid=send([{'op':'decision.close','key':'D000001','data':{'answer':'A','rationale':'B','approval':{'mode':'authenticated_now'}}}],1,{'D000001':1});assert valid.status_code==200,valid.text
         detail=client.get(url+'/decisions/D000001').json()['data'];assert detail['latest_resolution_approval']['recorded_by']=='operator'
         assert client.get(url+'/decisions/D000001/approvals').json()['data'][0]['mode']=='authenticated_now'
-        assert client.get('/api/v1/schema').json()['x-decision-tracker']['ledger_schemas']==[1,2]
+        assert client.get('/api/v1/schema').json()['x-decision-tracker']['ledger_schemas']==[1,2,3]

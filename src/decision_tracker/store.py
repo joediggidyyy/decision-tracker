@@ -119,6 +119,20 @@ CREATE TRIGGER immutable_upgrade_update BEFORE UPDATE ON schema_upgrades BEGIN S
 CREATE TRIGGER immutable_upgrade_delete BEFORE DELETE ON schema_upgrades BEGIN SELECT RAISE(ABORT,'Immutable upgrade'); END;
 """
 
+APPLICATION_SQL = """
+CREATE TABLE application_receipts(receipt_id TEXT PRIMARY KEY,decision_key TEXT NOT NULL REFERENCES decisions(key),
+ ledger_revision INTEGER NOT NULL REFERENCES transactions(ledger_revision),operation_ordinal INTEGER NOT NULL,
+ resolution_id TEXT NOT NULL,receipt_json TEXT NOT NULL CHECK(json_valid(receipt_json)),receipt_sha256 TEXT NOT NULL,
+ UNIQUE(decision_key,resolution_id),UNIQUE(ledger_revision,operation_ordinal)) STRICT;
+CREATE INDEX application_history ON application_receipts(decision_key,ledger_revision);
+CREATE TABLE application_policy_events(policy_revision INTEGER PRIMARY KEY CHECK(policy_revision>0),
+ request_id TEXT NOT NULL UNIQUE,request_hash TEXT NOT NULL,event_json TEXT NOT NULL CHECK(json_valid(event_json)),event_sha256 TEXT NOT NULL) STRICT;
+CREATE TRIGGER immutable_application_update BEFORE UPDATE ON application_receipts BEGIN SELECT RAISE(ABORT,'Immutable application'); END;
+CREATE TRIGGER immutable_application_delete BEFORE DELETE ON application_receipts BEGIN SELECT RAISE(ABORT,'Immutable application'); END;
+CREATE TRIGGER immutable_policy_update BEFORE UPDATE ON application_policy_events BEGIN SELECT RAISE(ABORT,'Immutable policy'); END;
+CREATE TRIGGER immutable_policy_delete BEFORE DELETE ON application_policy_events BEGIN SELECT RAISE(ABORT,'Immutable policy'); END;
+"""
+
 def initialize(path, uuid=None, schema_version=2):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -129,27 +143,28 @@ def initialize(path, uuid=None, schema_version=2):
         db.execute("PRAGMA journal_mode=DELETE")
         db.execute("PRAGMA synchronous=FULL")
         db.execute("PRAGMA foreign_keys=ON")
-        require(schema_version in (1,2),'UNSUPPORTED_SCHEMA','Unsupported ledger schema.',409)
+        require(schema_version in (1,2,3),'UNSUPPORTED_SCHEMA','Unsupported ledger schema.',409)
         ledger_sql=LEDGER_SQL.replace('CHECK(schema_version=1)',f'CHECK(schema_version={schema_version})')
-        db.executescript("BEGIN IMMEDIATE;\n" + (ledger_sql+(APPROVAL_SQL if schema_version==2 else '') if uuid else CATALOG_SQL))
+        db.executescript("BEGIN IMMEDIATE;\n" + (ledger_sql+(APPROVAL_SQL if schema_version>=2 else '')+(APPLICATION_SQL if schema_version==3 else '') if uuid else CATALOG_SQL))
         if uuid:
             db.execute("INSERT INTO meta VALUES(1,?,?,0,?)", (uuid,schema_version,now()))
-            if schema_version==2:
-                receipt={'initialized':True,'ledger_uuid':str(uuid),'schema_version':2,'revision':0}
+            if schema_version>=2:
+                receipt={'initialized':True,'ledger_uuid':str(uuid),'schema_version':schema_version,'revision':0}
                 db.execute('INSERT INTO schema_upgrades VALUES(?,?,?,?,?,?,?,?,?)',
-                           ('initialize','system',0,2,0,now(),None,digest(receipt),encode(receipt)))
+                           ('initialize','system',0,schema_version,0,now(),None,digest(receipt),encode(receipt)))
         db.commit()
     finally:
         db.close()
 
 def metadata(db, uuid=None):
     row = db.execute("SELECT * FROM meta WHERE id=1").fetchone()
-    require(row is not None and row["schema_version"] in (1,2), "UNSUPPORTED_SCHEMA", "Unsupported ledger schema.", 409)
-    if row['schema_version']==2:
-        receipt=db.execute('SELECT * FROM schema_upgrades').fetchall()
-        require(len(receipt)==1 and receipt[0]['to_version']==2 and receipt[0]['from_version'] in (0,1)
-                and 0<=receipt[0]['ledger_revision']<=row['ledger_revision'],
-                'INTEGRITY_FAILED','Approval schema receipt is missing or invalid.',409)
+    require(row is not None and row["schema_version"] in (1,2,3), "UNSUPPORTED_SCHEMA", "Unsupported ledger schema.", 409)
+    if row['schema_version']>=2:
+        receipts=db.execute('SELECT * FROM schema_upgrades ORDER BY to_version').fetchall()
+        chain=[(r['from_version'],r['to_version']) for r in receipts]
+        valid=chain in ([(0,2)],[(1,2)]) if row['schema_version']==2 else chain in ([(0,3)],[(0,2),(2,3)],[(1,2),(2,3)])
+        require(valid and all(0<=r['ledger_revision']<=row['ledger_revision'] for r in receipts),
+                'INTEGRITY_FAILED','Schema receipt chain is missing or invalid.',409)
     if uuid is not None:
         require(row["ledger_uuid"] == str(uuid), "LEDGER_IDENTITY_MISMATCH", "Ledger identity does not match.", 409)
     return dict(row)

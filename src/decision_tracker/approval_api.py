@@ -17,16 +17,17 @@ def upgrade(objects,project_id,uuid,principal,request=None):
         with catalog.project(project_id,uuid,principal) as (db,project):
             meta=store.metadata(db,uuid);validate_history(db)
             payload=request.model_dump(mode='json') if request else None
-            if request and meta['schema_version']==2:
+            if request and meta['schema_version']>=2:
                 row=db.execute('SELECT * FROM schema_upgrades WHERE request_id=?',(str(request.request_id),)).fetchone()
                 if row:
                     require(row['principal_id']==principal.id and row['request_hash']==store.digest(payload),'REQUEST_ID_REUSED','Upgrade request ID has different content.',409)
                     return objects.service.envelope(project,meta,{**json.loads(row['receipt_json']),'replayed':True})
-                require(False,'ALREADY_UPGRADED','This project already uses the current data format.',409)
+                require(meta['schema_version']<3,'ALREADY_UPGRADED','This project already uses the current data format.',409)
+            target=2 if meta['schema_version']==1 else 3
             if request and meta['ledger_revision']!=request.expected_revision:stale(meta['ledger_revision'])
             if request is None:
                 size=db.execute('PRAGMA page_count').fetchone()[0]*db.execute('PRAGMA page_size').fetchone()[0]
-                return objects.service.envelope(project,meta,{'from_version':meta['schema_version'],'to_version':2,'upgrade_required':meta['schema_version']==1,'history':'verified','database_bytes':size,'estimated_backup_bytes':size,'compatibility':{'schema1_readable':True,'schema1_writable':False,'older_binary_can_read_schema2':False}})
+                return objects.service.envelope(project,meta,{'from_version':meta['schema_version'],'to_version':target,'upgrade_required':meta['schema_version']<3,'history':'verified','database_bytes':size,'estimated_backup_bytes':size,'compatibility':{'schema1_readable':True,'schema1_writable':False,'older_binary_can_read_schema2':False,'older_binary_can_read_schema3':False}})
         backup=objects.create(project_id,uuid,principal,'backup')['data']
         objects.restore_check(project_id,uuid,principal,backup['artifact_id'])
         with catalog.project(project_id,uuid,principal,True) as (db,project):
@@ -34,15 +35,15 @@ def upgrade(objects,project_id,uuid,principal,request=None):
             require(current==meta,'REVISION_CONFLICT','Project changed during upgrade.',409)
             # execute, not executescript: the complete upgrade must remain one transaction.
             db.execute('ALTER TABLE meta RENAME TO meta_v1')
-            db.execute('CREATE TABLE meta(id INTEGER PRIMARY KEY CHECK(id=1),ledger_uuid TEXT NOT NULL UNIQUE,schema_version INTEGER NOT NULL CHECK(schema_version=2),ledger_revision INTEGER NOT NULL CHECK(ledger_revision>=0),created_at TEXT NOT NULL) STRICT')
-            db.execute('INSERT INTO meta SELECT id,ledger_uuid,2,ledger_revision,created_at FROM meta_v1')
+            db.execute(f'CREATE TABLE meta(id INTEGER PRIMARY KEY CHECK(id=1),ledger_uuid TEXT NOT NULL UNIQUE,schema_version INTEGER NOT NULL CHECK(schema_version={target}),ledger_revision INTEGER NOT NULL CHECK(ledger_revision>=0),created_at TEXT NOT NULL) STRICT')
+            db.execute(f'INSERT INTO meta SELECT id,ledger_uuid,{target},ledger_revision,created_at FROM meta_v1')
             db.execute('DROP TABLE meta_v1')
             statement=''
-            for line in store.APPROVAL_SQL.splitlines(True):
+            for line in (store.APPROVAL_SQL if target==2 else store.APPLICATION_SQL).splitlines(True):
                 statement+=line
                 if sqlite3.complete_statement(statement):db.execute(statement);statement=''
-            receipt={'ledger_uuid':str(uuid),'revision':meta['ledger_revision'],'from_version':1,'to_version':2,'backup_artifact_id':backup['artifact_id'],'recorded_at':now(),'replayed':False}
-            db.execute('INSERT INTO schema_upgrades VALUES(?,?,?,?,?,?,?,?,?)',(str(request.request_id),principal.id,1,2,meta['ledger_revision'],receipt['recorded_at'],backup['artifact_id'],store.digest(payload),store.encode(receipt)))
+            receipt={'ledger_uuid':str(uuid),'revision':meta['ledger_revision'],'from_version':meta['schema_version'],'to_version':target,'backup_artifact_id':backup['artifact_id'],'recorded_at':now(),'replayed':False}
+            db.execute('INSERT INTO schema_upgrades VALUES(?,?,?,?,?,?,?,?,?)',(str(request.request_id),principal.id,meta['schema_version'],target,meta['ledger_revision'],receipt['recorded_at'],backup['artifact_id'],store.digest(payload),store.encode(receipt)))
             validate_history(db)
             return objects.service.envelope(project,store.metadata(db),receipt)
 
@@ -60,7 +61,7 @@ def mount(app):
         p=principal(request);p.need('read')
         with service.catalog.project(project_id,identity(request),p) as (db,project):
             meta=store.metadata(db);store.get(db,'decisions',key)
-            rows=list(db.execute('SELECT * FROM approval_events WHERE decision_key=? ORDER BY ledger_revision,operation_ordinal',(key,))) if meta['schema_version']==2 else []
+            rows=list(db.execute('SELECT * FROM approval_events WHERE decision_key=? ORDER BY ledger_revision,operation_ordinal',(key,))) if meta['schema_version']>=2 else []
             if event_id:
                 row=next((r for r in rows if r['event_id']==event_id),None)
                 if row is None:missing()

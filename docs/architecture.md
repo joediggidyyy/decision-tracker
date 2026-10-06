@@ -14,6 +14,10 @@ Transactions retain canonical intent and its hash alongside committed outcomes. 
 
 Native export/import retains history exactly. Backup and restore checks operate on bounded contained candidates; no maintenance endpoint overwrites an active ledger. Request scope, expected identity and versions remain mandatory.
 
+Schema 3 adds immutable planning application receipts and policy events. The current applied indicator is derived from the current closure's identity and its receipt; it is not an editable decision field. Application advances the ledger/record revision while preserving decision content and approval. Reopen starts another closure cycle; historical receipts remain intact. Schema 1/2 history stays readable, and explicit backup/restore-checked upgrades introduce each extension.
+
+The owner CLI registers project planning roots and optional-anchor policy through the protected local administration channel. Policy evidence is ledger data, but filesystem permission is a separate names-only binding under the deployment data root. Imported/restored policy cannot authorize file reads by itself. The resolver reads bounded local canonical JSON and optional generated Markdown; it rejects unregistered locations, symbolic links and junctions. Apply rechecks observed bytes before commit, without claiming a transaction across SQLite and external editors. No generator or network request runs inside Apply.
+
 The detailed approved business execution contract remains in Polymath planning custody. This implementation record describes actual technical boundaries. The portable agent-access skill is included; MCP remains a follow-up. Both agent and browser use the shared API.
 
 Managed Windows deployments use an open-only URI handler, nonce/HMAC readiness, owner-local administration, DPAPI and a separate auth.sqlite. Human password sessions and agent bearer credentials have independent lifecycles. Idle admission and draft leases share a mutex; polling and notifications cannot keep a managed service alive. Foreground operation remains available with idle shutdown disabled.

@@ -54,14 +54,14 @@ Retry an uncertain write with the identical body and request ID. A committed mat
 |---|---|
 | service | serve, status, catalog-backup, ensure-running, open, install-launcher, uninstall-launcher, configure-credentials, stop |
 | auth | setup-code, recover, reset-password, migrate; token create, rotate, revoke, list |
-| project | list, show, create, register, disable, enable |
-| decision | list, get, create, edit, edit-resolution, close, reopen, lock, amend, deprecate, defer, resume, challenge, resolve-challenge, set-work, history, as-of, field |
+| project | list, show, create, register, disable, enable; policy show, set |
+| decision | list, get, create, edit, edit-resolution, close, reopen, lock, amend, deprecate, defer, resume, challenge, resolve-challenge, set-work, history, as-of, field, apply, applications |
 | option | list, add, edit, retire |
 | reference | list, add, edit, retire |
 | link | list, add, unlink |
 | query | search, context, impact, deprecated |
 | change | apply |
-| data | export, import-validate, import-new, backup, verify, restore-check, artifact-list, artifact-download |
+| data | export, import-validate, import-new, candidates, prepare-candidate, backup, verify, restore-check, artifact-list, artifact-download, upgrade-check, upgrade |
 
 Selecting an option belongs to `decision close`, using `selected_option` in input or `--selected-option`. Selection changes require decide authority. Reopen clears selection. Rejected options need reason and authority. Protected and deprecated aggregates reject ordinary editing.
 
@@ -88,8 +88,31 @@ Project create/register use expected catalog revision and request ID. Register a
 | GET .../artifacts/{id}/content | Verified artifact download |
 | POST /api/v1/imports/validate, /new | Validate native candidate / retain registerable candidate |
 | POST /api/v1/catalog/backups | Separate catalog backup |
+| GET /api/v1/projects/{project}/policy | Inspect application policy; no HTTP write route |
+| GET /api/v1/projects/{project}/planning-document?locator=PATH | Bounded canonical section choices; follow returned cursors |
+| GET .../{key}/applications | Paginated immutable planning application receipts |
 
 Project-bound routes require `X-Ledger-UUID`; changes also require matching `expected_ledger_uuid`. API JSON is UTF-8. Unknown model fields are rejected. Optional authority is evidence text, not proof of external approval.
+
+## Planning application
+
+An open record displays only `open`. A closed record displays `closed` and **Apply**. The small form contains **Planning document**, **Section** and **Apply**; it constructs the API input from these fields. Success replaces the button with a noninteractive `applied` tag. Reopen clears current application state; reclosure requires a new application even when the answer is unchanged. Earlier receipts remain in History and `decision applications`. Deprecated records have no Apply action. Protected closed baselines can append application evidence without changing their approved content.
+
+Use a local native `codesentinel.canonical-document/v1` JSON document or its generated Markdown companion within this project's registered planning roots. Readable headings select stable section/block IDs. No arbitrary URL fetch or filesystem browsing is provided. Missing sections report **Section not found in this document.** Unavailable files report **Cannot access this document.** These failures preserve the form and leave the decision unapplied; other work can continue. If the observed document bytes change, review the refreshed section choices and retry. A stale Markdown source marker requires regenerating that companion.
+
+```powershell
+decision-tracker project policy show --project PROJECT --binding BINDING --credential-principal agents --json
+decision-tracker decision apply --project PROJECT --binding BINDING --credential-principal agents --key KEY --expected-revision REVISION --record-revision RECORD_REVISION --expected-policy-revision POLICY_REVISION --planning-document C:/Project/planning/plan.json --planning-section SECTION_ID --request-id UUID --reason "Incorporated approved resolution into planning" --json
+decision-tracker decision applications --project PROJECT --binding BINDING --credential-principal agents --key KEY --json
+```
+
+Replace uppercase placeholders with read values. `decision apply` needs write access and schema 3. `change apply` accepts the same `decision.apply` operation. Required operation data: `expected_policy_revision`; anchor fields: `planning_document` and `planning_section`. Optional `expected_resolution_id`, `expected_document_sha256` and `expected_projection_sha256` pin prior observations. Ledger and record preconditions remain mandatory. Save Apply separately from any other mutation of that decision. The browser pins resolution and observed hashes automatically; CLI flags can do the same. Retry uncertain outcomes with exactly the original values and request ID.
+
+Anchor requirement defaults to true. Only owner-local `project policy set` can change it or register planning roots; see [operations](operations.md#planning-application-policy). If disabled, a blank anchor records `omitted`; a supplied invalid anchor still fails. Policy conflicts require review rather than silently accepting a different requirement.
+
+Receipts identify the closure/approval, transaction/request, actor and recording time, policy, planning document/version/file hash and selected section content digest. `planning_application` on detail and `applied` on list expose current status. Application attests incorporation into one designated planning section. Anchor/hash checks do not prove semantic incorporation, implementation or acceptance. `generator_verification: not_checked` is explicit: Apply does not run the canonical generator or claim a Doctor/render-check result. A Markdown source-marker match is recorded with its projection bytes; it is not full generator verification.
+
+A generator workflow can prefill the form through the decision URL's fragment: `#project=PROJECT&decision=KEY&planning-document=ENCODED_PATH&planning-section=SECTION_ID&planning-sha256=FILE_SHA256`. Values must be URL encoded. The project/decision must match, choices are reloaded through the service, and the user still presses Apply. A stale supplied hash is surfaced for review. No application is recorded by opening the link.
 
 ## Bounds and output
 
@@ -113,7 +136,7 @@ Local credential operations are an OS-owner administrative exception, not ledger
 
 ## Decision approval events (schema 2)
 
-The **Record decision** form shows proposed solutions, then Decision and Why this choice. Selecting a proposal fills those fields and the optional change note. Editing the answer switches to a written answer; editing the explanation keeps the proposal selected. Save closes the question; it does not perform implementation work.
+The **Decide** form shows proposed solutions, then Decision and Why this choice. Selecting a proposal fills those fields and the optional change note. Switching to another proposal replaces all three fields; choosing Write a different answer clears the answer and explanation and resets the change note. There is no draft cache per choice or extra confirmation prompt. Editing the answer switches to a written answer while retaining the text being edited; editing the explanation keeps the proposal selected. Approval details are independent of these choices. Save closes the question; it does not perform implementation work.
 
 `decision.close` accepts `data.approval`. Current approval is `{"mode":"authenticated_now"}` and requires a password-authenticated human session plus decide permission. Recorder identity and UTC recording time come from the server. Agent bearer credentials and legacy token sessions cannot use this mode.
 

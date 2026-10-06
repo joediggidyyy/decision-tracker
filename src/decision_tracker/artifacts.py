@@ -16,9 +16,10 @@ from .errors import require, Fault, missing
 TABLES=("decisions","alternatives","references","links","transactions","revisions")
 SORT={"decisions":"key","alternatives":"id","references":"id","links":"id",
       "transactions":"ledger_revision","revisions":"decision_key,ledger_revision",
-      "approval_events":"ledger_revision,operation_ordinal","schema_upgrades":"recorded_at,request_id"}
+      "approval_events":"ledger_revision,operation_ordinal","schema_upgrades":"recorded_at,request_id",
+      "application_receipts":"ledger_revision,operation_ordinal","application_policy_events":"policy_revision"}
 
-def tables(version):return TABLES+('approval_events','schema_upgrades') if version==2 else TABLES
+def tables(version):return TABLES+('approval_events','schema_upgrades')+('application_receipts','application_policy_events') if version==3 else TABLES+('approval_events','schema_upgrades') if version==2 else TABLES
 
 def bundle(db):
     meta=store.metadata(db)
@@ -62,8 +63,11 @@ def validate_history(db):
     validator.validate()
     for table,model in store.MODELS.items():
         for row in db.execute(f'SELECT * FROM "{table}"'):model.model_validate(store.unpack(row))
-    if meta['schema_version']==2:
+    if meta['schema_version']>=2:
         from .approval_history import validate
+        validate(db,meta)
+    if meta['schema_version']==3:
+        from .applications import validate
         validate(db,meta)
     return {"integrity":"ok","ledger_uuid":meta["ledger_uuid"],"revision":meta["ledger_revision"],
             "logical_sha256":store.digest(bundle(db))}
@@ -200,7 +204,7 @@ class Artifacts:
         principal.need("maintain")
         # Import privilege does not grant registry access; candidate registration is separate.
         version=value.get('schema_version') if isinstance(value,dict) else None
-        require(type(version) is int and version in (1,2),'UNSUPPORTED_SCHEMA','Unsupported interchange format.',409)
+        require(type(version) is int and version in (1,2,3),'UNSUPPORTED_SCHEMA','Unsupported interchange format.',409)
         require(isinstance(value,dict) and set(value)==set(tables(version))|{"format","schema_version","ledger_uuid","ledger_revision","meta"},
                 "VALIDATION_ERROR","Native bundle fields do not match v1.")
         require(value["format"]==f"decision-tracker/v{version}",
@@ -224,7 +228,7 @@ class Artifacts:
                     "VALIDATION_ERROR","Bundle metadata is inconsistent.")
             db.execute("UPDATE meta SET ledger_revision=?,created_at=? WHERE id=1",
                        (value["ledger_revision"],value["meta"]["created_at"]))
-            if version==2:
+            if version>=2:
                 # Empty candidate initialization is replaced by the source initialization/upgrade receipt.
                 db.execute('DROP TRIGGER immutable_upgrade_delete')
                 db.execute('DELETE FROM schema_upgrades')

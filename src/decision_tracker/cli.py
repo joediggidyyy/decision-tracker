@@ -12,14 +12,14 @@ from .errors import Fault, require
 from .store import encode
 
 DECISIONS=["list","get","create","edit","edit-resolution","close","reopen","lock","amend","deprecate",
-           "defer","resume","challenge","resolve-challenge","set-work","history","as-of","field"]
+           "defer","resume","challenge","resolve-challenge","set-work","history","as-of","field","apply","applications"]
 
 def common(parser,suppress=True):
     default=argparse.SUPPRESS if suppress else None
     for name in ["base-url","config","project","ledger-uuid","token-env","input","request-id","reason",
                  "expected-decision-revisions","binding","deployment","credential-principal","principal","token-id"]:
         parser.add_argument("--"+name,default=default)
-    for name in ["expected-revision","expected-catalog-revision","record-revision"]:
+    for name in ["expected-revision","expected-catalog-revision","record-revision","expected-policy-revision"]:
         parser.add_argument("--"+name,type=int,default=default)
     parser.add_argument("--json",action="store_true",default=argparse.SUPPRESS if suppress else False)
     parser.add_argument("--dry-run",action="store_true",default=argparse.SUPPRESS if suppress else False)
@@ -36,6 +36,10 @@ def common(parser,suppress=True):
     parser.add_argument("--revision",type=int,default=default)
     parser.add_argument("--offset",type=int,default=argparse.SUPPRESS if suppress else 0)
     parser.add_argument("--field",default=default)
+    for name in ('planning-document','planning-section','expected-document-sha256','expected-projection-sha256','expected-resolution-id'):
+        parser.add_argument('--'+name,default=default)
+    parser.add_argument('--anchor-required',choices=('true','false'),default=default)
+    parser.add_argument('--planning-root',dest='planning_roots',action='append',default=default)
 
 def parser():
     root=argparse.ArgumentParser(prog="decision-tracker",description=__doc__,
@@ -45,7 +49,7 @@ def parser():
     definitions={
         "service":["serve","status","catalog-backup","ensure-running","open","install-launcher","uninstall-launcher","configure-credentials","stop"],
         "auth":["setup-code","recover","reset-password","migrate","token"],
-        "project":["list","show","create","register","disable","enable"],
+        "project":["list","show","create","register","disable","enable","policy"],
         "decision":DECISIONS,
         "option":["add","list","edit","retire"],
         "reference":["add","list","edit","retire"],
@@ -60,6 +64,9 @@ def parser():
             description = "Withdrawn for new writes. Reopen, edit the open decision, then Close. Historical receipts still replay." if group=="decision" and verb=="edit-resolution" else f"{group} {verb}; use the shared versioned API. Closed records require reopening before ordinary edits. Reopening must commit separately."
             child=children.add_parser(verb,description=description)
             common(child)
+            if group=='project' and verb=='policy':
+                actions=child.add_subparsers(dest='policy_action',required=True)
+                for action in ('show','set'):common(actions.add_parser(action))
             if group=='auth' and verb=='token':
                 token_actions=child.add_subparsers(dest='token_action',required=True)
                 for action in ('create','rotate','revoke','list'):common(token_actions.add_parser(action))
@@ -108,9 +115,9 @@ class Client:
         finally:connection.close()
 
 def execute(args):
-    is_change=args.group=="change" or (args.group in ("decision","option","reference","link") and args.action not in ("list","get","history","as-of","field"))
+    is_change=args.group=="change" or (args.group in ("decision","option","reference","link") and args.action not in ("list","get","history","as-of","field","applications"))
     require(not args.dry_run or is_change,"VALIDATION_ERROR","Dry-run is supported only for decision change operations.")
-    if args.group=='auth' or args.group=='service' and args.action in ('ensure-running','open','install-launcher','uninstall-launcher','configure-credentials','stop'):
+    if args.group=='auth' or args.group=='service' and args.action in ('ensure-running','open','install-launcher','uninstall-launcher','configure-credentials','stop') or args.group=='project' and args.action=='policy' and args.policy_action=='set':
         from .local_cli import execute as local_execute
         return local_execute(args)
     cfg=load_config(args.config) if args.config else None
@@ -163,6 +170,9 @@ def execute(args):
     require(re.fullmatch(r"[a-z][a-z0-9-]{0,47}",args.project) is not None,"VALIDATION_ERROR","Invalid project ID.")
     path="/api/v1/projects/"+args.project
     if g=="project":
+        if a=='policy':
+            require(uuid,'VALIDATION_ERROR','Supply --ledger-uuid or a matching --binding.')
+            return client.request('GET',path+'/policy',uuid=uuid)
         if a=="show":
             value=client.request("GET",path,uuid=uuid)
             if args.bind and value.get("ok"):
@@ -206,14 +216,14 @@ def execute(args):
         value=Change.model_validate({**data,"validate_only":args.dry_run or data.get("validate_only",False)})
         require(str(value.expected_ledger_uuid)==uuid,"LEDGER_IDENTITY_MISMATCH","Input UUID differs from binding.",409)
         return client.request("POST",path+"/changes",value.model_dump(mode="json"),uuid)
-    read=(g=="decision" and a in ("get","history","as-of","field")) or (g=="query" and a in ("context","impact")) or a=="list"
+    read=(g=="decision" and a in ("get","history","as-of","field","applications")) or (g=="query" and a in ("context","impact")) or a=="list"
     if read:
         require(args.key,"VALIDATION_ERROR","Supply --key.")
         endpoint=path+"/decisions/"+args.key
         params={}
         if a=="list":endpoint+="/"+{"option":"options","reference":"references","link":"links"}[g];params={"limit":args.limit}
         elif a!="get":endpoint+="/"+("fields/"+(args.field or "") if a=="field" else a)
-        if a=="history":params["limit"]=args.limit
+        if a in ('history','applications'):params["limit"]=args.limit
         if args.cursor:params["cursor"]=args.cursor
         if a in ("as-of","field"):
             require(args.revision is not None,"VALIDATION_ERROR","Supply --revision.")
@@ -222,6 +232,7 @@ def execute(args):
         return client.request("GET",endpoint+("?"+urlencode(params) if params else ""),uuid=uuid)
     fields=("title","question","answer","rationale","owner_role","baseline","work_tag","resume_trigger",
             "kind","replacement_key","target_key","type","impact","baseline_disposition","selected_option")
+    if g=='decision' and a=='apply':fields=('planning_document','planning_section','expected_document_sha256','expected_projection_sha256','expected_policy_revision','expected_resolution_id')
     opdata={**data,**{k:getattr(args,k) for k in fields if getattr(args,k) is not None}}
     expected=read_input(args.expected_decision_revisions) if args.expected_decision_revisions else {}
     if args.key and args.record_revision is not None:expected[args.key]=args.record_revision
@@ -235,7 +246,7 @@ def exit_code(value):
     if value.get("ok"):return 0
     code=value.get("error",{}).get("code")
     if code in ("UNAUTHORIZED","FORBIDDEN","SETUP_REQUIRED"):return 4
-    if code in ('PROPOSAL_CHANGED','UPGRADE_REQUIRED','ALREADY_UPGRADED'):return 3
+    if code in ('PROPOSAL_CHANGED','UPGRADE_REQUIRED','ALREADY_UPGRADED','POLICY_CHANGED','DOCUMENT_CHANGED','RESOLUTION_CHANGED','ALREADY_APPLIED'):return 3
     if code in ("SERVICE_UNAVAILABLE","RETRY_LATER","DATABASE_UNAVAILABLE","SERVICE_STOPPING","PORT_CONFLICT"):return 5
     if code in ("STALE_REVISION","LEDGER_IDENTITY_MISMATCH","REQUEST_ID_REUSED","CURSOR_STALE","RELATION_CYCLE","DUPLICATE_LEDGER","PROJECT_DISABLED","LOCKED_BASELINE","SERVICE_BUSY","AUTH_STATE_CONFLICT"):return 3
     return 1 if code=="INTERNAL_ERROR" else 2

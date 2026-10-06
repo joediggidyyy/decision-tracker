@@ -38,14 +38,17 @@ class Service:
                 require(previous["request_hash"]==digest,"REQUEST_ID_REUSED","Request ID was used with different content.",409)
                 result=json.loads(previous["result_json"]);result["replayed"]=True
                 return result
-            require(meta['schema_version']==2,'UPGRADE_REQUIRED','This project needs a data-format upgrade before changes can be saved.',409)
+            require(meta['schema_version']>=2,'UPGRADE_REQUIRED','This project needs a data-format upgrade before changes can be saved.',409)
             if meta["ledger_revision"]!=request.expected_revision:stale(meta["ledger_revision"])
             from .state import check_new_request
             check_new_request(db, request)
             from . import approvals
             stamp=now()
+            transaction_id=str(uuid4())
             require(not any(k.startswith('dt_') for k in request.attribution),'VALIDATION_ERROR','Server attribution fields cannot be supplied.')
             events=approvals.prepare(db,principal,request,stamp)
+            from . import applications
+            receipts=applications.prepare(self,db,principal,request,stamp,transaction_id)
             effective=request.model_copy(deep=True)
             mutation=Mutator(db,principal,effective)
             for ordinal,op in enumerate(effective.operations):
@@ -66,16 +69,20 @@ class Service:
             meta["ledger_revision"]=rev
             result=self.envelope(project,meta,summaries,request_id=str(request.request_id),
                                  replayed=False,aliases=mutation.aliases,validated=request.validate_only)
+            if receipts:result['application_receipts']=list(receipts.values())
+            require(len(store.encode(result).encode())<=60000,'LIMIT_EXCEEDED','Change outcome exceeds response capacity.',413)
             if request.validate_only:
                 result["revision"]=request.expected_revision
                 result["planned_revision"]=rev
                 db.rollback()
                 return result
+            applications.confirm(self,db,receipts)
             db.execute("INSERT INTO transactions VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-                       (rev,str(uuid4()),principal.id,str(request.request_id),digest,store.encode(request.attribution),
+                       (rev,transaction_id,principal.id,str(request.request_id),digest,store.encode(request.attribution),
                         request.reason,store.encode(request.authority_refs),stamp,
                         request.occurred_at.isoformat() if request.occurred_at else None,store.encode(result),store.encode(payload)))
             for event in events.values():approvals.insert(db,event)
+            for receipt in receipts.values():applications.insert(db,receipt)
             for key,old in mutation.original.items():
                 snapshot=store.snapshot(db,key)
                 db.execute("INSERT INTO revisions VALUES(?,?,?,?,?)",
@@ -127,7 +134,11 @@ class Service:
                 if work and obj["work_tag"]!=work:continue
                 if owner and obj["owner_role"]!=owner:continue
                 if q and q.casefold() not in " ".join(str(obj[k] or "") for k in ("key","title","question","answer","rationale")).casefold():continue
-                items.append((obj["key"],{k:obj[k] for k in ("key","title","status","locked","work_tag","contested","owner_role","revision","updated_at")}))
+                item={k:obj[k] for k in ("key","title","status","locked","work_tag","contested","owner_role","revision","updated_at")}
+                from .applications import current
+                application=current(db,obj['key'],meta['ledger_revision'])
+                item['applied']=bool(application and application['applied'])
+                items.append((obj['key'],item))
             data,next_cursor,complete=self.page(items,meta,query,cursor,limit)
             return self.envelope(project,meta,data,next_cursor=next_cursor,complete=complete)
 
@@ -161,6 +172,9 @@ class Service:
             data=self.compact(snapshot,base,snaprev);data["collections"]=collections
             from .approvals import latest
             data['latest_resolution_approval']=latest(db,key,snaprev)
+            from .applications import current,policy
+            data['planning_application']=current(db,key,snaprev)
+            data['application_policy_revision']=policy(db)['policy_revision']
             return self.envelope(project,meta,data,as_of_revision=revision)
 
     def children(self,project_id,uuid,principal,key,family,cursor=None,limit=50,revision=None):

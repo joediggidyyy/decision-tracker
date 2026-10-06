@@ -5,9 +5,9 @@ const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.
 export function installDecisionForm(container,d,editing=false){
  const notice=el('p');notice.setAttribute('role','status');
  container.append(el('h3',d.question),el('p',editing?'Update the recorded answer. Saving keeps this decision closed; it does not perform the work.':'Choose a proposal or write your answer. Saving closes this question; it does not perform the work.'));
- const choices=el('fieldset');choices.append(el('legend','Which proposed solution do you choose?'));container.append(choices);
+ const choices=el('fieldset');choices.append(el('legend','Which proposed solution do you choose?'),el('p','Switching choices replaces the Decision, Why this choice and Change note fields. Choose a proposal to fill them, or Write a different answer to clear them.'));container.append(choices);
  const proposals=(d.alternatives||[]).filter(p=>p.disposition!=='retired').sort((a,b)=>a.position-b.position||a.id.localeCompare(b.id));
- let selected=editing?proposals.find(p=>p.disposition==='selected')?.id||'':null;
+ let selected=editing?proposals.find(p=>p.disposition==='selected')?.id||'':(d.answer||d.rationale?'':null);
  const radios=[];
  function input(label,name,value='',type='textarea',required=false,parent=container){const wrap=el('label',label),n=el(type==='textarea'?'textarea':'input');if(type!=='textarea')n.type=type;n.name=name;n.id='resolution-'+name;n.value=value;n.required=required;wrap.htmlFor=n.id;wrap.append(n);parent.append(wrap);return n;}
  function radio(id,title,disabled=false){const label=el('label'),n=el('input');n.type='radio';n.name='proposal_choice';n.value=id;n.required=true;n.disabled=disabled;n.checked=selected===id;label.append(n,document.createTextNode(title));choices.append(label);radios.push(n);return n;}
@@ -21,8 +21,7 @@ export function installDecisionForm(container,d,editing=false){
  const rationale=input('Why this choice?','rationale',d.rationale||'','textarea',true);rationale.maxLength=32768;
  const rationaleHint=el('p','Explain why this answer is appropriate, including important tradeoffs.');rationaleHint.id='resolution-rationale-hint';rationale.setAttribute('aria-describedby',rationaleHint.id);container.append(rationaleHint);
  container.append(notice);
- const switchBox=el('section');switchBox.hidden=true;switchBox.setAttribute('aria-label','Review changed proposal');container.append(switchBox);
- let answerDirty=!!d.answer,rationaleDirty=!!d.rationale,reasonDirty=false,pendingChoice;
+ let reasonDirty=false;
  const approval=el('fieldset'),approvalNotice=el('p','Approval will be recorded as Operator when you save.');approval.append(el('legend','Approval'),approvalNotice);container.append(approval);
  const report=input('Record an earlier or external approval','reported','','checkbox',false,approval);
  const history=el('div');history.hidden=true;approval.append(history);
@@ -42,10 +41,8 @@ export function installDecisionForm(container,d,editing=false){
  const details=el('details');details.append(el('summary','Optional details'));container.append(details);
  const reason=input('Change note','reason',(editing?'Updated':'Recorded')+' a written decision.','textarea',true,details);reason.maxLength=8192;reason.oninput=()=>reasonDirty=true;
  function markSelection(){for(const r of radios)r.checked=r.value===selected;}
- function applyChoice(id){notice.textContent='';selected=id;markSelection();switchBox.hidden=true;const p=proposals.find(p=>p.id===id);if(p){const v=defaults(p,editing);answer.value=v.answer;rationale.value=v.rationale;if(!reasonDirty)reason.value=v.reason;answerDirty=rationaleDirty=false;}else if(!reasonDirty)reason.value=(editing?'Updated':'Recorded')+' a written decision.';}
- function choose(id){if(id===selected)return;if(id&&((answerDirty&&answer.value)||(rationaleDirty&&rationale.value))){pendingChoice=id;markSelection();switchBox.replaceChildren(el('p','You edited this answer or explanation. What should happen to your text?'));for(const [title,fn] of [['Keep my written answer',()=>{selected='';markSelection();switchBox.hidden=true;}],['Replace with this proposal',()=>applyChoice(pendingChoice)],['Cancel',()=>{switchBox.hidden=true;markSelection();}]]){const b=el('button',title);b.type='button';b.onclick=fn;switchBox.append(b);}switchBox.hidden=false;switchBox.querySelector('button').focus();}else applyChoice(id);}
- answer.oninput=()=>{answerDirty=true;if(selected){const p=proposals.find(p=>p.id===selected);if(normalize(answer.value)!==normalize(defaults(p,editing).answer)){selected='';markSelection();notice.textContent='Your edited answer will be saved as a written decision, not as the selected proposal.';if(!reasonDirty)reason.value=(editing?'Updated':'Recorded')+' a written decision.';}}};
- rationale.oninput=()=>rationaleDirty=true;
+ function choose(id){if(id===selected)return;notice.textContent='';selected=id;markSelection();const p=proposals.find(p=>p.id===id),v=p?defaults(p,editing):{answer:'',rationale:'',reason:(editing?'Updated':'Recorded')+' a written decision.'};answer.value=v.answer;rationale.value=v.rationale;reason.value=v.reason;reasonDirty=false;}
+ answer.oninput=()=>{if(selected){const p=proposals.find(p=>p.id===selected);if(normalize(answer.value)!==normalize(defaults(p,editing).answer)){selected='';markSelection();notice.textContent='Your edited answer will be saved as a written decision, not as the selected proposal.';if(!reasonDirty)reason.value=(editing?'Updated':'Recorded')+' a written decision.';}}};
  function sync(){const active=report.checked,known=precision.value==='exact'||precision.value==='date';history.hidden=!active;for(const n of history.querySelectorAll('input,select,button'))n.disabled=!active;approver.required=active;precision.required=active;sourceFields.forEach(n=>n.required=active);for(const n of [date,offset,confirm]){n.closest('label').hidden=!known;n.disabled=!active||!known;}time.closest('label').hidden=precision.value!=='exact';time.disabled=!active||precision.value!=='exact';date.required=active&&known;time.required=active&&precision.value==='exact';confirm.required=active&&known;}
  report.onchange=()=>{approvalNotice.textContent=report.checked?'You are recording an approval made earlier or outside this application. The approver below is reported, not authenticated.':'Approval will be recorded as Operator when you save.';sync();};precision.onchange=()=>{const n=new Date(),pad=x=>String(x).padStart(2,'0');date.value=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate());time.value=pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());offset.value=-n.getTimezoneOffset();confirm.checked=false;explicitOffset=false;sync();};
  let explicitOffset=false;offset.onchange=()=>explicitOffset=true;
@@ -57,7 +54,6 @@ export function installDecisionForm(container,d,editing=false){
   const fields=error.details?.fields||[{field:inferred[error.code]}];
   for(const item of fields){const name=item.field?.split(/[/.]/).filter(x=>x&&!/^\d+$/.test(x)).pop(),target=map[name];if(!target)continue;target.setAttribute('aria-invalid','true');const b=el('button',item.message||('Review '+name.replaceAll('_',' ')));b.type='button';b.onclick=()=>{target.closest('details')?.setAttribute('open','');target.focus();};box.append(b);}
  },read(){
-  if(!switchBox.hidden)throw new Error('Choose how to handle your edited answer before saving.');
   const data={answer:answer.value,rationale:rationale.value,selected_option:selected||null};
   if(selected)data.expected_option_revision=proposals.find(p=>p.id===selected).revision;
   if(!report.checked)data.approval={mode:'authenticated_now'};

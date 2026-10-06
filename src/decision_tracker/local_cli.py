@@ -10,6 +10,22 @@ def terminal(args,confirmation=None):
 
 def execute(args):
     path=Path(args.deployment or default_path())
+    if args.group=='project' and args.action=='policy' and args.policy_action=='set':
+        from .cli import read_input
+        from .applications import PolicyChange
+        uuid=args.ledger_uuid
+        if args.binding:
+            binding=read_input(args.binding)
+            require(binding.get('project_id')==args.project,'LEDGER_IDENTITY_MISMATCH','Binding belongs to another project.',409)
+            uuid=uuid or binding.get('ledger_uuid')
+        require(args.project and uuid,'VALIDATION_ERROR','Supply --project and an explicit ledger binding.')
+        data=read_input(args.input)
+        for field in ('expected_policy_revision','request_id','reason','anchor_required','planning_roots'):
+            v=getattr(args,field,None)
+            if v is not None:data[field]=v
+        if isinstance(data.get('anchor_required'),str):data['anchor_required']=data['anchor_required']=='true'
+        request=PolicyChange.model_validate(data).model_dump(mode='json')
+        return local_admin(path,'project-policy-set',project_id=args.project,ledger_uuid=uuid,request=request)
     if args.group=='service':
         if args.action=='install-launcher':
             if not path.exists():initialize(path)

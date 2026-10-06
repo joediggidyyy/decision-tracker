@@ -1,11 +1,13 @@
 import {installProjects} from './projects.js';
 import {installActionForm,titles} from './action-form.js';
 import {installDecisionForm} from './decision-form.js';
+import {installApplicationForm} from './application-form.js';
 import {sendRetained,definitive,readResponse} from './save-request.js';
 import {LiveMonitor} from './live.js';
 import {installAccount} from './account.js';
 const $=id=>document.getElementById(id);
 const state={csrf:null,caps:[],projects:[],project:null,revision:0,record:null,cursor:null,edit:null,listRevision:null,contextFingerprint:null,view:null};
+const applicationPrefill=new URLSearchParams(location.hash.slice(1));
 let pageGeneration=0,listGeneration=0,detailGeneration=0,searchTimer=null,acceptedRoute=location.hash;
 function rememberView(key=null){if(state.project){const params=new URLSearchParams({project:state.project.project_id});if(state.view==='projects-view')params.set('view','projects');else if(key)params.set('decision',key);history.replaceState(null,'','#'+params);}else if(state.view==='projects-view')history.replaceState(null,'','#view=projects');acceptedRoute=location.hash;}
 const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
@@ -52,7 +54,7 @@ async function listing(more=false){
  if(more&&state.cursor)q.set('cursor',state.cursor);
  const r=await api(base()+'/decisions?'+q);if(generation!==listGeneration)return;state.revision=r.revision;state.listRevision=r.revision;state.cursor=r.next_cursor;
  if(!more)$('results').replaceChildren();
- for(const d of r.data){const b=button(d.key+' · '+d.title,()=>projectUI.navigate(async()=>{show('workspace');await detail(d.key);}),$('results'));b.className='decision-row';b.dataset.key=d.key;b.setAttribute('aria-current',state.record?.key===d.key?'true':'false');b.append(node('span',d.status+(d.locked?' · protected':'')+(d.work_tag?' · '+d.work_tag:''),'muted'));}
+ for(const d of r.data){const b=button(d.key+' · '+d.title,()=>projectUI.navigate(async()=>{show('workspace');await detail(d.key);}),$('results'));b.className='decision-row';b.dataset.key=d.key;b.setAttribute('aria-current',state.record?.key===d.key?'true':'false');b.append(node('span',d.status+(d.applied?' · applied':'')+(d.locked?' · protected':'')+(d.work_tag?' · '+d.work_tag:''),'muted'));}
  if(state.record){let label=$('outside-filters');if(label)label.remove();if(![...$('results').querySelectorAll('button')].some(b=>b.dataset.key===state.record.key)&&!state.cursor){label=node('p','Outside current filters','muted');label.id='outside-filters';$('detail').prepend(label);}}
  if(!$('results').children.length)$('results').append(node('p','No decisions match these filters.','muted'));
  $('result-count').textContent=$('results').querySelectorAll('button').length+(state.cursor?' +':'');$('load-more').hidden=!state.cursor;live.update();if(!state.record&&state.view==='workspace')await defaultDecision();
@@ -64,11 +66,18 @@ async function expand(value){if(!value||typeof value!=='object'||!value.chunks_u
 async function all(url){const values=[];let cursor=null;do{const r=await api(url+(cursor?(url.includes('?')?'&':'?')+'cursor='+encodeURIComponent(cursor):''));values.push(...r.data);cursor=r.next_cursor;}while(cursor);return values;}
 async function detail(key){
  const generation=++detailGeneration;
+ $('detail').dataset.loaded='false';
  const r=await api(base()+'/decisions/'+key);state.revision=r.revision;state.schemaVersion=r.schema_version;const d=r.data;
  for(const k of Object.keys(d))d[k]=await expand(d[k]);
  if(generation!==detailGeneration)return;rememberView(key);state.record=d;for(const b of $('results').querySelectorAll('button'))b.setAttribute('aria-current',b.dataset.key===key?'true':'false');
  const box=$('detail');box.dataset.loaded='false';box.replaceChildren();
- box.append(node('p',d.key+' · revision '+d.revision,'eyebrow'),node('h2',d.title),node('p',d.status+(d.locked?' · protected baseline '+d.baseline:''),'badge'));
+ box.append(node('p',d.key+' · revision '+d.revision,'eyebrow'),node('h2',d.title));
+ const badges=node('div',undefined,'decision-badges');badges.append(node('span',d.status+(d.locked?' · protected baseline '+d.baseline:''),'badge'));
+ if(d.status==='closed'){
+  if(d.planning_application?.applied)badges.append(node('span','applied','badge applied-tag'));
+  else button('apply',()=>edit('decision.apply'),badges,!state.caps.includes('write')).className='badge apply-button';
+ }
+ box.append(badges);
  if(state.schemaVersion<2)box.append(node('p','This project needs a verified data-format upgrade before the new decision form can be used. Existing decisions remain readable.','notice'));
  const question=node('section',undefined,'question-section'),heading=node('div',undefined,'question-heading');heading.append(node('h3','Question','section-title'));question.append(heading,node('p',d.question,'long-text'));box.append(question);
  for(const [label,k] of [['Answer','answer'],['Rationale','rationale']])box.append(node('h3',label),node('p',d[k]||'Not recorded.','long-text'));
@@ -118,6 +127,8 @@ async function detail(key){
   historyBox.append(node('p','Loading history…'));try{const history=await all(base()+'/decisions/'+key+'/history');if(!historyOpen||request!==historyRequest||generation!==detailGeneration)return;historyBox.replaceChildren(node('h3','Recorded history','section-title'));
   for(const h of history){const row=node('section');row.append(node('p','Ledger '+h.ledger_revision+' · '+h.principal_id+' · '+h.reason));const content=node('div');let open=false,serial=0;
    const toggle=button('View snapshot',async()=>{open=!open;const ticket=++serial;toggle.setAttribute('aria-expanded',String(open));content.replaceChildren();if(!open)return;content.append(node('p','Loading snapshot…'));try{const snapshot=(await api(base()+'/decisions/'+key+'/as-of?revision='+h.ledger_revision)).data;if(open&&ticket===serial&&historyOpen&&request===historyRequest&&generation===detailGeneration)content.replaceChildren(node('pre',JSON.stringify(snapshot,null,2)));}catch(e){if(open&&ticket===serial&&content.isConnected)content.replaceChildren(node('p',e.message,'error'));}},row);toggle.setAttribute('aria-expanded','false');row.append(content);historyBox.append(row);}
+  const receipts=await all(base()+'/decisions/'+key+'/applications');if(!historyOpen||request!==historyRequest||generation!==detailGeneration)return;
+  for(const receipt of receipts){const row=node('section',undefined,'application-history');row.append(node('h3','Planning application'),node('p','Ledger '+receipt.ledger_revision+' · '+receipt.recorded_by+' · '+receipt.recorded_at),node('p',receipt.anchor?receipt.anchor.path+' · '+receipt.anchor.section.heading:'Anchor omitted'),node('pre',JSON.stringify(receipt,null,2)));historyBox.append(row);}
   }catch(e){if(historyOpen&&request===historyRequest&&generation===detailGeneration)historyBox.replaceChildren(node('p',e.message,'error'));}
  },box);box.append(historyBox);historyButton.setAttribute('aria-expanded','false');
  const context=(await api(base()+'/decisions/'+key+'/context')).data;if(generation!==detailGeneration)return;state.contextFingerprint=context.context_fingerprint;
@@ -125,13 +136,16 @@ async function detail(key){
  box.dataset.loaded='true';syncFocus();live.start(state.project,key);
 }
 function edit(op,child=null){
+ $('editor').classList.toggle('application-editor',op==='decision.apply');
+ if(op==='decision.apply'&&state.schemaVersion<3){message('Upgrade this ledger before recording planning application.',true);return;}
  if(['decision.close','decision.edit-resolution'].includes(op)&&state.schemaVersion<2){message('This project needs a data-format upgrade before decisions can be recorded.',true);return;}
  const d=state.record||{},invoker=document.activeElement;
  if(op==='decision.edit-resolution'||(d.status!=='open'&&['decision.edit','decision.set-work','decision.defer','decision.resume','decision.challenge','decision.resolve-challenge','option.add','option.edit','option.retire','reference.add','reference.edit','reference.retire','link.add','link.unlink'].includes(op))){message('Reopen this decision before changing its content.',true);return;}
  state.edit={op,child,revision:state.revision,decisionRevision:d.revision,key:d.key,requestId:crypto.randomUUID(),pending:null,invoker};
- $('edit-title').textContent=titles[op];$('edit-project').textContent=state.project.name+(d.key&&op!=='decision.create'?' · '+d.key:'');
+ $('edit-title').textContent=op==='decision.apply'?'Apply to planning':titles[op];$('edit-project').textContent=state.project.name+(d.key&&op!=='decision.create'?' · '+d.key:'');
  const fields=$('edit-fields');fields.replaceChildren();$('form-error').hidden=true;$('conflict').hidden=true;
  if(op==='decision.close')state.edit.resolution=installDecisionForm(fields,d,false);
+ else if(op==='decision.apply')state.edit.action=installApplicationForm(fields,d,{api,base,onPrefilled:()=>{if(state.edit?.op==='decision.apply')state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();},prefill:applicationPrefill.get('project')===state.project.project_id&&applicationPrefill.get('decision')===d.key?{document:applicationPrefill.get('planning-document'),section:applicationPrefill.get('planning-section'),sha256:applicationPrefill.get('planning-sha256')}:null});
  else state.edit.action=installActionForm(fields,op,d,child,{decide:state.caps.includes('decide'),findDecisions:async q=>{const items=await all(base()+'/decisions?q='+encodeURIComponent(q));return op==='link.add'?items.filter(item=>item.status==='open'&&!item.locked):items;}});
  $('save-edit').textContent=state.edit.action?.submit||'Save decision';state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();
  if(!$('editor').open)$('editor').showModal();fields.querySelector('input:not([disabled]),textarea,select')?.focus();
@@ -163,7 +177,7 @@ $('edit-form').onsubmit=async event=>{
   if(e.code==='INVALID_TRANSITION')error.textContent+=' Your draft is preserved. Review the current record and reopen it before editing.';
   if(['REVISION_CONFLICT','STALE_REVISION','REQUEST_ID_REUSED','PROPOSAL_CHANGED'].includes(e.code)||e.code?.includes('STALE')){
    const c=$('conflict');c.hidden=false;c.replaceChildren(node('p','Your draft is preserved. Review the current record before rebasing this draft.'));
-   button('Load current state alongside draft',async()=>{const r=await api(base()+(editState.op==='decision.create'?'/decisions':'/decisions/'+editState.key));c.querySelector('.current-comparison')?.remove();const comparison=node('pre',JSON.stringify(r.data,null,2),'current-comparison');c.append(comparison);if(editState.op==='decision.create'||r.data.status==='open'||!['decision.edit','option.add','option.edit','option.retire','reference.add','reference.edit','reference.retire','link.add','link.unlink','decision.set-work','decision.defer','decision.resume','decision.challenge','decision.resolve-challenge'].includes(editState.op))button('Use these revisions; keep draft for review',()=>{editState.revision=r.revision;editState.decisionRevision=editState.op==='decision.create'?undefined:r.data.revision;editState.requestId=crypto.randomUUID();editState.pending=null;message('Draft retained. Review differences, then save explicitly.');},c);},c);
+   button('Load current state alongside draft',async()=>{const r=await api(base()+(editState.op==='decision.create'?'/decisions':'/decisions/'+editState.key));c.querySelector('.current-comparison')?.remove();const comparison=node('pre',JSON.stringify(r.data,null,2),'current-comparison');c.append(comparison);if(editState.op==='decision.create'||r.data.status==='open'||!['decision.edit','option.add','option.edit','option.retire','reference.add','reference.edit','reference.retire','link.add','link.unlink','decision.set-work','decision.defer','decision.resume','decision.challenge','decision.resolve-challenge'].includes(editState.op))button('Use these revisions; keep draft for review',()=>{editState.revision=r.revision;editState.decisionRevision=editState.op==='decision.create'?undefined:r.data.revision;editState.action?.rebase?.(r.data);editState.requestId=crypto.randomUUID();editState.pending=null;message('Draft retained. Review differences, then save explicitly.');},c);},c);
    if(e.code==='PROPOSAL_CHANGED')button('Keep my text as a written answer',()=>{editState.resolution.asWritten();message('Proposal selection cleared. Review current revisions before saving your written answer.');},c);
   }else if(editState.pending&&(!e.code||e.code==='INTERNAL_ERROR')){
    const c=$('conflict');c.hidden=false;c.replaceChildren(node('p','The save outcome is unknown. Your original request is retained. Retry it before changing the draft.'));

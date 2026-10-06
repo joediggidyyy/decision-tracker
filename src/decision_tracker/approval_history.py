@@ -8,11 +8,12 @@ from .errors import require
 def validate(db,meta):
     def check(ok):require(ok,'INTEGRITY_FAILED','Approval history is inconsistent.',409)
     receipts=[store.unpack(x) for x in db.execute('SELECT * FROM schema_upgrades')]
+    receipts=[r for r in receipts if r['from_version'] in (0,1)]
     check(len(receipts)==1)
     receipt=receipts[0];boundary=receipt['ledger_revision']
-    check(receipt['to_version']==2 and receipt['from_version'] in (0,1) and 0<=boundary<=meta['ledger_revision'])
+    check(receipt['to_version'] in (2,3) and 0<=boundary<=meta['ledger_revision'])
     if receipt['from_version']==0:
-        check(boundary==0 and receipt['receipt_json']=={'initialized':True,'ledger_uuid':meta['ledger_uuid'],'schema_version':2,'revision':0})
+        check(boundary==0 and receipt['receipt_json']=={'initialized':True,'ledger_uuid':meta['ledger_uuid'],'schema_version':receipt['to_version'],'revision':0})
         check(receipt['request_hash']==store.digest(receipt['receipt_json']))
     else:
         body={'expected_revision':boundary,'request_id':receipt['request_id']}

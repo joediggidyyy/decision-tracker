@@ -1,6 +1,6 @@
 """Human password sessions with durable epoch revocation and separate agent bearer auth."""
 import secrets,time,threading
-from .auth import Principal
+from .auth import Principal, SESSION_IDLE_SECONDS, SESSION_MAX_SECONDS
 from .errors import require
 
 class PasswordAuth:
@@ -16,7 +16,7 @@ class PasswordAuth:
     def new_session(self,epoch):
         with self.lock:
             tick=time.monotonic()
-            self.sessions={k:v for k,v in self.sessions.items() if tick-v['seen']<1800 and tick-v['created']<28800 and v['epoch']==epoch}
+            self.sessions={k:v for k,v in self.sessions.items() if tick-v['seen']<SESSION_IDLE_SECONDS and tick-v['created']<SESSION_MAX_SECONDS and v['epoch']==epoch}
             require(len(self.sessions)<256,'RETRY_LATER','Session capacity reached.',503)
             sid=secrets.token_urlsafe(32);session={'principal':self.principals['operator'],'csrf':secrets.token_urlsafe(32),'epoch':epoch,'created':tick,'seen':tick}
             self.sessions[sid]=session;return sid,session
@@ -25,7 +25,7 @@ class PasswordAuth:
         state=self.store.state()
         with self.lock:
             value=self.sessions.get(sid);tick=time.monotonic()
-            require(value and state['state']=='active' and value['epoch']==state['epoch'] and tick-value['seen']<1800 and tick-value['created']<28800,'UNAUTHORIZED','Sign in again.',401)
+            require(value and state['state']=='active' and value['epoch']==state['epoch'] and tick-value['seen']<SESSION_IDLE_SECONDS and tick-value['created']<SESSION_MAX_SECONDS,'UNAUTHORIZED','Sign in again.',401)
             if touch:value['seen']=tick
             return value
     def logout(self,sid):

@@ -4,6 +4,20 @@
 
 Changes to the local application are recorded here. This is a development history, not a packaged release announcement.
 
+## Unreleased — planning application
+
+- Add the closed/apply/applied tag cycle, a two-field planning-anchor form and immutable application receipts. Reopen resets current application while preserving history.
+- Add bounded canonical planning section resolution, document/policy conflicts and owner-local anchor policy. Imports preserve evidence without granting filesystem access.
+- Add `decision apply`, `decision applications` and nested `project policy show/set`; retain all ten top-level CLI groups.
+- Extend explicit backup/restore-checked upgrades and native interchange to schema 3; schema 1/2 remain readable.
+- Allow a superseded question's replacement to remain open, preserving the deprecation reason and relationship.
+
+## Unreleased — explicit resolution choice switching
+
+- Replace answer, explanation and change note when switching proposals; clear answer and explanation when choosing a written answer.
+- Remove the extra edited-text preservation prompt and its focus movement. Approval details remain independent of the solution choice.
+- Add public agent guidance to read and address challenge history during investigation.
+
 ## Unreleased — public source and user launch instructions
 
 - Reflect operator-enabled public repository visibility without inventing a distribution license.

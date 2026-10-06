@@ -26,7 +26,7 @@ def run(path):
     server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=cfg.port,workers=1,access_log=False,proxy_headers=False,log_config=None,timeout_graceful_shutdown=5))
     app.state.shutdown=lambda:setattr(server,'should_exit',True)
     def call(request):
-        return dispatch(value,cfg,app.state.auth.store,life,request['operation'],{k:v for k,v in request.items() if k not in ('operation','version','deployment_id')})
+        return dispatch(value,cfg,app.state.auth.store,life,request['operation'],{k:v for k,v in request.items() if k not in ('operation','version','deployment_id')},app.state.service)
     pipe=AdminPipe(value['deployment_id'],call)
     try:
         pipe.start();logger.info('instance=%s state=STARTING',life.instance_id)
