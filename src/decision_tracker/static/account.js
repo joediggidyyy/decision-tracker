@@ -11,7 +11,7 @@ export function installAccount({$,state,api,signedIn,show,message,dirty,live,has
  async function loginView(){
   try{const info=await preauth();$('setup-fields').hidden=!setup;$('setup-confirm-label').hidden=!setup;$('token').autocomplete=setup?'new-password':'current-password';$('setup-code').required=setup;$('setup-confirm').required=setup;
    $('login-submit').textContent=setup?'Set password':'Sign in';$('login-heading').textContent=setup?'Create your password':'Sign in';
-   $('login-help').textContent=legacy?'Use the isolated preview credential.':info?.recovery_pending?'Password recovery is in progress. Complete it using the local CLI.':setup?'Enter the one-time setup code from your local terminal, then choose a private password.':'Your password stays private. It is not stored in this browser.';
+   $('login-help').textContent=legacy?'Use the isolated preview credential.':info?.recovery_pending?'Password recovery is in progress. Complete it using the local CLI.':setup?'Enter the one-time setup code from your local terminal, then choose a private password.':'Security Efficiency Awareness Minimalism';
    $('login-form').hidden=!!info?.recovery_pending;
   }catch(error){message(error.message,true);}
  }
