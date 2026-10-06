@@ -1,2 +1,2 @@
-"""Decision Tracker package scaffold. Application behavior is not implemented."""
+"""Decision Tracker browser application, command-line interface and shared API."""
 __version__ = "0.1.0.dev0"

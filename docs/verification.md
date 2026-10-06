@@ -6,6 +6,8 @@ Internal alpha for local use. On 2026-10-05 the operator confirmed successful pa
 
 ## Reading this record
 
+Public source visibility was verified after the operator changed the repository setting. User-installation proof `.local/proofs/a892b22b0b844caeae24da6e02b703d8` passed through native `dt-package` with source unchanged: a new wheel installation used runtime dependencies only (no Calamum or test runner), the installed console script started and reused an isolated managed service, HTTP served the sign-in page, and safe shutdown completed. The `service open` command was exercised with only browser dispatch stubbed. This is Windows package/CLI launch evidence, not a cross-platform or real-browser external-protocol qualification. Subsequent changes document these results without changing tested runtime or package behavior.
+
 The dated sections below preserve historical checkpoints. Statements about schema 1, revision 1, missing zoom evidence or pending activation describe their checkpoint, not current deployment state. Later sections supersede those specific limits where evidence is provided. Current project revisions and permissions must be read through the service; they are operational data and are not maintained in this portable document.
 
 The browser now labels the resolution action **Decide**. Earlier references to the Close button describe its former label. The CLI/API operation and the `closed` state are unchanged.

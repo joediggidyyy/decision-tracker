@@ -6,7 +6,7 @@
 
 Decision Tracker is a portable application for people and agents. Each project has its own SQLite decision ledger, selected through a central catalog. The browser, CLI and API share the same rules, revision checks and audit history.
 
-**Internal alpha · Python 3.14 · Private repository**
+**Local alpha · Python 3.14 · Public source repository**
 
 The application supports creating and editing decisions, comparing alternatives, recording evidence and changing decision status. The operator accepted the earlier system-browser experience and launch from Polymath home. The decision-page layout and action forms are implemented and regression-tested, including isolated Chromium workflows and actual 200% browser zoom. The installed migration project is active on data format 2. Projects & data now uses separate bounded Backup/Export managers, configurable page sizes, horizontal navigation and persistent translucent control panes. The file-manager batch is implemented and verified; operator reassessment remains separate. Closed records now block ordinary edits and work-state changes in all interfaces; lifecycle actions and inspection remain available. See the [verification record](docs/verification.md) for automated evidence and remaining qualification limits.
 
@@ -26,34 +26,37 @@ The application supports creating and editing decisions, comparing alternatives,
 
 ## Quick start
 
-Run commands from this repository's root using **its own `.venv`**. A parent project's environment does not provide this installation. For a new checkout, complete the [development setup](CONTRIBUTING.md#development-environment) first.
-
-Activate the environment in PowerShell, then check the CLI and open the application:
+The managed browser launcher currently targets **Windows** with **Python 3.14**. Download this repository or clone it, then open PowerShell in the repository folder. Install the application and its runtime dependencies into your own environment:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
-decision-tracker --help
-decision-tracker service open
+py -3.14 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install .
+.\.venv\Scripts\decision-tracker.exe --help
 ```
 
-On Windows, install the current-user launcher once to enable the Polymath home card:
+This installs the `decision-tracker` CLI, web assets and runtime dependencies. Users do not need Polymath home, Calamum, development dependencies or the maintainer's local environment. Installation requires access to the Python package index unless you provide a compatible offline wheel collection. Contributors running tests should use the separate [development setup](CONTRIBUTING.md#development-environment).
+
+Initialize the current-user deployment and register its optional `decision-tracker://open` link handler once:
 
 ```powershell
-decision-tracker service install-launcher --json
+.\.venv\Scripts\decision-tracker.exe service install-launcher --json
 ```
 
 For **first-time password setup**, run this in a private local terminal:
 
 ```powershell
-decision-tracker auth setup-code
+.\.venv\Scripts\decision-tracker.exe auth setup-code
+.\.venv\Scripts\decision-tracker.exe service open
 ```
 
 The code expires after 15 minutes. Enter it in the browser and choose your private password, then sign in. Do not share the code or password with an agent or put it in a command argument. Existing users simply sign in; [password changes and CLI-only recovery](docs/operations.md) have separate procedures.
 
-The home card starts or reuses the service and opens the app in a new browser tab. An agent can start it without opening a browser:
+**Launch again:** run `.\.venv\Scripts\decision-tracker.exe service open` from this folder. It starts or reuses the backend and opens the browser. Keep the installed environment in place: the launcher records its location. You can activate `.venv` to use the shorter `decision-tracker` command; no global PATH change is required.
+
+The Polymath home card uses the same registered handler, but is not needed by other users. Browsers may ask permission to open the local application. If a custom link leaves a blank tab, use the CLI launch command above. An agent can start the backend without opening a browser:
 
 ```powershell
-decision-tracker service ensure-running --json
+.\.venv\Scripts\decision-tracker.exe service ensure-running --json
 ```
 
 The managed service stops after 90 minutes without useful activity when no operation or protected draft is active. No Windows startup task is installed.
@@ -99,7 +102,7 @@ Environment folders, credentials, project databases and generated evidence stay 
 
 ## Status and rights
 
-Version `0.1.0.dev0` is for private local use. The [verification record](docs/verification.md) distinguishes automated proof, browser observations and operator acceptance. The QA Engine and Polymath Ledger migrations are planned separately; neither has been executed. Public distribution and broader platform qualification remain outside this checkpoint.
+Version `0.1.0.dev0` is a local-use alpha in a public source repository. The [verification record](docs/verification.md) distinguishes automated proof, browser observations and operator acceptance. The QA Engine and Polymath Ledger migrations are planned separately; neither has been executed. A packaged public release and broader platform qualification remain outside this checkpoint.
 
 No distribution license or public release has been selected. Third-party license terms still apply.
 

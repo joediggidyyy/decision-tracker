@@ -846,6 +846,69 @@
         "sandbox_test": [],
         "empirical_test": []
       }
+    },
+    {
+      "id": "dt-package",
+      "title": "Decision Tracker independent user installation",
+      "summary": "Install a wheel with runtime dependencies only and verify the installed CLI managed launch and shutdown.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "package-launch"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "package-launch",
+            "title": "Fresh installed console script and managed service",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_package.py",
+              "tests/test_bootstrap.py",
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
     }
   ]
 }

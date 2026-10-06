@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md) · [Changelog](../CHANGELOG.md)
 
-Use this map to find the guide for your task. These documents describe the shipped internal alpha; approved business plans and project migration plans remain in Polymath custody.
+Use this map to find the guide for your task. These documents describe the local-use alpha in the public source repository; approved business plans and project migration plans remain in Polymath custody.
 
 ## Use and operate
 

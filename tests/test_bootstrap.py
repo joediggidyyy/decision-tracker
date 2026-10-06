@@ -23,8 +23,8 @@ def test_portable_project_descriptor_and_roots():
         assert ".." not in Path(value).parts
     assert (ROOT / "catalog/test_definitions.json").is_file()
 
-def test_private_repository_contract_and_cli_entry_point():
+def test_repository_contract_and_cli_entry_point():
     contract = json.loads((ROOT / "docs/repository-contract.json").read_text())
-    assert contract["visibility"] == "private"
+    assert contract["visibility"] == "public"
     assert contract["license"] == "not-selected"
     assert tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["scripts"]["decision-tracker"] == "decision_tracker.cli:main"

@@ -10,7 +10,7 @@ Business plans, approval evidence, Polymath home and project-specific migration 
 
 Cleanup removes only reproducible caches. Preserve failed tests, source manifests, old proofs, local wheels, the working venv, deployment and owner data. Git dangling objects from staged revisions are not corruption and are not routinely pruned.
 
-A private push still transmits every reachable ancestor of the selected branch. Inspect history as well as current files. Targeted pattern scanning reduces obvious disclosure risk but is not an exhaustive secret detector. Push only the reviewed branch after the requested final authorization; do not publish a release or change repository visibility.
+The source repository is public. Every push transmits reachable history as well as current files, so inspect both. Targeted pattern scanning reduces obvious disclosure risk but is not an exhaustive secret detector. Push only the reviewed branch after the requested final authorization; do not publish a release or change repository visibility.
 
 ---
 

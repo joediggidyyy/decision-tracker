@@ -8,6 +8,8 @@ Run command examples from the repository root after activating its environment:
 .\.venv\Scripts\Activate.ps1
 ```
 
+For a new user installation, follow the [Quick start](../README.md#quick-start). Installing the package creates the `decision-tracker` console script. `decision-tracker service open` is the user launch point; it starts or reuses the managed backend and opens the default browser. Without activation, invoke `.\.venv\Scripts\decision-tracker.exe service open` directly. Polymath home is optional and its link may require browser permission to open an external application. The managed launcher is currently qualified on Windows only.
+
 ## Storage and credentials
 
 Use local nonsynchronized storage, separate from source and OneDrive. The managed deployment lives under `%LOCALAPPDATA%/DecisionTracker/`. Configuration contains principal scopes and file paths; auth.sqlite holds password/token verifiers. secrets.bin uses current-user DPAPI for the launcher key and explicitly stored agent tokens. These files are not project exports or transferable ledger backups. OS account ownership remains the local trust boundary.

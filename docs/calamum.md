@@ -38,6 +38,8 @@ evidence is not an authenticated signed release.
 
 ## Optional capabilities
 
+For fresh user-installation qualification, run `tools/prove.py --definition dt-package --budget-seconds 180`. It builds a wheel, installs only runtime dependencies into a new environment, verifies the installed console script and packaged assets, and exercises isolated Windows managed startup, reuse and shutdown. It reads the served sign-in page; browser dispatch is stubbed for the CLI `service open` check. No owner data or protocol registry entries are changed by this proof.
+
 Monitor capability discovery and optional signing were reviewed. Hardware/packet
 capture, privileged repair and signed publication are not required for this app
 bootstrap and are not activated. Future empirical browser checks must retain

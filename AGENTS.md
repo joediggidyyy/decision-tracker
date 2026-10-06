@@ -1,7 +1,7 @@
 # Decision Tracker agent instructions
 
 Read README.md, docs/repository-contract.json and docs/calamum.md first.
-This is a Polymath-owned private repository, not a client-owned tree.
+This is a Polymath-owned public source repository, not a client-owned tree.
 Apply the organization workspace/naming and workflow authorities from the
 operator's Polymath workspace. Machine-local authority locations belong in
 .local, not portable runtime code.

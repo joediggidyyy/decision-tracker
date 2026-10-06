@@ -14,7 +14,7 @@ A correctly titled email sends Joe an alert. Describe the affected version, obse
 
 After emailing, an optional call or text to **948.888.2336** is encouraged for urgent concerns. It does not replace the email.
 
-Decision Tracker is an internal alpha for local use. No production support window or response-time commitment is declared.
+Decision Tracker is a local-use alpha in a public source repository. No production support window or response-time commitment is declared.
 
 ## Implemented boundaries
 

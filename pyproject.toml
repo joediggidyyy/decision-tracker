@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 authors = [{name = "Polymath Global"}]
 dependencies = ["fastapi==0.121.3", "uvicorn==0.38.0"]
-classifiers = ["Development Status :: 3 - Alpha", "Private :: Do Not Upload"]
+classifiers = ["Development Status :: 3 - Alpha"]
 
 [project.urls]
 Repository = "https://github.com/joediggidyyy/decision-tracker"

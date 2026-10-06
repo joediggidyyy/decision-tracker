@@ -2,7 +2,13 @@
 
 [Home](README.md) · [Documentation](docs/README.md) · [Verification](docs/verification.md)
 
-Changes to the private local application are recorded here. This is a development history, not a public release announcement.
+Changes to the local application are recorded here. This is a development history, not a packaged release announcement.
+
+## Unreleased — public source and user launch instructions
+
+- Reflect operator-enabled public repository visibility without inventing a distribution license.
+- Document runtime-only installation and the installed `decision-tracker service open` user launch command.
+- Qualify fresh wheel installation, CLI startup/reuse, sign-in-page serving and safe shutdown without the maintainer's environment or development dependencies.
 
 ## Unreleased — decision wording and tooltip layering
 
