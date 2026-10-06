@@ -4,43 +4,29 @@
 
 > A lasting decision record for human–agent collaboration on complex projects.
 
-Complex projects depend on many critical, specific decisions. As plans evolve and people or agents join the work, you need to retrieve what was decided, why it was decided, and the evidence behind it—without losing or rewriting the history.
+Decision Tracker helps you and your agents collaborate on complex projects with many critical, specific decisions. Keep each decision, its reasoning and supporting evidence retrievable throughout the project lifecycle. As plans evolve, immutable snapshots preserve earlier decisions so you can revisit what was agreed and why.
 
-Decision Tracker gives you and your agents a shared project decision ledger. Capture questions, compare alternatives, record approvals and preserve immutable decision snapshots throughout the project lifecycle. When a decision changes, its earlier record remains available for review.
+**Local-use alpha · Python 3.14 · Public source repository**
 
-**Local-use alpha · Windows launcher · Python 3.14**
+Capture open questions, compare alternatives, record approvals and connect related decisions. Use the browser to review and decide, and the CLI or API to give agents access to the same project context. Closed decisions require explicit reopening before edits; protected baselines require amendment. Earlier records remain available as the project changes. Decision approval, implementation and verification stay distinct, so agreeing on an approach does not imply that the work is complete.
 
-## Keep the reasoning with the decision
+## Site map
 
-A decision is more useful when you can recover its context. Each record brings together the question, answer, rationale, alternatives and supporting references. Relationships connect decisions so you can investigate dependencies and the impact of a proposed change.
-
-- **Investigate:** record an open question, compare options and attach evidence.
-- **Decide:** save the answer, reasoning and approval as a closed decision.
-- **Revisit:** explicitly reopen a decision when circumstances change, or amend a protected baseline.
-- **Retrieve:** search project records and inspect earlier revisions, approvals and relationships.
-- **Retire:** mark decisions as deprecated while preserving their history and replacement relationships.
-
-Decision approval, implementation and verification are recorded separately. Deciding what to do does not mean the work has been completed or tested.
-
-## Work together across sessions
-
-Use the browser to review and decide. Give your agents scoped access through the CLI or API to retrieve context, prepare proposals and make authorized changes. All three interfaces use the same decision rules and history.
-
-Each project has its own ledger within a central project catalog. Explicit project identity and revision checks help prevent changes to the wrong project and protect against overwriting work made by another participant. If a request is interrupted, retained request IDs support safe retries.
-
-The [agent-access guide](skills/decision-tracker/SKILL.md) explains credentials, project binding and conflict handling. Agent access does not replace your approval requirements. This version provides CLI and API access; it does not include an MCP server.
-
-## Preserve history as the project evolves
-
-You can edit an open decision, but you cannot silently rewrite a closed one. Reopening is an explicit, recorded step before further edits. Protected baselines require an amendment, and deprecated records remain available for inspection.
-
-Committed changes retain immutable snapshots of affected decisions. Earlier answers, rationale and approval records remain retrievable as the current record evolves. The application has no hard-delete operation for decisions.
-
-Backups and native exports preserve ledger history. Restore checks use isolated copies, and imports create candidates for review rather than overwriting active data. See the [operations guide](docs/operations.md) for backup and recovery procedures.
+| I want to… | Start here |
+|---|---|
+| Install and launch the application | [Quick start](#quick-start) |
+| Find a guide | [Documentation index](docs/README.md) |
+| Work through the CLI or API | [Interface guide](docs/interfaces.md) |
+| Give your agents access | [Agent-access skill](skills/decision-tracker/SKILL.md) |
+| Manage credentials, launch or recovery | [Operations guide](docs/operations.md) |
+| Understand the implementation | [Architecture](docs/architecture.md) |
+| Contribute code or run tests | [Contributing](CONTRIBUTING.md) |
+| Report a security concern | [Private reporting instructions](SECURITY.md) |
+| Review what has changed | [Changelog](CHANGELOG.md) |
 
 ## Quick start
 
-The managed browser launcher currently supports **Windows with Python 3.14**. Download or clone this repository, then open PowerShell in its folder:
+The managed browser launcher currently targets **Windows** with **Python 3.14**. Download this repository or clone it, then open PowerShell in the repository folder. Install the application and its runtime dependencies into your own environment:
 
 ```powershell
 py -3.14 -m venv .venv
@@ -48,63 +34,77 @@ py -3.14 -m venv .venv
 .\.venv\Scripts\decision-tracker.exe --help
 ```
 
-This installs the application, browser assets and CLI with their runtime dependencies. Installation requires access to the Python package index unless you supply compatible offline wheels.
+This installs the application, browser assets and `decision-tracker` CLI with their runtime dependencies. Installation requires access to the Python package index unless you provide compatible offline wheels. If you want to contribute code or run tests, follow the [development setup](CONTRIBUTING.md#development-environment).
 
-Initialize your local deployment and register the `decision-tracker://open` application link:
+Initialize the current-user deployment and register its optional `decision-tracker://open` link handler once:
 
 ```powershell
 .\.venv\Scripts\decision-tracker.exe service install-launcher --json
 ```
 
-For first-time password setup, run these commands in your private terminal:
+For **first-time password setup**, run this in a private local terminal:
 
 ```powershell
 .\.venv\Scripts\decision-tracker.exe auth setup-code
 .\.venv\Scripts\decision-tracker.exe service open
 ```
 
-Enter the setup code in the browser, choose your password and sign in. The code expires after 15 minutes. Keep your password and setup code private; agents use separate credentials.
+The code expires after 15 minutes. Enter it in the browser and choose your private password, then sign in. Do not share the code or password with an agent or put it in a command argument. Existing users simply sign in; [password changes and CLI-only recovery](docs/operations.md) have separate procedures.
 
-**To launch again:**
+**Launch again:** run `.\.venv\Scripts\decision-tracker.exe service open` from this folder. It starts or reuses the backend and opens the browser. Keep the installed environment in place: the launcher records its location. You can activate `.venv` to use the shorter `decision-tracker` command; no global PATH change is required.
 
-```powershell
-.\.venv\Scripts\decision-tracker.exe service open
-```
-
-This starts or reuses the local backend and opens your browser. Keep the installed environment in place because the launcher records its location. If you activate `.venv`, you can use the shorter command `decision-tracker service open`.
-
-You can also open the registered application link from a browser that permits external applications. If the browser leaves a blank tab or blocks the link, use the CLI command above.
-
-For agent access without opening a browser:
+You can also launch through the registered `decision-tracker://open` application link. Your browser may ask permission to open the local application. If the link leaves a blank tab, use the CLI launch command above. Your agents can start the backend without opening a browser:
 
 ```powershell
 .\.venv\Scripts\decision-tracker.exe service ensure-running --json
 ```
 
-The backend normally stops after 90 minutes without useful activity when no operation or protected draft is active. It does not install a Windows startup task.
+The managed service stops after 90 minutes without useful activity when no operation or protected draft is active. No Windows startup task is installed.
 
-## Your data stays local
+## Three interfaces, one decision model
 
-Project ledgers use SQLite in local, nonsynchronized storage. The application listens on your computer's loopback interface; this version is not intended for network hosting. Password credentials are separate from project ledgers, and stored agent tokens use Windows account protection.
-
-Keep active databases out of synchronized folders and source control. Use verified backups and exports for recovery. The [security guide](SECURITY.md) describes access controls, trust boundaries and how to report a concern privately.
-
-## Guides
-
-| You want to… | Read |
+| Interface | What it provides |
 |---|---|
-| Give an agent access | [Agent-access guide](skills/decision-tracker/SKILL.md) |
-| Use commands or integrate with the API | [CLI and API guide](docs/interfaces.md) |
-| Manage passwords, launch, backups or recovery | [Operations guide](docs/operations.md) |
-| Understand refresh and concurrent work | [Live updates](docs/live-updates.md) |
-| Understand how the application works | [Architecture](docs/architecture.md) |
-| Review tested behavior and current limitations | [Verification](docs/verification.md) |
-| Contribute code or run tests | [Contributing](CONTRIBUTING.md) |
-| Find all documentation | [Documentation index](docs/README.md) |
+| Browser | Review questions and alternatives, record decisions, search project records and inspect their history. Your drafts are retained when validation fails or another participant changes the record. |
+| CLI | Let agents retrieve decision context and apply authorized changes. Manage projects, decisions, alternatives, references, relationships and backups through structured commands. |
+| API | Integrate decision tracking with your tools through versioned `/api/v1` routes. Revision checks and durable request IDs protect concurrent changes and retries. Authenticated `GET /api/v1/schema` provides the API specification. |
 
-## Availability
+The [portable agent skill](skills/decision-tracker/SKILL.md) explains explicit project binding, credential use and conflict recovery. Copy its folder into your agent's supported skill directory. An MCP server is not included in this alpha.
 
-Version `0.1.0.dev0` is a local-use alpha. Windows installation and managed CLI launch have been tested; broader platform support is not yet qualified. Source is available in this public repository. No distribution license or packaged release has been selected; third-party license terms still apply.
+Use **Decide** beside an open question to record the answer and approval. The resulting record has status `closed`; CLI `decision close` and API `decision.close` retain their existing names. The decision is recorded without marking its implementation or verification complete.
+
+[Live updates](docs/live-updates.md) tell you when another participant has changed the data without moving your focus or replacing your draft.
+
+## Integrity and data boundaries
+
+Each project has its own SQLite decision ledger within a central project catalog. Decisions are open, closed or deprecated, with separate work, challenge and evidence states. Protected baselines require amendment, and a rejected option remains distinct from an unselected one. The application has no hard-delete or silent-overwrite operation for decisions.
+
+Committed changes retain immutable snapshots of affected decisions. You can retrieve earlier answers, reasoning and approval records as the current decision evolves. Backups and native exports preserve ledger history; imports create candidates for review rather than replacing active data. Restore checks use isolated copies.
+
+Your data stays in local, nonsynchronized storage. Password credentials are separate from project ledgers, and stored agent tokens use Windows account protection. The application listens on your computer's loopback interface; this version is not intended for network hosting. See the [security guide](SECURITY.md) and [operations guide](docs/operations.md) for access controls and recovery procedures.
+
+## Repository map
+
+```text
+decision-tracker/
+├── src/decision_tracker/     Shared service, CLI, domain rules and browser assets
+├── docs/                    Architecture, interface and operating guides
+├── skills/decision-tracker/ Portable agent-access instructions
+├── tests/                   Assertions and observed-workflow checks
+├── catalog/                 Native Calamum test definitions
+├── tools/                   Bounded proof and browser-observation helpers
+├── .calamum/project.json    Portable Calamum project descriptor
+├── pyproject.toml           Package metadata and CLI entry point
+└── requirements-dev.lock    Exact development dependency versions
+```
+
+Keep your environment, credentials, project databases and generated evidence out of source control. See the [tracking guide](docs/tracking-boundaries.md) and [repository contract](docs/repository-contract.json) for contribution and repository requirements.
+
+## Status and rights
+
+Version `0.1.0.dev0` is a local-use alpha in a public source repository. Windows installation and managed CLI launch have been tested; broader platform support is not yet qualified. See the [verification record](docs/verification.md) for tested behavior and current limitations.
+
+No distribution license or public release has been selected. Third-party license terms still apply.
 
 ---
 
