@@ -13,6 +13,14 @@ Registration and approval escalation are separate. Resolve agent-owned choices o
 
 Routine mechanics can remain in execution documentation when they implement an already defined contract without introducing a consequential choice. Formatting and private variable names usually qualify; public names or formats that create a compatibility commitment can require a decision. Search existing decisions first. Cite settled requirements and record only the new choice; do not reopen an approved requirement merely to choose its engineering representation. Use the existing decision/options/references/link operations, not a second editable register or a new CLI root. The repository's docs/decision-workflow.md gives human-facing examples; these instructions remain self-contained when installed alone.
 
+## Recommended proposals
+
+Whenever presenting multiple proposals for a decision, explicitly identify exactly one as **Recommended**. Explain why it is preferred for the current requirements, including its benefits and costs. Do not rely on proposal order or leave the operator to infer the recommendation.
+
+Record that recommendation in the Tracker as well as in any review presentation. The current proposal model has no dedicated recommendation field: append `(Recommended)` to the recommended proposal's title and include a concise recommendation rationale in its description. Keep the proposal's benefit and cost fields informative. Use the existing option operations; preserve proposal IDs and unrelated content. When changing the recommendation, remove the old recommended label so each decision has one current recommendation. Read current decision and proposal state before editing, and respect revision and closed-record controls.
+
+Recommended is advisory. It does not mean selected, approved, closed, implemented or accepted. Do not change proposal disposition, resolve the decision or report operator approval merely to identify a recommendation.
+
 ## Planning links
 
 Link records that an authorized closed resolution has been incorporated into one designated authoritative planning section. It does not mark implementation, verification or acceptance complete. Confirm the cited planning content against the approved answer before recording this attestation; anchor/hash checks alone do not establish meaning. Do not mark every closed decision linked merely because the feature is available.
