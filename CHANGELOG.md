@@ -4,6 +4,14 @@
 
 Changes to the local application are recorded here. This is a development history, not a packaged release announcement.
 
+## Unreleased — coherent refresh and modal recovery
+
+- Refresh results stages results, selected detail, collections and context at one revision, with identity/generation guards, one retry and a 20-second deadline.
+- Bind the final selected decision stream; wait for a sufficiently recent state frame before reporting refresh completion. Restore monitoring on persisted pageshow.
+- Keep refresh accessible through Review workspace updates inside the editor. Comparison preserves drafts and exact pending saves; explicit rebase validates current state without saving.
+- Make popup retry and sign-in reconcile without a browser reload. Keep domain-specific refresh actions scoped.
+- Require actual planning links and linked-value readback for closed decisions in the portable and installed agent skills.
+
 ## Unreleased — planning-link terminology
 
 - Rename the browser cycle to closed/link/linked, including the form, result rows and History. An owner-authorized omitted anchor displays recorded.

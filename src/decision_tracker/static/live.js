@@ -1,13 +1,16 @@
 /* Latest-state notifications never mutate displayed records or editor revisions. */
 export function freshness(connected,latest,loaded){
  if(!connected||!latest)return 'gray';
+ if((loaded.key||null)!==latest.decision_key)return 'gray';
  if(loaded.key&&(!latest.selected_exists||latest.decision_revision!==loaded.decisionRevision))return 'red';
  if(latest.ledger_revision!==loaded.listRevision||(loaded.key&&latest.context_fingerprint!==loaded.contextFingerprint))return 'yellow';
  return 'green';
 }
 export class LiveMonitor{
- constructor(loaded,render){this.loaded=loaded;this.render=render;this.generation=0;this.latest=null;this.connected=false;this.binding=null;}
- update(){this.render(freshness(this.connected,this.latest,this.loaded()),this.label);}
+ constructor(loaded,render){this.loaded=loaded;this.render=render;this.generation=0;this.latest=null;this.connected=false;this.binding=null;this.listeners=new Set();}
+ update(){this.render(freshness(this.connected,this.latest,this.loaded()),this.label);for(const listener of this.listeners)listener();}
+ ensure(project,key){if(this.binding?.project!==project?.project_id||this.binding?.uuid!==project?.ledger_uuid||this.binding?.key!==key||!this.connected)this.start(project,key);}
+ ready(signal,minimumRevision=0){return new Promise((resolve,reject)=>{const generation=this.generation;const finish=error=>{this.listeners.delete(check);signal.removeEventListener('abort',abort);error?reject(error):resolve(this.latest);};const abort=()=>finish(signal.reason||Error('Refresh cancelled.'));const check=()=>{if(generation!==this.generation)finish(Error('Connection changed during refresh.'));else if(this.connected&&this.latest&&this.latest.ledger_revision>=minimumRevision)finish();else if(['Sign in required','Unavailable','Service stopped'].includes(this.label))finish(Error(this.label));};this.listeners.add(check);signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();else check();});}
  stop(label='Disconnected'){this.generation++;this.controller?.abort();clearTimeout(this.timer);clearTimeout(this.watchdog);this.binding=null;this.latest=null;this.connected=false;this.label=label;this.update();}
  start(project,key){this.stop(project?'Connecting':'Select project');if(!project)return;this.binding={project:project.project_id,uuid:project.ledger_uuid,key};this.attempt=0;this.connect(this.generation);}
  async connect(generation){

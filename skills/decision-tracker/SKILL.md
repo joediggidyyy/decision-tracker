@@ -45,6 +45,12 @@ With owner-authorized optional anchors, blank input records incorporation as `om
 
 Use the application service as the sole ledger writer. The installed `decision-tracker` CLI and HTTP API enforce the same rules. This skill does not grant authority to change decisions, project registrations, credentials, or data custody. Continue within the user's existing authorization; read and prepare a concrete proposal when mutation authority is missing.
 
+## Required planning link after closure
+
+For every closed decision created or closed within the authorized task, incorporate its resolution into authoritative planning and record a real planning link through `decision link` (or `decision.link`). Do not report the decision workflow complete until readback confirms `status: closed`, `linked: true` and `planning_link_recorded: true` for each affected record. These are service-derived values; never set them directly, fabricate a receipt or substitute an omitted-anchor `recorded` value for `linked`.
+
+Use the actual canonical document and section, current ledger/decision/policy revisions and observed content hash. Closure and linking are separate committed requests. Reopening clears current-cycle linking; after authorized reclosure, link the new cycle again. Check existing closed records in task scope for missing links without rewriting unrelated historical records. If incorporation or a required schema upgrade/planning-root registration is not authorized or cannot be completed, report each unlinked key and its exact prerequisite; retain the request and continue independent work. Do not loosen anchor policy to manufacture completion. Linking does not claim implementation, verification or owner acceptance.
+
 ## Start or reuse the local service
 
 For an installed Windows deployment, run `decision-tracker service ensure-running --json` before data access. It starts or reuses the service without opening a browser. Pass `--deployment FILE` for a nondefault deployment. Do not install a startup task or keep it alive with polling; useful requests and bounded draft leases manage the 90-minute idle policy.

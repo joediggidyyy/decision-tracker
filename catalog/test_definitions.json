@@ -268,7 +268,7 @@
     {
       "id": "dt-live-focus",
       "title": "Decision Tracker live-update boundaries",
-      "summary": "Focused notification, transport, authorization and parser proof.",
+      "summary": "Notification, transport, coherent refresh and modal draft recovery proof.",
       "status": "active",
       "category": "regression",
       "selector_policy": "exact-name-only",
@@ -312,6 +312,8 @@
               "tests/test_live.py",
               "tests/test_live_http.py",
               "tests/test_live_monitor.py",
+              "tests/test_refresh_browser.py",
+              "tests/test_action_browser.py",
               "-q",
               "--basetemp",
               ".local/test-tmp"

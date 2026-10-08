@@ -6,6 +6,7 @@ const loaded={key:'D000001',decisionRevision:1,listRevision:1,contextFingerprint
 const latest={version:1,project_id:'alpha',ledger_uuid:'uuid',ledger_revision:1,decision_key:'D000001',decision_revision:1,selected_exists:true,context_fingerprint:'abc'};
 assert.equal(freshness(false,latest,loaded),'gray');
 assert.equal(freshness(true,latest,loaded),'green');
+assert.equal(freshness(true,{...latest,decision_key:null},loaded),'gray');
 assert.equal(freshness(true,{...latest,ledger_revision:2},loaded),'yellow');
 assert.equal(freshness(true,{...latest,decision_revision:2},loaded),'red');
 assert.equal(freshness(true,{...latest,context_fingerprint:'changed'},loaded),'yellow');
@@ -29,6 +30,18 @@ assert.equal((await observe([encoder.encode('event: state\ndata: broken\n\n')]))
 assert.equal((await observe([encoder.encode('event: state\ndata: '+JSON.stringify({...latest,ledger_uuid:'wrong'})+'\n\n')])).accepted,false);
 assert.equal((await observe([encoder.encode('x'.repeat(17000))])).accepted,false);
 assert.equal((await observe([],false,401)).label,'Sign in required');
+assert.equal((await observe([],false,403)).label,'Unavailable');
 const missing=encoder.encode('event: unavailable\ndata: {}\n\n');assert.equal((await observe([missing])).label,'Unavailable');
 const backwards=encoder.encode('event: state\ndata: '+JSON.stringify({...latest,ledger_revision:0})+'\n\n');assert.equal((await observe([frame,backwards])).latest.ledger_revision,1);
+const stopped=new LiveMonitor(()=>loaded,()=>{});const cancellation=new AbortController();const waiting=stopped.ready(cancellation.signal);cancellation.abort(Error('deadline'));await assert.rejects(waiting,/deadline/);assert.equal(stopped.listeners.size,0);
+const readiness=new LiveMonitor(()=>loaded,()=>{});readiness.connected=true;readiness.latest=latest;const waitSignal=new AbortController();let resolved=false;const pendingReady=readiness.ready(waitSignal.signal,2).then(()=>resolved=true);await Promise.resolve();assert.equal(resolved,false);readiness.latest={...latest,ledger_revision:2};readiness.update();await pendingReady;assert.equal(resolved,true);assert.equal(readiness.listeners.size,0);
+const refreshSource=readFileSync(new URL('../src/decision_tracker/static/refresh.js',import.meta.url),'utf8');
+const {collectWorkspace}=await import('data:text/javascript;base64,'+Buffer.from(refreshSource).toString('base64'));
+const signal=new AbortController().signal;
+const list={revision:2,schema_version:3,data:[],next_cursor:null};
+const detail={revision:2,data:{key:'D000001',title:'Current',collections:{alternatives:{url:'/options'},references:{url:'/references'},links:{url:'/links'}}}};
+const read=async path=>path.includes('/decisions?')?structuredClone(list):path.endsWith('/D000001')?structuredClone(detail):path.endsWith('/context')?{revision:2,data:{context_fingerprint:'ctx'}}:{revision:2,data:[],next_cursor:null};
+const candidate=await collectWorkspace(read,'/projects/alpha','','D000001',signal);assert.equal(candidate.context.context_fingerprint,'ctx');assert.deepEqual(candidate.record.references,[]);
+await assert.rejects(collectWorkspace(async path=>{const r=await read(path);if(path==='/references')r.revision=3;return r;},'/projects/alpha','','D000001',signal),e=>e.code==='REFRESH_CHANGED'&&e.stage==='decision collections');
+const cancelled=new AbortController();cancelled.abort(Error('superseded'));await assert.rejects(collectWorkspace(read,'/projects/alpha','',null,cancelled.signal),/superseded/);
 console.log('monitor cases passed');
