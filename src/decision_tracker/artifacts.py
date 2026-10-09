@@ -19,7 +19,14 @@ SORT={"decisions":"key","alternatives":"id","references":"id","links":"id",
       "approval_events":"ledger_revision,operation_ordinal","schema_upgrades":"recorded_at,request_id",
       "application_receipts":"ledger_revision,operation_ordinal","application_policy_events":"policy_revision"}
 
-def tables(version):return TABLES+('approval_events','schema_upgrades')+('application_receipts','application_policy_events') if version==3 else TABLES+('approval_events','schema_upgrades') if version==2 else TABLES
+def tables(version):
+    base=TABLES+('approval_events','schema_upgrades')+('application_receipts','application_policy_events') if version>=3 else TABLES+('approval_events','schema_upgrades') if version==2 else TABLES
+    if version==4:
+        from .legacy import TABLES as legacy_tables, SORT as legacy_sort
+        SORT.update({'legacy_'+k:v for k,v in legacy_sort.items()})
+        SORT.update(legacy_imports='import_id',legacy_native_seeds='native_key')
+        base+=legacy_tables
+    return base
 
 def bundle(db):
     meta=store.metadata(db)
@@ -40,15 +47,16 @@ def validate_history(db):
         require(result.get("ledger_uuid")==meta["ledger_uuid"] and result.get("revision")==tx["ledger_revision"],
                 "INTEGRITY_FAILED","Transaction outcome metadata differs.",409)
     for row in db.execute("SELECT * FROM decisions ORDER BY key"):
-        obj=store.unpack(row);Decision.model_validate(obj)
-        key=obj["key"];previous=0;latest=None
+        obj=store.unpack(row);store.validate_decision(db,obj)
+        from .legacy import initial
+        key=obj["key"];latest=initial(db,key);previous=1 if latest else 0
         for rev in db.execute("SELECT * FROM revisions WHERE decision_key=? ORDER BY ledger_revision",(key,)):
             snap=json.loads(rev["snapshot_json"])
             require(store.digest(snap)==rev["snapshot_sha256"],"INTEGRITY_FAILED","Historical snapshot hash differs.",409)
             require(rev["prior_decision_revision"]==previous and snap["revision"]==previous+1 and snap["key"]==key,
                     "INTEGRITY_FAILED","Historical decision revisions are inconsistent.",409)
             current={k:v for k,v in snap.items() if k not in ("alternatives","references","links")}
-            Decision.model_validate(current)
+            store.validate_decision(db,current)
             for family,model in (("alternatives",Option),("references",Reference),("links",Link)):
                 for child in snap[family]:
                     model.model_validate(child)
@@ -62,13 +70,17 @@ def validate_history(db):
     validator.original={r[0]:0 for r in db.execute("SELECT key FROM decisions")}
     validator.validate()
     for table,model in store.MODELS.items():
-        for row in db.execute(f'SELECT * FROM "{table}"'):model.model_validate(store.unpack(row))
+        for row in db.execute(f'SELECT * FROM "{table}"'):
+            store.validate_decision(db,store.unpack(row)) if table=='decisions' else model.model_validate(store.unpack(row))
     if meta['schema_version']>=2:
         from .approval_history import validate
         validate(db,meta)
-    if meta['schema_version']==3:
+    if meta['schema_version']>=3:
         from .planning_links import validate
         validate(db,meta)
+    if meta['schema_version']==4:
+        from .legacy import validate
+        validate(db)
     return {"integrity":"ok","ledger_uuid":meta["ledger_uuid"],"revision":meta["ledger_revision"],
             "logical_sha256":store.digest(bundle(db))}
 
@@ -202,9 +214,12 @@ class Artifacts:
 
     def import_native(self,principal,value,promote=False):
         principal.need("maintain")
+        if isinstance(value,dict) and value.get('format')=='decision-tracker.legacy-import/v1':
+            from .legacy_candidates import import_legacy
+            return import_legacy(self,principal,value,promote)
         # Import privilege does not grant registry access; candidate registration is separate.
         version=value.get('schema_version') if isinstance(value,dict) else None
-        require(type(version) is int and version in (1,2,3),'UNSUPPORTED_SCHEMA','Unsupported interchange format.',409)
+        require(type(version) is int and version in (1,2,3,4),'UNSUPPORTED_SCHEMA','Unsupported interchange format.',409)
         require(isinstance(value,dict) and set(value)==set(tables(version))|{"format","schema_version","ledger_uuid","ledger_revision","meta"},
                 "VALIDATION_ERROR","Native bundle fields do not match v1.")
         require(value["format"]==f"decision-tracker/v{version}",
@@ -238,7 +253,7 @@ class Artifacts:
                 columns=[r[1] for r in db.execute(f'PRAGMA table_info("{table}")')]
                 for row in value[table]:
                     require(isinstance(row,dict) and set(row)==set(columns),"VALIDATION_ERROR","Native row fields do not match schema.",table=table)
-                    if table in store.MODELS:store.MODELS[table].model_validate(row)
+                    if table in store.MODELS and not (version==4 and table=='decisions'):store.MODELS[table].model_validate(row)
                     vals=[store.encode(row[c]) if c in store.JSON_FIELDS else int(row[c]) if isinstance(row[c],bool) else row[c] for c in columns]
                     db.execute(f'INSERT INTO "{table}" ({",".join(chr(34)+c+chr(34) for c in columns)}) VALUES({",".join("?" for c in columns)})',vals)
             result=validate_history(db)

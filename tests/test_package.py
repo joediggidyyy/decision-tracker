@@ -1,4 +1,4 @@
-import hashlib,json,os,subprocess,sys,socket,time,urllib.request
+import hashlib,json,os,subprocess,sys,socket,time,urllib.request,zipfile,tarfile
 from pathlib import Path
 
 def test_fresh_offline_wheel_install(tmp_path):
@@ -12,6 +12,23 @@ def test_fresh_offline_wheel_install(tmp_path):
   return p.stdout
  run([sys.executable,"-m","pip","wheel","--no-deps","--no-build-isolation","--wheel-dir",str(work),str(root)])
  wheel=next(work.glob("decision_tracker-*.whl"))
+ run([sys.executable,"-c","from setuptools.build_meta import build_sdist; import os,sys; os.chdir(sys.argv[1]); build_sdist(sys.argv[2])",str(root),str(work)])
+ source=next(work.glob("decision_tracker-*.tar.gz"))
+ with zipfile.ZipFile(wheel) as archive:
+  wheel_names=archive.namelist()
+  for name in ['saved_decisions.py','static/saved-decisions.js','schemas/legacy-import-v1.json']:
+   assert 'decision_tracker/'+name in wheel_names
+  assert any(n.endswith('/licenses/LICENSE') for n in wheel_names)
+  assert any(n.endswith('/licenses/NOTICE') for n in wheel_names)
+ with tarfile.open(source) as archive:
+  source_names=[n.partition('/')[2] for n in archive.getnames() if '/' in n]
+  for name in ['AGENTS.md','docs/packaging.md','docs/saved-decisions.md','skills/decision-tracker/SKILL.md','LICENSE','NOTICE','MANIFEST.in']:
+   assert name in source_names,name
+ for name in wheel_names+source_names:
+  parts=Path(name).parts
+  assert not any(p in {'.local','.venv','.git','deployment','data','backups','exports','__pycache__'} for p in parts),name
+  assert not name.endswith(('.sqlite','.db','.pem','.key','.pfx','.p12','.pyc')),name
+  assert Path(name).name not in {'secrets.bin','deployment.json'},name
  venv=work/"venv"
  run([sys.executable,"-m","venv",str(venv)])
  python=venv/("Scripts/python.exe" if os.name=="nt" else "bin/python")
@@ -22,6 +39,8 @@ def test_fresh_offline_wheel_install(tmp_path):
  assert info["prefix"]!=info["base"]
  assert Path(info["path"]).is_relative_to(venv)
  for name,hash in info["assets"].items():assert hashlib.sha256((root/"src/decision_tracker/static"/name).read_bytes()).hexdigest()==hash
+ installed_contract=run([str(python),'-c',"from decision_tracker.legacy import contract_digest; print(contract_digest())"]).strip()
+ assert installed_contract==hashlib.sha256((root/'src/decision_tracker/schemas/legacy-import-v1.json').read_bytes()).hexdigest()
  command=python.with_name("decision-tracker.exe" if os.name=="nt" else "decision-tracker")
  assert "data" in run([str(command),"--help"])
  launch_verified=False
@@ -49,4 +68,4 @@ def test_fresh_offline_wheel_install(tmp_path):
      if sock.connect_ex(('127.0.0.1',port))!=0:break
     time.sleep(.1)
    else:raise AssertionError('Isolated managed service did not stop')
- (root/".local/package-proof.json").write_text(json.dumps({"wheel_sha256":hashlib.sha256(wheel.read_bytes()).hexdigest(),"isolated":True,"runtime_dependencies_only":True,"cli_launch_verified":launch_verified,"browser_dispatch":"stubbed; loopback sign-in page read through HTTP","assets":info["assets"]},indent=2),encoding="utf-8")
+ (root/".local/package-proof.json").write_text(json.dumps({"wheel_path":str(wheel),"source_path":str(source),"source_sha256":hashlib.sha256(source.read_bytes()).hexdigest(),"archive_contents_checked":True,"wheel_sha256":hashlib.sha256(wheel.read_bytes()).hexdigest(),"isolated":True,"runtime_dependencies_only":True,"cli_launch_verified":launch_verified,"browser_dispatch":"stubbed; loopback sign-in page read through HTTP","assets":info["assets"]},indent=2),encoding="utf-8")

@@ -22,10 +22,10 @@ class InstanceLock:
     def __init__(self,path):self.path=path;self.file=None
     def acquire(self):
         self.file=self.path.open("a+b")
-        self.file.seek(0,2)
-        if self.file.tell()==0:self.file.write(b"0");self.file.flush()
-        self.file.seek(0)
         try:
+            self.file.seek(0,2)
+            if self.file.tell()==0:self.file.write(b"0");self.file.flush()
+            self.file.seek(0)
             if os.name=="nt":
                 import msvcrt
                 msvcrt.locking(self.file.fileno(),msvcrt.LK_NBLCK,1)
@@ -138,13 +138,16 @@ def create_app(config:Config,environment=None):
             if request.method in ("POST","PUT","PATCH"):
                 require(request.headers.get("content-type","").split(";")[0].lower()=="application/json",
                         "VALIDATION_ERROR","Use application/json.",422)
-                cap=10*1024*1024 if request.url.path in ("/api/v1/imports/new","/api/v1/imports/validate") else 1024*1024
+                cap=10*1024*1024 if request.url.path in ("/api/v1/imports/new","/api/v1/imports/validate", "/api/v1/saved-decisions/changes", "/api/v1/saved-decisions/import-check", "/api/v1/saved-decisions/prepare") else 1024*1024
                 if request.url.path.startswith(("/api/v1/session","/api/v1/account","/api/v1/service")):cap=16384
                 body=bytearray()
                 async for chunk in request.stream():
                     require(len(body)+len(chunk)<=cap,"LIMIT_EXCEEDED","Request body exceeds the documented limit.",413)
                     body.extend(chunk)
                 request._body=bytes(body)
+                if request.url.path in ('/api/v1/imports/new','/api/v1/imports/validate','/api/v1/saved-decisions/changes','/api/v1/saved-decisions/import-check','/api/v1/saved-decisions/prepare'):
+                    from .legacy import parse
+                    parse(request._body)
             response=await call_next(request)
         except Fault as exc:response=error(exc,request)
         except Exception:
@@ -237,12 +240,17 @@ def create_app(config:Config,environment=None):
         return response
 
     @app.get("/api/v1/schema")
-    def schema(request:Request):
+    def schema(request:Request,contract:str|None=None):
         principal(request)
+        from .legacy import schema as legacy_schema,contract_digest
+        if contract is not None:
+            require(contract=='legacy-import-v1','NOT_FOUND','Schema contract unavailable.',404)
+            return legacy_schema()
         schema=app.openapi().copy()
         from .approvals import Approval
         from .planning_links import PlanningLink
-        schema['x-decision-tracker']={'capabilities':['approval_events_v1','planning_links_v1','planning_applications_v1'],'ledger_schemas':[1,2,3],
+        schema['x-decision-tracker']={'capabilities':['approval_events_v1','planning_links_v1','planning_applications_v1','legacy_history_v1','inactive_candidate_recovery_v1','saved_decisions_v1'],'ledger_schemas':[1,2,3,4],
+                                     'legacy_contract_url':'/api/v1/schema?contract=legacy-import-v1','legacy_contract_sha256':contract_digest(),
                                      'approval_input':Approval.model_json_schema(),
                                      'planning_link_input':PlanningLink.model_json_schema(),
                                      'planning_link_policy_write':'os_owner_cli_only',
@@ -288,7 +296,11 @@ def create_app(config:Config,environment=None):
 
     @app.get("/api/v1/projects/{project_id}/decisions")
     def decisions(project_id:str,request:Request,q:str="",status:str|None=None,work:str|None=None,
-                  owner:str|None=None,cursor:str|None=None,limit:int=Query(50,ge=1,le=200)):
+                  owner:str|None=None,cursor:str|None=None,limit:int=Query(50,ge=1,le=200),source_namespace:str|None=None,source_id:str|None=None):
+        if source_namespace is not None or source_id is not None:
+            p=principal(request);p.need('read');require(source_namespace and source_id,'VALIDATION_ERROR','Supply source namespace and source ID together.')
+            with service.catalog.project(project_id,identity(request),p) as (db,_):key=service.legacy_reads.source_key(db,source_namespace,source_id)
+            return output(request,service.detail(project_id,identity(request),p,key))
         return output(request,service.list_decisions(project_id,identity(request),principal(request),q,status,work,owner,cursor,limit))
 
     @app.get("/api/v1/projects/{project_id}/decisions/{key}")
@@ -322,9 +334,13 @@ def create_app(config:Config,environment=None):
     if not legacy:
         from .account_api import mount as mount_account
         mount_account(app,origin,error)
+    from .saved_decisions import mount as mount_saved_decisions
+    mount_saved_decisions(app)
     from .artifacts import mount
     from fastapi.staticfiles import StaticFiles
     mount(app)
+    from .legacy_api import mount as mount_legacy
+    mount_legacy(app)
     from .approval_api import mount as mount_approvals
     mount_approvals(app)
     from .planning_links import mount as mount_planning_links

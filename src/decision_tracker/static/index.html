@@ -12,9 +12,7 @@
 <header class="topbar"><div class="topbar__inner">
 <a class="brand" href="/" aria-label="Decision Tracker home"><img src="/static/logo.png" alt="Polymath Global logo" width="34" height="34"><span>Polymath <span class="mono">Global</span></span></a>
 <div class="app-name">Decision Tracker <span class="local-mark">Local workspace</span></div>
-<div class="header-actions"><label>Project <select id="project"><option value="">Choose project</option></select></label>
-<button id="freshness" type="button" class="freshness gray" title="Select project" aria-label="Select project"><span class="freshness-dot" aria-hidden="true"></span><span id="freshness-label">Select project</span></button><span id="freshness-announcement" class="sr-only" role="status" aria-live="polite"></span>
-<nav class="page-nav" aria-label="Pages"><button id="decisions-button" type="button">Decisions</button><button id="projects-button" type="button">Projects & data</button></nav><button id="signout" type="button" hidden>Sign out</button></div>
+<div class="header-actions"><nav class="page-nav" aria-label="Pages"><button id="decisions-button" type="button">Decisions</button><button id="projects-button" type="button">Projects</button><button id="saved-button" type="button">Library</button></nav><button id="signout" type="button" hidden>Sign out</button></div>
 </div></header>
 <button id="focus-toggle" class="focus-toggle" type="button" aria-label="Focus decision" title="Focus decision" aria-pressed="false" hidden><span aria-hidden="true"></span></button>
 <div class="local-shell">
@@ -25,7 +23,9 @@
 <form id="login-form"><div id="setup-fields" hidden><label>Setup code <input id="setup-code" type="password" autocomplete="off" maxlength="128"></label></div><label>Password <input id="token" type="password" autocomplete="current-password" required maxlength="128"></label><label id="setup-confirm-label" hidden>Confirm new password <input id="setup-confirm" type="password" autocomplete="new-password" maxlength="128"></label><button id="login-submit" class="primary" type="submit">Sign in</button></form>
 </section>
 <section id="workspace" class="workspace" hidden>
-<div class="workspace-heading"><div><p class="eyebrow">Project decisions</p><h1 id="workspace-title">Decisions</h1></div></div>
+<div class="workspace-heading"><div><p class="eyebrow">Project decisions</p><h1 id="workspace-title">Decisions</h1></div><div id="project-picker" class="project-picker"><label>Project <select id="project"><option value="">Choose project</option></select></label>
+<button id="freshness" type="button" class="freshness gray" title="Select project" aria-label="Select project"><span class="freshness-dot" aria-hidden="true"></span><span id="freshness-label">Select project</span></button><span id="freshness-announcement" class="sr-only" role="status" aria-live="polite"></span>
+</div></div>
 <form id="filters" class="toolbar"><label>Search <input id="search" type="search" placeholder="Search decisions" maxlength="512"></label>
 <label>Status <select id="status"><option value="">All statuses</option><option>open</option><option>closed</option><option>deprecated</option></select></label>
 <label>Work <select id="work"><option value="">All work</option><option>queued</option><option>under-investigation</option><option>deferred</option></select></label>
@@ -35,7 +35,7 @@
 <section id="detail" class="detail" aria-label="Selected decision"><p class="muted">Choose a decision to see its question, answer, evidence and history.</p></section>
 </div></section>
 <section id="projects-view" class="page admin-page" hidden>
-<div class="admin-heading"><h1>Projects &amp; data</h1></div>
+<div id="projects-heading" class="admin-heading"><h1>Projects</h1></div>
 <section><div class="admin-heading"><h2 class="section-title">Projects</h2></div><div id="project-admin"></div></section>
 <section id="maintenance"></section>
 

@@ -4,6 +4,25 @@
 
 Changes to the local application are recorded here. This is a development history, not a packaged release announcement.
 
+## Unreleased — packaging preparation
+
+- Align browser, Library, recovery and agent guidance with completed behavior. Add a packaging/support guide and explicit source-distribution contents; qualify archive boundaries alongside fresh wheel installation. Keep version 0.1.0.dev0 and publication separate.
+
+## Unreleased — project selector placement
+
+- Move the shared project selector and connection-status control from the header into the existing heading area on Decisions and Projects. Preserve selection across page navigation and wrap within narrow screens.
+
+## Unreleased — saved decisions and optional groups
+
+- Library group dropdown, persistent decision selection and Check all; Edit/Delete are inside View. Publish records approval and finishes injected decisions closed and protected, with phase-specific replay for browser, CLI and API.
+
+- Add a blank Library page for reusable decisions, optional editable tag relationships and staging with individual add/drop.
+- Use Projects and Library as the short page labels. Reuse the application shell with Library controls above staging in the right panel, and a compact-screen panel toggle.
+- Reuse ordinary question/draft forms in individual action popups. Keep staged selections across page navigation and browser Back/Forward; retain conflict review and exact pending saves.
+- Publish copied content through ordinary project Change requests, retaining next numbering, repeat publication and exact retry behavior. Group metadata ends at staging.
+- Add shared saved-decisions API routes and `data saved-*` CLI commands, portable current-content bundles and checked saved-history backups.
+- Preserve saved drafts during conflict/unknown-outcome recovery; damaged saved storage leaves project work available.
+
 ## Unreleased — coherent refresh and modal recovery
 
 - Refresh results stages results, selected detail, collections and context at one revision, with identity/generation guards, one retry and a 20-second deadline.
@@ -118,3 +137,13 @@ Changes to the local application are recorded here. This is a development histor
 - Preserve historical request replay and approval history; withdraw new edit-resolution writes.
 - Keep the fixed control grid, disable unavailable actions, hide child mutation controls and place Protect/Amend beside Approval.
 - Scope notices to committed page navigation and preserve drafts after closure by another session.
+
+## Unreleased — immutable legacy decision origins
+
+- Add the packaged closed legacy-import/v1 contract, token-preserving E1 origin tables and native v4 interchange.
+- Preserve original source identities, ordered history, unknowns, attribution, references and appearances separately from native approvals and transactions.
+- Extend existing decision/query/data commands and read-only browser source views; retain existing CLI roots and supported native formats.
+- Add durable candidate import intent/replay and digest-bound inactive export, backup, verification and independent restore checks.
+- Keep sparse exceptions provenance-bound and new native resolutions strict. No live-ledger upgrade, migration execution or cutover is included.
+
+- Correct concurrent Windows launch-lock initialization to use the existing bounded contention retry path and close failed handles.

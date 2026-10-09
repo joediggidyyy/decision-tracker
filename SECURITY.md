@@ -30,6 +30,8 @@ Decision Tracker is a local-use alpha in a public source repository. No producti
 - Contained local paths with symlink/junction rejection.
 - Packaged offline assets, restrictive CSP and user text rendered through textContent.
 
+Library content uses its own read/write/maintain checks; project publication additionally requires explicit project binding and write/decide authority. Browser Publish records operator approval through the existing lifecycle. Agent credentials cannot claim authenticated operator approval. Portable saved-content bundles carry content and tags, not credentials or historical approvals. These files can still contain private user text; distribute application packages separately from user exports and backups.
+
 Local account compromise is outside the application boundary. Loopback HTTP is deliberately local and not suitable for LAN exposure. The session cookie uses HTTP on loopback, so Secure is not set; do not reverse proxy this alpha to a network listener.
 
 No credential belongs in a URL, command argument, tracked file or report. Runtime data, exports, backups and evidence remain ignored. Reference locators are inert evidence text and are never automatically fetched.

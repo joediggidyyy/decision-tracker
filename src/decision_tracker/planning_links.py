@@ -63,7 +63,7 @@ def set_policy(service,project_id,uuid,principal,request):
     with service.catalog.coordinator:
         with service.catalog.project(project_id,uuid,principal,True) as (db,project):
             meta=store.metadata(db,uuid)
-            require(meta['schema_version']==3,'UPGRADE_REQUIRED','Upgrade this ledger before configuring planning-link policy.',409)
+            require(meta['schema_version']>=3,'UPGRADE_REQUIRED','Upgrade this ledger before configuring planning-link policy.',409)
             row=db.execute('SELECT * FROM application_policy_events WHERE request_id=?',(str(request.request_id),)).fetchone()
             if row:
                 require(row['request_hash']==digest and json.loads(row['event_json'])['recorded_by']==principal.id,'REQUEST_ID_REUSED','Policy request ID has different content or actor.',409)
@@ -128,7 +128,7 @@ def document_inventory(service,db,directory=None):
         directories=roots
         # Previously linked documents join the pool without creating another
         # mutable registry. Authorization still comes only from current roots.
-        if store.metadata(db)['schema_version']==3:
+        if store.metadata(db)['schema_version']>=3:
             candidates.update(Path(r[0]) for r in db.execute("SELECT DISTINCT json_extract(receipt_json,'$.anchor.path') FROM application_receipts WHERE json_extract(receipt_json,'$.anchor.path') IS NOT NULL LIMIT 1000"))
     try:
         for root in directories:
@@ -210,13 +210,18 @@ def read_document(service,db,locator,byte_budget=None):
 
 def resolution(db,key,revision):
     row=db.execute('SELECT r.ledger_revision,r.snapshot_json,r.snapshot_sha256,t.request_json FROM revisions r JOIN transactions t USING(ledger_revision) WHERE decision_key=? AND ledger_revision<=? ORDER BY ledger_revision',(key,revision)).fetchall()
-    prior=None;closure=None
+    from .legacy import initial
+    origin=initial(db,key)
+    prior=origin;closure=None
     for r in row:
         snap=json.loads(r['snapshot_json'])
         approved=any(op['op'] in ('decision.close','decision.edit-resolution') and op['key']==key for op in json.loads(r['request_json'])['operations'])
         if snap['status']=='closed' and (approved or prior is None or prior['status']!='closed' or (snap['answer'],snap['rationale'])!=(prior['answer'],prior['rationale'])):closure=r
         prior=snap
     if prior is None or prior['status']!='closed':return None
+    if closure is None and origin is not None and origin['status']=='closed':
+        seed=db.execute('SELECT import_id,snapshot_sha256 FROM legacy_native_seeds WHERE native_key=?',(key,)).fetchone()
+        return {'resolution_id':'import:'+seed[0]+':'+seed[1],'closure_revision':0,'closure_snapshot_sha256':seed[1],'approval_event_id':None}
     require(closure is not None,'INTEGRITY_FAILED','Closed decision has no historical closure.',409)
     event=db.execute('SELECT event_id FROM approval_events WHERE decision_key=? AND ledger_revision=? ORDER BY operation_ordinal DESC LIMIT 1',(key,closure['ledger_revision'])).fetchone() if store.metadata(db)['schema_version']>=2 else None
     return {'resolution_id':'approval:'+event[0] if event else 'legacy:'+str(closure['ledger_revision'])+':'+closure['snapshot_sha256'],
@@ -226,7 +231,7 @@ def current(db,key,revision):
     r=resolution(db,key,revision)
     if r is None:return None
     receipt=None
-    if store.metadata(db)['schema_version']==3:
+    if store.metadata(db)['schema_version']>=3:
         row=db.execute('SELECT receipt_json FROM application_receipts WHERE decision_key=? AND resolution_id=? AND ledger_revision<=?',(key,r['resolution_id'],revision)).fetchone()
         receipt=json.loads(row[0]) if row else None
     return {**r,'recorded':bool(receipt),'linked':bool(receipt and receipt['anchor']),'receipt':receipt}
@@ -239,7 +244,7 @@ def prepare(service,db,principal,request,stamp,transaction_id):
     result={};meta=store.metadata(db)
     for ordinal,op in enumerate(request.operations):
         if op.op not in ('decision.link','decision.apply'):continue
-        require(meta['schema_version']==3,'UPGRADE_REQUIRED','Upgrade this ledger before recording a planning link.',409)
+        require(meta['schema_version']>=3,'UPGRADE_REQUIRED','Upgrade this ledger before recording a planning link.',409)
         data=PlanningLink.model_validate(op.data);p=policy(db)
         require(data.expected_policy_revision==p['policy_revision'],'POLICY_CHANGED','Planning-link policy changed. Review it before retrying.',409)
         state=current(db,op.key,meta['ledger_revision'])
@@ -308,7 +313,9 @@ def validate(db,meta):
             check(isinstance(a['section']['content_sha256'],str) and len(a['section']['content_sha256'])==64)
             check(data.expected_projection_sha256 is None or a['projection'] and data.expected_projection_sha256==a['projection']['sha256'])
         else:check(not p['anchor_required'] and data.planning_document is None)
-        before=json.loads(db.execute('SELECT snapshot_json FROM revisions WHERE decision_key=? AND ledger_revision<? ORDER BY ledger_revision DESC LIMIT 1',(r['decision_key'],r['ledger_revision'])).fetchone()[0])
+        before_row=db.execute('SELECT snapshot_json FROM revisions WHERE decision_key=? AND ledger_revision<? ORDER BY ledger_revision DESC LIMIT 1',(r['decision_key'],r['ledger_revision'])).fetchone()
+        from .legacy import initial
+        before=json.loads(before_row[0]) if before_row else initial(db,r['decision_key'])
         after=json.loads(db.execute('SELECT snapshot_json FROM revisions WHERE decision_key=? AND ledger_revision=?',(r['decision_key'],r['ledger_revision'])).fetchone()[0])
         check({k:v for k,v in before.items() if k not in ('revision','updated_at')}=={k:v for k,v in after.items() if k not in ('revision','updated_at')})
         covered.add((r['ledger_revision'],r['operation_ordinal']))
@@ -351,7 +358,7 @@ def mount(app):
         p=principal(request);p.need('read')
         with service.catalog.project(project_id,identity(request),p) as (db,project):
             store.get(db,'decisions',key);meta=store.metadata(db)
-            rows=[(f"{r['ledger_revision']:020d}",json.loads(r['receipt_json'])) for r in db.execute('SELECT * FROM application_receipts WHERE decision_key=?',(key,))] if meta['schema_version']==3 else []
+            rows=[(f"{r['ledger_revision']:020d}",json.loads(r['receipt_json'])) for r in db.execute('SELECT * FROM application_receipts WHERE decision_key=?',(key,))] if meta['schema_version']>=3 else []
             # Preserve cursor identity for clients resuming an older route.
             data,cur,complete=service.page(rows,meta,{'kind':'applications','key':key},cursor,limit)
             return output(request,service.envelope(project,meta,data,next_cursor=cur,complete=complete))

@@ -39,3 +39,7 @@ An agent-owned decision can belong in the tracker without requiring a new human 
 Search existing decisions first. Cite settled requirements and focus a new entry on the remaining choice. For example, a requirement to preserve unknown historical values can remain settled while the database representation is a separate engineering decision.
 
 Use **New decision** to register a question and **Decide** to record its authorized resolution. Closed decisions retain immutable history. Incorporate the resolution into authoritative planning, then use **link** with its planning anchor. Recording a decision, linking it to planning, implementing it, verifying it and accepting the result remain distinct. The [interface guide](interfaces.md) and [agent skill](../skills/decision-tracker/SKILL.md) cover supported commands and revision checks.
+
+## Reusable decisions
+
+Library stores reusable content without applying it to a project. Groups are optional tags for selecting that content. The operator reviews staging and explicitly publishes to a destination. Completed copies are closed and protected, with current approval; their implementation, verification and planning links remain separate. Reuse does not settle contradictions or update earlier copies. See [Saved decisions](saved-decisions.md).

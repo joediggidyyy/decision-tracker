@@ -1047,6 +1047,195 @@
         "sandbox_test": [],
         "empirical_test": []
       }
+    },
+    {
+      "id": "dt-legacy",
+      "title": "Decision Tracker legacy history and inactive recovery",
+      "summary": "Synthetic token fidelity, origin-aware lifecycle, replay and inactive candidate recovery.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "integrated-application"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "legacy-contract",
+            "title": "Legacy contract qualification",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_legacy.py",
+              "tests/test_legacy_browser.py",
+              "tests/test_candidates.py",
+              "tests/test_artifacts.py",
+              "tests/test_store.py",
+              "tests/test_state.py",
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
+    },
+    {
+      "id": "dt-migration",
+      "title": "Reviewed source-input construction qualification",
+      "summary": "Frozen selected-root integrity and production E1 encoder through bounded rootless Linux Calamum; no business conversion or candidate.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default"
+      ],
+      "tags": [
+        "catalog",
+        "sandbox",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "containment",
+        "deterministic-output",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "sandbox_test"
+      ],
+      "metadata": {
+        "scope": "source-input-construction",
+        "release_admission": false
+      },
+      "lanes": {
+        "pytest": [],
+        "sandbox_test": [
+          {
+            "id": "frozen-selected-inputs",
+            "title": "Frozen selected roots and shared E1 encoder",
+            "cwd": "/tmp/work",
+            "command": [
+              "/usr/bin/python",
+              "-B",
+              "tools/migration_input_checks.py"
+            ],
+            "shell": false,
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "empirical_test": []
+      }
+    },
+    {
+      "id": "dt-saved-decisions",
+      "title": "Saved decisions and user-directed publication",
+      "summary": "Empty boot, optional tags, staged copies, repeat publication, retries, API/CLI parity, portable transfer, backup and real browser behavior.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "api",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "saved-decisions"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "saved-decisions",
+            "title": "Saved decisions shared interface and browser verification",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_saved_decisions.py",
+              "tests/test_saved_browser.py",
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
     }
   ]
 }

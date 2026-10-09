@@ -6,6 +6,8 @@ Apply the organization workspace/naming and workflow authorities from the
 operator's Polymath workspace. Machine-local authority locations belong in
 .local, not portable runtime code.
 
+Read docs/packaging.md before preparing distribution artifacts. Package application code and public support material only; preserve runtime data and local evidence. Local candidate builds do not authorize publication.
+
 All software tests run through native Calamum. Do not invoke PyTest directly.
 Use tools/prove.py for bounded native execution; retain failures and verify
 source correspondence. Do not confuse bootstrap proof with application proof.

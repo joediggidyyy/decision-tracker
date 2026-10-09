@@ -143,9 +143,14 @@ def initialize(path, uuid=None, schema_version=2):
         db.execute("PRAGMA journal_mode=DELETE")
         db.execute("PRAGMA synchronous=FULL")
         db.execute("PRAGMA foreign_keys=ON")
-        require(schema_version in (1,2,3),'UNSUPPORTED_SCHEMA','Unsupported ledger schema.',409)
+        require(schema_version in (1,2,3,4),'UNSUPPORTED_SCHEMA','Unsupported ledger schema.',409)
         ledger_sql=LEDGER_SQL.replace('CHECK(schema_version=1)',f'CHECK(schema_version={schema_version})')
-        db.executescript("BEGIN IMMEDIATE;\n" + (ledger_sql+(APPROVAL_SQL if schema_version>=2 else '')+(APPLICATION_SQL if schema_version==3 else '') if uuid else CATALOG_SQL))
+        legacy_sql=''
+        if uuid and schema_version==4:
+            from .legacy import sql
+            legacy_sql=sql()
+            ledger_sql=ledger_sql.replace('question TEXT NOT NULL','question TEXT').replace("CHECK((status='open' AND work_tag IS NOT NULL) OR (status!='open' AND work_tag IS NULL))", "CHECK(status='open' OR work_tag IS NULL)")
+        db.executescript("BEGIN IMMEDIATE;\n" + (ledger_sql+(APPROVAL_SQL if schema_version>=2 else '')+(APPLICATION_SQL if schema_version>=3 else '')+legacy_sql if uuid else CATALOG_SQL))
         if uuid:
             db.execute("INSERT INTO meta VALUES(1,?,?,0,?)", (uuid,schema_version,now()))
             if schema_version>=2:
@@ -158,11 +163,11 @@ def initialize(path, uuid=None, schema_version=2):
 
 def metadata(db, uuid=None):
     row = db.execute("SELECT * FROM meta WHERE id=1").fetchone()
-    require(row is not None and row["schema_version"] in (1,2,3), "UNSUPPORTED_SCHEMA", "Unsupported ledger schema.", 409)
+    require(row is not None and row["schema_version"] in (1,2,3,4), "UNSUPPORTED_SCHEMA", "Unsupported ledger schema.", 409)
     if row['schema_version']>=2:
         receipts=db.execute('SELECT * FROM schema_upgrades ORDER BY to_version').fetchall()
         chain=[(r['from_version'],r['to_version']) for r in receipts]
-        valid=chain in ([(0,2)],[(1,2)]) if row['schema_version']==2 else chain in ([(0,3)],[(0,2),(2,3)],[(1,2),(2,3)])
+        valid=chain in ([(0,2)],[(1,2)]) if row['schema_version']==2 else chain in ([(0,3)],[(0,2),(2,3)],[(1,2),(2,3)]) if row['schema_version']==3 else chain==[(0,4)]
         require(valid and all(0<=r['ledger_revision']<=row['ledger_revision'] for r in receipts),
                 'INTEGRITY_FAILED','Schema receipt chain is missing or invalid.',409)
     if uuid is not None:
@@ -170,7 +175,7 @@ def metadata(db, uuid=None):
     return dict(row)
 
 MODELS = {"decisions": Decision, "alternatives": Option, "references": Reference, "links": Link}
-JSON_FIELDS = {"authority_refs", "evidence_state", "attribution", "result_json", "snapshot_json", "validation_summary", "request_json", "event_json", "receipt_json"}
+JSON_FIELDS = {"authority_refs", "evidence_state", "attribution", "result_json", "snapshot_json", "validation_summary", "request_json", "event_json", "receipt_json", "initial_snapshot_json", "aliases", "source_revisions", "parent_commit_ids", "provenance_member_ids", "source_endpoint", "target_endpoint", "accounting_member_ids"}
 
 def unpack(row):
     obj = dict(row)
@@ -181,8 +186,14 @@ def unpack(row):
             obj[key] = bool(obj[key])
     return obj
 
-def save(db, table, obj):
-    obj = MODELS[table].model_validate(obj).model_dump(mode="json")
+def validate_decision(db,obj,strict=False,changed_fields=()):
+    from .legacy import context
+    origin=None if strict else context(db,obj['key'])
+    if origin:origin['legacy_sparse']={k:v for k,v in origin['legacy_sparse'].items() if k not in changed_fields}
+    return Decision.model_validate(obj,context=origin)
+
+def save(db, table, obj, context=None):
+    obj = (Decision.model_validate(obj,context=context) if context is not None else validate_decision(db,obj) if table=='decisions' else MODELS[table].model_validate(obj)).model_dump(mode="json")
     columns = list(obj)
     values = [encode(v) if k in JSON_FIELDS else int(v) if isinstance(v, bool) else v for k,v in obj.items()]
     key = "key" if table == "decisions" else "id"

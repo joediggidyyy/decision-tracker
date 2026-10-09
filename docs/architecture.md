@@ -10,6 +10,12 @@ A conservative in-process coordinator serializes registry and ledger operations 
 
 The UI uses external static assets, semantic controls, a full-width decision detail, Focus view, and a right panel with context above results. Both panel boundaries support dragging and keyboard resizing, with nonsecret local layout preferences. At 980 CSS pixels or narrower, the context/results panel stacks and stays visible, with one page scroll surface and no collapse toggle. Selecting a result leaves the panel visible. Desktop scrollbars appear only while interacting with overflowing regions. It never imports the business workspace folder index. Credentials, source records and application hosting stay independent of the home page.
 
+## Saved content and publication
+
+Library has independent saved-decisions.sqlite storage, revisions and immutable change history. Optional groups are metadata relationships that populate staging; copied project decisions retain no Library/group binding. Browser selection and staging are tab-local. Shared preparation validates content, destination and approval before ordinary create/close/protect phases. There is no transaction across phases or projects: retained request IDs and receipts support exact replay, and partial results remain inspectable. The browser, CLI and API use these shared rules. Contradictions remain an operator/agent concern.
+
+One project-selector DOM control moves between the Decisions and Projects heading areas; Library chooses a destination only for publication. The right panel retains each page’s controls and results or staging.
+
 Transactions retain canonical intent and its hash alongside committed outcomes. Revisions retain complete affected aggregates. Protected amendment records an incident relationship in parent history while preserving baseline content. Selected alternatives can change only through explicit resolution operations.
 
 Native export/import retains history exactly. Backup and restore checks operate on bounded contained candidates; no maintenance endpoint overwrites an active ledger. Request scope, expected identity and versions remain mandatory.
@@ -29,3 +35,9 @@ Public planning-link names are aliases over the existing schema-3 evidence model
 ---
 
 <p align="center">Maintained by Polymath Global</p>
+
+## Immutable legacy origins
+
+Schema 4 retains schema-3 native tables and adds immutable source identities, versions/appearances, E1 payloads, ordered members, associations, relations, projections, reference anchors, absences and initial native snapshots. The packaged `src/decision_tracker/schemas/legacy-import-v1.json` is the normative closed interchange/storage authority. Source events are never fabricated native transactions or approval events. Imported seeds start at decision revision 1 and native ledger revision 0.
+
+Sparse-field exceptions derive only from immutable seed projections and apply to unchanged values. Changed fields, new Close and native amendment children use ordinary validation. Native state, permission, lock, graph, revision and capacity guards remain shared. A separate durable import journal reserves principal/request identity, target UUID and candidate before publication. Candidate maintenance requires its ID and expected digest, and never registers or replaces active data. Existing v1–v3 interchange and upgrade flows remain supported; v4 is initialized for new legacy candidates, with no automatic live upgrade.

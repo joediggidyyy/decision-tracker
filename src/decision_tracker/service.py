@@ -13,6 +13,8 @@ class Service:
         self.catalog=Catalog(root)
         self.root=self.catalog.root
         self.on_commit=lambda project_id: None
+        from .legacy import Reads
+        self.legacy_reads=Reads(self)
 
     def envelope(self, project, meta, data, **extra):
         return {"ok":True,"project_id":project["project_id"],"ledger_uuid":meta["ledger_uuid"],
@@ -151,7 +153,11 @@ class Service:
         require(revision>=0 and revision<=store.metadata(db)["ledger_revision"],"VALIDATION_ERROR","Invalid as-of revision.")
         row=db.execute("SELECT snapshot_json FROM revisions WHERE decision_key=? AND ledger_revision<=? ORDER BY ledger_revision DESC LIMIT 1",
                        (key,revision)).fetchone()
-        if row is None:missing()
+        if row is None:
+            from .legacy import initial
+            origin=initial(db,key)
+            if origin is not None:return origin
+            missing()
         return json.loads(row[0])
 
     def compact(self,item,base,revision,prefix=""):
@@ -181,6 +187,10 @@ class Service:
             data['planning_link_policy_revision']=policy(db)['policy_revision']
             data['planning_application']=legacy_current(data['planning_link'])
             data['application_policy_revision']=data['planning_link_policy_revision']
+            if meta['schema_version']==4:
+                origin=db.execute('SELECT i.namespace,i.source_id,s.import_id FROM legacy_identities i JOIN legacy_native_seeds s ON s.native_key=i.native_key WHERE i.native_key=?',(key,)).fetchone()
+                if origin:
+                    data['legacy_origin']={**dict(origin),'fields':[{k:r[k] for k in ('field','known_state','projection_kind','origin_member_id','selector')} for r in db.execute('SELECT * FROM legacy_projections WHERE native_key=? ORDER BY field',(key,))]}
             return self.envelope(project,meta,data,as_of_revision=revision)
 
     def children(self,project_id,uuid,principal,key,family,cursor=None,limit=50,revision=None):

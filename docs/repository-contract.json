@@ -17,5 +17,16 @@
   "proof": "Native Calamum, bounded supervision, source manifests, retained runs and aggregates.",
   "publication": "Pushes to the public source repository require applicable explicit operator authorization. No packaged release, force push or remote-setting changes are implied.",
   "follow_up": "QA Engine and Polymath Ledger source migration discovery and qualification follow the current planning decisions in the installed tracker. Neither source migration has executed. MCP and distribution qualification remain separate.",
-  "owner_acceptance": "Operator confirmed password setup, system-browser testing and Polymath home launch on 2026-10-05; this does not substitute for native automated evidence."
+  "owner_acceptance": "Operator confirmed password setup, system-browser testing and Polymath home launch on 2026-10-05; this does not substitute for native automated evidence.",
+  "packaging": {
+    "version": "0.1.0.dev0",
+    "status": "local alpha candidate preparation; no published release",
+    "formats": [
+      "Python wheel",
+      "source distribution with support documents and portable skill"
+    ],
+    "qualification": "Native dt-package and dt-integration; archive contents, dependency-only fresh installation, installed assets and source correspondence.",
+    "excluded": "Credentials, deployment data, project/saved databases, organization seed content, local preparations and generated evidence.",
+    "guide": "docs/packaging.md"
+  }
 }

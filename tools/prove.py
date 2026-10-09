@@ -16,7 +16,7 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 def source_files(root):
-    names = ["pyproject.toml", "README.md", "LICENSE", "NOTICE", "CONTRIBUTING.md", "SECURITY.md",
+    names = ["MANIFEST.in", "pyproject.toml", "README.md", "LICENSE", "NOTICE", "CONTRIBUTING.md", "SECURITY.md",
              "CHANGELOG.md", "AGENTS.md", ".gitignore", ".gitattributes",
              "requirements-dev.lock", ".calamum/project.json"]
     files = [root / p for p in names if (root / p).is_file()]
@@ -92,10 +92,19 @@ def supervise(command, cwd, env, output, seconds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form", "dt-action-forms","dt-projects-data","dt-closed-records", "dt-planning-links", "dt-applications", "dt-package"])
+    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form", "dt-action-forms","dt-projects-data","dt-closed-records", "dt-planning-links", "dt-applications", "dt-package", "dt-legacy", "dt-migration", "dt-saved-decisions"])
     parser.add_argument("--budget-seconds", type=int, default=60)
+    parser.add_argument("--input-manifest", help="Reviewed local frozen-input manifest for dt-migration.")
+    parser.add_argument("--runtime-file", help="Names-only existing rootless Linux runtime for dt-migration.")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
+    if args.definition == "dt-migration":
+        if not args.input_manifest or not args.runtime_file:
+            parser.error("dt-migration requires --input-manifest and --runtime-file")
+        from prove_linux import run
+        return run(root,args,source_files)
+    if args.input_manifest or args.runtime_file:
+        parser.error("Input/runtime flags belong only to dt-migration")
     run = root / ".local/proofs" / uuid.uuid4().hex
     proof = run / "source"
     proof.mkdir(parents=True)

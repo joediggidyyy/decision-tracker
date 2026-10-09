@@ -18,11 +18,13 @@ Capture open questions, compare alternatives, record approvals and connect relat
 | Find a guide | [Documentation index](docs/README.md) |
 | Know which choices to record | [Decision workflow](docs/decision-workflow.md) |
 | Work through the CLI or API | [Interface guide](docs/interfaces.md) |
+| Reuse decisions across projects | [Saved decisions and optional groups](docs/saved-decisions.md) |
 | Give your agents access | [Agent-access skill](skills/decision-tracker/SKILL.md) |
 | Manage credentials, launch or recovery | [Operations guide](docs/operations.md) |
 | Understand the implementation | [Architecture](docs/architecture.md) |
 | Contribute code or run tests | [Contributing](CONTRIBUTING.md) |
 | Report a security concern | [Private reporting instructions](SECURITY.md) |
+| Prepare an installable package | [Packaging guide](docs/packaging.md) |
 | Review what has changed | [Changelog](CHANGELOG.md) |
 
 ## Quick start
@@ -61,6 +63,12 @@ You can also launch through the registered `decision-tracker://open` application
 ```
 
 The managed service stops after 90 minutes without useful activity when no operation or protected draft is active. No Windows startup task is installed.
+
+## Browser pages
+
+Use **Decisions** for project records, **Projects** for project and data administration, and **Library** for reusable decisions. The project selector and connection indicator share the top-right heading area on Decisions and Projects; selection carries across page navigation. Narrow screens wrap controls to fit. Library chooses its destination in staging.
+
+Library starts empty. Create saved decisions with optional group tags, browse groups with the dropdown, and use individual checks or Check all. Checks persist in the current tab across browsing and page changes. Add to staging, adjust the copied set, choose or create a destination, then Publish. Each completed project copy receives the next decision number and starts closed and protected. Publish records the current browser operator’s approval; answers and rationale are required. View contains Edit and Delete. Groups have no effect after staging, and later Library edits leave project copies unchanged. See the [Library guide](docs/saved-decisions.md) for retry, transfer and backup details.
 
 ## Three interfaces, one decision model
 
@@ -114,3 +122,9 @@ Copyright 2026 Polymath Global. Licensed under the [Apache License 2.0](LICENSE)
 ---
 
 <p align="center">Maintained by Polymath Global</p>
+
+## Imported decision histories
+
+Decision Tracker can retain a project’s earlier decision history alongside its native decisions. Source identities, literal values, ordered events, versions and references remain immutable and retrievable. Unknown source values remain unknown; source benefit and summary text retain their attribution. New decisions and resolutions use the ordinary validation and approval rules.
+
+The existing CLI and API support complete source retrieval and maintenance of inactive import candidates. See [Legacy import and recovery](docs/legacy-import.md). The current migration pilot is still awaiting its complete request/export sizing evidence and execution release.

@@ -28,4 +28,4 @@ addopts = "-ra"
 decision-tracker = "decision_tracker.cli:main"
 
 [tool.setuptools.package-data]
-decision_tracker = ["static/*"]
+decision_tracker = ["static/*", "schemas/*.json"]

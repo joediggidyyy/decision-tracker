@@ -45,6 +45,15 @@ def run_browser(tmp_path, script="action_browser.cjs", folder="action-browser"):
             source=tmp_path/(str(uuid4())+'.sqlite');store.initialize(source,str(uuid4()),schema_version=version)
             with store.connect(source) as db:value=bundle(db)
             Artifacts(app.state.service).import_native(principal,value,promote)
+    if folder=='legacy-browser':
+        from legacy_fixture import request
+        from decision_tracker.artifacts import Artifacts
+        from decision_tracker.auth import Principal
+        from decision_tracker.models import ProjectChange
+        from uuid import uuid4
+        p=Principal('fixture',frozenset({'*'}),frozenset({'read','write','decide','maintain','registry'}))
+        r=Artifacts(app.state.service).import_native(p,request(),True)['data']
+        app.state.service.catalog.mutate(p,ProjectChange(kind='register',project_id='legacy-test',name='Synthetic legacy',candidate_id=r['candidate_id'],expected_candidate_digest=r['logical_digest'],expected_catalog_revision=0,request_id=uuid4()))
     server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='warning'))
     thread=threading.Thread(target=server.run,daemon=True);thread.start()
     try:

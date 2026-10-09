@@ -29,6 +29,28 @@ def test_password_http_and_no_recovery_endpoint(tmp_path):
         assert client.post('/api/v1/session/setup',headers=headers,json={'bootstrap_code':reset,'new_password':OLD,'confirmation':OLD}).status_code==400
 
 
+def test_lock_initialization_contention_is_retryable_and_closes_handle(tmp_path):
+    import pytest
+    from decision_tracker.api import InstanceLock
+    path=tmp_path/'launch.lock';opened=[]
+    class ContendedFile:
+        def __init__(self,file):self.file=file
+        def __getattr__(self,name):return getattr(self.file,name)
+        def flush(self):raise PermissionError('Synthetic concurrent first-byte lock')
+    class FirstContendedPath:
+        def open(self,mode):
+            file=path.open(mode);opened.append(file)
+            return ContendedFile(file) if len(opened)==1 else file
+    owner=InstanceLock(FirstContendedPath())
+    with pytest.raises(Fault) as rejected:owner.acquire()
+    assert rejected.value.code=='SERVICE_ALREADY_RUNNING' and owner.file is None and opened[0].closed
+    owner.acquire();other=InstanceLock(path)
+    try:
+        with pytest.raises(Fault):other.acquire()
+        assert other.file is None
+    finally:owner.release()
+    other.acquire();other.release()
+
 def test_managed_cold_start_reuse_stop(tmp_path):
     import os,sys,socket
     if os.name!='nt':__import__('pytest').skip('Windows adapter')

@@ -1,0 +1,2523 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:polymath:decision-tracker:legacy-import:v1",
+  "$ref": "#/$defs/request",
+  "$defs": {
+    "endpoint": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "decision",
+            "record",
+            "source",
+            "requirement",
+            "evidence",
+            "disposition",
+            "document",
+            "unknown"
+          ]
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "literal_member_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "literal_pointer": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "namespace",
+        "source_id",
+        "literal_member_id",
+        "literal_pointer"
+      ],
+      "additionalProperties": false
+    },
+    "version": {
+      "type": "object",
+      "properties": {
+        "version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "locator": {
+          "type": "string"
+        },
+        "file_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_kind": {
+          "enum": [
+            "json",
+            "markdown",
+            "git-object"
+          ]
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_revisions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parent_commit_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "provenance_member_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      },
+      "required": [
+        "version_id",
+        "namespace",
+        "locator",
+        "file_sha256",
+        "source_kind",
+        "source_order",
+        "source_revisions",
+        "parent_commit_ids",
+        "provenance_member_ids"
+      ],
+      "additionalProperties": false
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "literal_type": {
+          "enum": [
+            "null",
+            "boolean",
+            "integer",
+            "number",
+            "string",
+            "array",
+            "object"
+          ]
+        },
+        "value_json": {
+          "type": "string"
+        },
+        "encoded_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "payload_sha256",
+        "literal_type",
+        "value_json",
+        "encoded_bytes"
+      ],
+      "additionalProperties": false
+    },
+    "member": {
+      "type": "object",
+      "properties": {
+        "member_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "selector": {
+          "type": "string"
+        },
+        "subject_kind": {
+          "type": "string"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "member_id",
+        "version_id",
+        "selector",
+        "subject_kind",
+        "source_id",
+        "source_order",
+        "payload_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "association": {
+      "type": "object",
+      "properties": {
+        "member_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "association_kind": {
+          "enum": [
+            "decision-context",
+            "direct-decision",
+            "source-reference"
+          ]
+        }
+      },
+      "required": [
+        "member_id",
+        "namespace",
+        "source_id",
+        "association_kind"
+      ],
+      "additionalProperties": false
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "native_key": {
+          "type": "string",
+          "pattern": "^D[0-9]{6}$"
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "namespace",
+        "source_id",
+        "native_key",
+        "aliases"
+      ],
+      "additionalProperties": false
+    },
+    "relation": {
+      "type": "object",
+      "properties": {
+        "relation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "member_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_endpoint": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "target_endpoint": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "relation_type": {
+          "type": "string"
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "literal_pointer": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "relation_id",
+        "version_id",
+        "member_id",
+        "source_endpoint",
+        "target_endpoint",
+        "relation_type",
+        "source_order",
+        "literal_pointer"
+      ],
+      "additionalProperties": false
+    },
+    "projection": {
+      "type": "object",
+      "properties": {
+        "native_key": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "origin_member_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selector": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "projection_kind": {
+          "enum": [
+            "exact",
+            "attributed-summary",
+            "none",
+            "import-provenance"
+          ]
+        },
+        "known_state": {
+          "enum": [
+            "exact_source",
+            "attributed_source_summary",
+            "not_projected",
+            "explicit_source_unknown"
+          ]
+        },
+        "projection_json": {
+          "type": "string"
+        },
+        "projection_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "native_key",
+        "field",
+        "origin_member_id",
+        "selector",
+        "projection_kind",
+        "known_state",
+        "projection_json",
+        "projection_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "anchor": {
+      "type": "object",
+      "properties": {
+        "native_key": {
+          "type": "string"
+        },
+        "member_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "original_locator": {
+          "type": "string"
+        },
+        "file_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "selector": {
+          "type": "string"
+        },
+        "incorporation_state": {
+          "enum": [
+            "reference-only",
+            "evidenced-incorporation"
+          ]
+        },
+        "source_resolution_identity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "native_key",
+        "member_id",
+        "original_locator",
+        "file_sha256",
+        "selector",
+        "incorporation_state",
+        "source_resolution_identity"
+      ],
+      "additionalProperties": false
+    },
+    "absence": {
+      "type": "object",
+      "properties": {
+        "version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "selector": {
+          "type": "string"
+        },
+        "presence": {
+          "const": "absent"
+        },
+        "accounting_member_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "absence_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "version_id",
+        "selector",
+        "presence",
+        "accounting_member_ids",
+        "absence_id"
+      ],
+      "additionalProperties": false
+    },
+    "native_seed": {
+      "type": "object",
+      "properties": {
+        "native_key": {
+          "type": "string"
+        },
+        "origin_source_id": {
+          "type": "string"
+        },
+        "projection_fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/projection"
+          }
+        }
+      },
+      "required": [
+        "native_key",
+        "origin_source_id",
+        "projection_fields"
+      ],
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "const": "decision-tracker.legacy-import/v1"
+        },
+        "contract_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "identities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identity"
+          }
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/version"
+          }
+        },
+        "payloads": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/payload"
+          }
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/member"
+          }
+        },
+        "associations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/association"
+          }
+        },
+        "relations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relation"
+          }
+        },
+        "projections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/projection"
+          }
+        },
+        "anchors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/anchor"
+          }
+        },
+        "absences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/absence"
+          }
+        },
+        "native_seeds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/native_seed"
+          }
+        },
+        "appearances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/appearance"
+          }
+        },
+        "target_ledger_uuid": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "format",
+        "contract_sha256",
+        "source_manifest_sha256",
+        "namespace",
+        "request_id",
+        "identities",
+        "versions",
+        "payloads",
+        "members",
+        "associations",
+        "relations",
+        "projections",
+        "anchors",
+        "absences",
+        "native_seeds",
+        "appearances",
+        "target_ledger_uuid"
+      ],
+      "additionalProperties": false
+    },
+    "member_page_data": {
+      "type": "object",
+      "properties": {
+        "import_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "source_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/member"
+          }
+        }
+      },
+      "required": [
+        "import_id",
+        "namespace",
+        "source_version_id",
+        "members"
+      ],
+      "additionalProperties": false
+    },
+    "chunk_data": {
+      "type": "object",
+      "properties": {
+        "import_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "literal_type": {
+          "type": "string"
+        },
+        "encoded_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chunk_base64": {
+          "type": "string"
+        },
+        "next_offset": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "import_id",
+        "payload_sha256",
+        "literal_type",
+        "encoded_bytes",
+        "offset",
+        "chunk_base64",
+        "next_offset"
+      ],
+      "additionalProperties": false
+    },
+    "as_of_data": {
+      "type": "object",
+      "properties": {
+        "import_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "presence": {
+          "enum": [
+            "present",
+            "absent"
+          ]
+        },
+        "member_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "absence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "source_status_member_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_status_pointer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "import_id",
+        "version_id",
+        "presence",
+        "member_ids",
+        "absence_ids",
+        "source_status_member_id",
+        "source_status_pointer"
+      ],
+      "additionalProperties": false
+    },
+    "view_record": {
+      "type": "object",
+      "properties": {
+        "native_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "member_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "view_kind": {
+          "enum": [
+            "decision",
+            "impact",
+            "disposition",
+            "provenance"
+          ]
+        },
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "attribution": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "native_key",
+        "source_id",
+        "member_id",
+        "source_version_id",
+        "view_kind",
+        "payload_sha256",
+        "attribution"
+      ],
+      "additionalProperties": false
+    },
+    "member_page_response": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "project_id": {
+          "type": "string"
+        },
+        "ledger_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "schema_version": {
+          "const": 4
+        },
+        "data": {
+          "$ref": "#/$defs/member_page_data"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "ok",
+        "project_id",
+        "ledger_uuid",
+        "revision",
+        "schema_version",
+        "data",
+        "complete",
+        "next_cursor",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "chunk_response": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "project_id": {
+          "type": "string"
+        },
+        "ledger_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "schema_version": {
+          "const": 4
+        },
+        "data": {
+          "$ref": "#/$defs/chunk_data"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "ok",
+        "project_id",
+        "ledger_uuid",
+        "revision",
+        "schema_version",
+        "data",
+        "complete",
+        "next_cursor",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "as_of_response": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "project_id": {
+          "type": "string"
+        },
+        "ledger_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "schema_version": {
+          "const": 4
+        },
+        "data": {
+          "$ref": "#/$defs/as_of_data"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "ok",
+        "project_id",
+        "ledger_uuid",
+        "revision",
+        "schema_version",
+        "data",
+        "complete",
+        "next_cursor",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "candidate_receipt": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "request_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "principal_id": {
+          "type": "string"
+        },
+        "candidate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ledger_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "logical_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "import_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "state": {
+          "const": "prepared"
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "request_id",
+        "request_hash",
+        "principal_id",
+        "candidate_id",
+        "ledger_uuid",
+        "logical_digest",
+        "import_id",
+        "state",
+        "replayed"
+      ],
+      "additionalProperties": false
+    },
+    "appearance": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "locator": {
+          "type": "string"
+        },
+        "source_revision": {
+          "type": "string"
+        },
+        "version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "file_presence": {
+          "enum": [
+            "present",
+            "absent"
+          ]
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "namespace",
+        "locator",
+        "source_revision",
+        "version_id",
+        "file_presence",
+        "source_order"
+      ],
+      "additionalProperties": false
+    },
+    "relation_page_data": {
+      "type": "object",
+      "properties": {
+        "import_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "source_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "relations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relation"
+          }
+        }
+      },
+      "required": [
+        "import_id",
+        "namespace",
+        "source_version_id",
+        "relations"
+      ],
+      "additionalProperties": false
+    },
+    "relation_page_response": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "project_id": {
+          "type": "string"
+        },
+        "ledger_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "schema_version": {
+          "const": 4
+        },
+        "data": {
+          "$ref": "#/$defs/relation_page_data"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "ok",
+        "project_id",
+        "ledger_uuid",
+        "revision",
+        "schema_version",
+        "data",
+        "complete",
+        "next_cursor",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "payload_metadata": {
+      "type": "object",
+      "properties": {
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "literal_type": {
+          "enum": [
+            "null",
+            "boolean",
+            "integer",
+            "number",
+            "string",
+            "array",
+            "object"
+          ]
+        },
+        "encoded_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "payload_sha256",
+        "literal_type",
+        "encoded_bytes"
+      ],
+      "additionalProperties": false
+    },
+    "record_page_response": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "project_id": {
+          "type": "string"
+        },
+        "ledger_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "schema_version": {
+          "const": 4
+        },
+        "data": {
+          "$ref": "#/$defs/record_page_data"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "ok",
+        "project_id",
+        "ledger_uuid",
+        "revision",
+        "schema_version",
+        "data",
+        "complete",
+        "next_cursor",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "record_page_data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "import_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "identities",
+            "versions",
+            "payloads",
+            "members",
+            "associations",
+            "relations",
+            "projections",
+            "source_anchors",
+            "absences",
+            "appearances"
+          ]
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/identity"
+              },
+              {
+                "$ref": "#/$defs/version"
+              },
+              {
+                "$ref": "#/$defs/member"
+              },
+              {
+                "$ref": "#/$defs/association"
+              },
+              {
+                "$ref": "#/$defs/relation"
+              },
+              {
+                "$ref": "#/$defs/projection"
+              },
+              {
+                "$ref": "#/$defs/anchor"
+              },
+              {
+                "$ref": "#/$defs/absence"
+              },
+              {
+                "$ref": "#/$defs/appearance"
+              },
+              {
+                "$ref": "#/$defs/payload_metadata"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "import_id",
+        "namespace",
+        "kind",
+        "rows"
+      ]
+    }
+  },
+  "x-native-projection-rules": {
+    "semantics": "Source payload remains immutable. Exact projections may use only literal identity, one source reference string wrapped as one native reference, or the reviewed [open]/[closed]/[locked] and work-tag adapters. Occurred_at native serialization may normalize equivalent timezone syntax; the original literal remains in the source payload.",
+    "sparse_fields": [
+      "question",
+      "answer",
+      "rationale",
+      "authority_refs",
+      "work_tag",
+      "deprecation_kind",
+      "deprecation_reason",
+      "defer_reason",
+      "resume_trigger"
+    ],
+    "sparse_values": [
+      null,
+      "",
+      []
+    ],
+    "enforcement": "Only values unchanged from immutable initial projections are exempt. Explicitly edited fields and every new Close/amendment child remain strict."
+  },
+  "x-native-v4": {
+    "format": "decision-tracker/v4",
+    "schema_version": 4,
+    "columns": {
+      "decisions": [
+        {
+          "name": "key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "title",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "question",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "answer",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "rationale",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "status",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "locked",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "baseline",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "work_tag",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "contested",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "owner_role",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "defer_reason",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "resume_trigger",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "deprecation_kind",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "deprecation_reason",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "replacement_key",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "authority_refs",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "occurred_at",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "created_at",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "updated_at",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "revision",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "evidence_state",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "alternatives": [
+        {
+          "name": "id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "decision_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "position",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "title",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "description",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "benefit",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "cost",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "disposition",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "reason",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "revision",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "references": [
+        {
+          "name": "id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "decision_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "position",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "label",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "locator",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "kind",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "version",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "sha256",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "availability",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "authenticity",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "limitations",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "retired",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "revision",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "links": [
+        {
+          "name": "id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "source_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "target_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "type",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "active",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "reason",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "revision",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "impact",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "baseline_disposition",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        }
+      ],
+      "transactions": [
+        {
+          "name": "ledger_revision",
+          "sqlite_type": "INTEGER",
+          "not_null": false,
+          "primary_key_order": 1
+        },
+        {
+          "name": "transaction_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "principal_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "request_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "request_hash",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "attribution",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "reason",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "authority_refs",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "recorded_at",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "occurred_at",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "result_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "request_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "revisions": [
+        {
+          "name": "decision_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "ledger_revision",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 2
+        },
+        {
+          "name": "prior_decision_revision",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "snapshot_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "snapshot_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "approval_events": [
+        {
+          "name": "event_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "decision_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "ledger_revision",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "operation_ordinal",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "supersedes_event_id",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "event_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "event_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "schema_upgrades": [
+        {
+          "name": "request_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "principal_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "from_version",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "to_version",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "ledger_revision",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "recorded_at",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "backup_artifact_id",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "request_hash",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "receipt_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "application_receipts": [
+        {
+          "name": "receipt_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "decision_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "ledger_revision",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "operation_ordinal",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "resolution_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "receipt_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "receipt_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "application_policy_events": [
+        {
+          "name": "policy_revision",
+          "sqlite_type": "INTEGER",
+          "not_null": false,
+          "primary_key_order": 1
+        },
+        {
+          "name": "request_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "request_hash",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "event_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "event_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_imports": [
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "namespace",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "manifest_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "contract_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "format_version",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "target_ledger_uuid",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "request_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "imported_by",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "imported_at",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "receipt_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_identities": [
+        {
+          "name": "namespace",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "source_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 2
+        },
+        {
+          "name": "native_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "aliases",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_versions": [
+        {
+          "name": "version_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "namespace",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "locator",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "file_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "source_kind",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "source_order",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "source_revisions",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "parent_commit_ids",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "provenance_member_ids",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_payloads": [
+        {
+          "name": "payload_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "literal_type",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "value_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "encoded_bytes",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_members": [
+        {
+          "name": "member_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "version_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "selector",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "subject_kind",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "source_id",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "source_order",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "payload_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_associations": [
+        {
+          "name": "member_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "namespace",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 2
+        },
+        {
+          "name": "source_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 3
+        },
+        {
+          "name": "association_kind",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 4
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_relations": [
+        {
+          "name": "relation_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "version_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "member_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "source_endpoint",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "target_endpoint",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "relation_type",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "source_order",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "literal_pointer",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_projections": [
+        {
+          "name": "native_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "field",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 2
+        },
+        {
+          "name": "origin_member_id",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "selector",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "projection_kind",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "known_state",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "projection_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "projection_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_source_anchors": [
+        {
+          "name": "native_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "member_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 2
+        },
+        {
+          "name": "original_locator",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "file_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "selector",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "incorporation_state",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "source_resolution_identity",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_absences": [
+        {
+          "name": "version_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "selector",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "presence",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "accounting_member_ids",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "absence_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_appearances": [
+        {
+          "name": "namespace",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "locator",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 2
+        },
+        {
+          "name": "source_revision",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 3
+        },
+        {
+          "name": "version_id",
+          "sqlite_type": "TEXT",
+          "not_null": false,
+          "primary_key_order": 0
+        },
+        {
+          "name": "file_presence",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "source_order",
+          "sqlite_type": "INTEGER",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ],
+      "legacy_native_seeds": [
+        {
+          "name": "native_key",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 1
+        },
+        {
+          "name": "import_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "origin_source_id",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "initial_snapshot_json",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        },
+        {
+          "name": "snapshot_sha256",
+          "sqlite_type": "TEXT",
+          "not_null": true,
+          "primary_key_order": 0
+        }
+      ]
+    },
+    "json_columns": [
+      "accounting_member_ids",
+      "aliases",
+      "attribution",
+      "authority_refs",
+      "event_json",
+      "evidence_state",
+      "initial_snapshot_json",
+      "parent_commit_ids",
+      "provenance_member_ids",
+      "receipt_json",
+      "request_json",
+      "result_json",
+      "snapshot_json",
+      "source_endpoint",
+      "source_revisions",
+      "target_endpoint",
+      "validation_summary"
+    ],
+    "legacy_json_columns": [
+      "accounting_member_ids",
+      "aliases",
+      "parent_commit_ids",
+      "provenance_member_ids",
+      "source_endpoint",
+      "source_revisions",
+      "target_endpoint"
+    ],
+    "legacy_tables": [
+      "legacy_imports",
+      "legacy_identities",
+      "legacy_versions",
+      "legacy_payloads",
+      "legacy_members",
+      "legacy_associations",
+      "legacy_relations",
+      "legacy_projections",
+      "legacy_source_anchors",
+      "legacy_absences",
+      "legacy_appearances",
+      "legacy_native_seeds"
+    ],
+    "legacy_rows": "Every immutable attachment row includes import_id. Payload value_json and projection_json are E1 token-preserving strings. Other listed JSON columns export as JSON values. Initial seed snapshots are native JSON, not source events.",
+    "initialization": "New legacy candidates only; no automatic upgrade of existing v1-v3 ledgers.",
+    "integrity": "Native histories retain their existing contiguous revisions and approvals. Seeded decisions start at native revision 1, ledger revision 0, with separate immutable source origin. All legacy identity, request, payload and projection hashes are revalidated."
+  }
+}

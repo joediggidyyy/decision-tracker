@@ -10,6 +10,12 @@ Run command examples from the repository root after activating its environment:
 
 For a new user installation, follow the [Quick start](../README.md#quick-start). Installing the package creates the `decision-tracker` console script. `decision-tracker service open` is the user launch point; it starts or reuses the managed backend and opens the default browser. Without activation, invoke `.\.venv\Scripts\decision-tracker.exe service open` directly. Polymath home is optional and its link may require browser permission to open an external application. The managed launcher is currently qualified on Windows only.
 
+## Pages and reusable content
+
+Select projects in the heading on Decisions or Projects. The adjacent connection dot opens workspace updates and service controls. Library works without a project and chooses the destination in staging. A fresh installation has no saved decisions or groups; no organization seed set is bundled.
+
+Library content is separate from project ledgers. Include its checked saved-content backup in a deployment backup, or use its portable export for content transfer. Project/catalog backups do not include Library. In-progress drafts, checkbox selections and staging live only in the current browser tab; finish or retain pending publication requests before closing it. A completed Publish creates closed/protected copies. If publication stops partway, retain the receipts and review the actual phase before continuing. See [Saved decisions](saved-decisions.md) for recovery and [Packaging](packaging.md) for installation/upgrade handoff.
+
 ## Storage and credentials
 
 Use local nonsynchronized storage, separate from source and OneDrive. The managed deployment lives under `%LOCALAPPDATA%/DecisionTracker/`. Configuration contains principal scopes and file paths; auth.sqlite holds password/token verifiers. secrets.bin uses current-user DPAPI for the launcher key and explicitly stored agent tokens. These files are not project exports or transferable ledger backups. OS account ownership remains the local trust boundary.
@@ -123,6 +129,8 @@ Filesystem authorization is a separate local binding under the deployment data r
 
 The browser's document pool discovers canonical JSON in the registered folders and includes previously linked documents that remain authorized. Add document browses subfolders or accepts a pasted source/companion path. It does not copy files, upload content, broaden roots or create a separate document registry. If inventory exceeds its bounds, use Add document to browse a narrower folder or paste the known path. Section and Link wait for a valid selection; missing files cannot produce a linked receipt.
 
----
+## Inactive legacy recovery
 
-<p align="center">Maintained by Polymath Global</p>
+Legacy import validation and publication use the existing `data import-validate` and `data import-new` commands. Validate-only retains an isolated scratch database but creates no published candidate or import intent. Publication first reserves a durable principal/request/body-hash/target-UUID/candidate binding. Retry uncertain outcomes with the same credential, exact file and request ID; changed content and identity collisions reject. Retain journal, incomplete preparation and source evidence for recovery.
+
+Before registration, use existing `data export`, `backup`, `verify` or `restore-check` with `--candidate-id` and `--expected-candidate-digest`. Restore-check additionally requires the backup `--artifact-id`; it prepares a distinct inactive candidate and changes no project registration. Download the resulting artifact through `data artifact-download` with the same candidate/digest binding. These operations require maintain permission; their receipt is not a cutover or migration release. Never substitute a guessed UUID or path for the reviewed candidate.

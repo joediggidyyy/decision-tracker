@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from typing import Literal, Annotated
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, ValidationInfo
 
 def now():
     return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
@@ -25,7 +25,7 @@ class EvidenceState(Model):
 class Decision(Model):
     key: str = Field(pattern=r"^D[0-9]{6}$")
     title: str = Field(min_length=1, max_length=160)
-    question: str = Field(min_length=1, max_length=8192)
+    question: str | None = Field(max_length=8192)
     answer: str | None = Field(default=None, max_length=32768)
     rationale: str | None = Field(default=None, max_length=32768)
     status: Literal["open", "closed", "deprecated"] = "open"
@@ -47,20 +47,22 @@ class Decision(Model):
     evidence_state: EvidenceState = Field(default_factory=EvidenceState)
 
     @model_validator(mode="after")
-    def state(self):
-        if not self.title.strip() or not self.question.strip():
+    def state(self, info: ValidationInfo):
+        sparse=(info.context or {}).get('legacy_sparse',{})
+        def retained(field):return field in sparse and getattr(self,field)==sparse[field]
+        if not self.title.strip() or (not (self.question and self.question.strip()) and not retained('question')):
             raise ValueError("Title and question cannot be blank.")
         if self.locked and (self.status != "closed" or not self.baseline):
             raise ValueError("A locked decision needs a closed baseline.")
-        if (self.status == "open") != (self.work_tag is not None):
+        if (self.status == "open") != (self.work_tag is not None) and not (self.status=='open' and retained('work_tag')):
             raise ValueError("Only open decisions have a work tag.")
         if self.contested and self.work_tag not in ("under-investigation", "deferred"):
             raise ValueError("A challenge requires investigation or deferral.")
-        if self.work_tag == "deferred" and not (self.defer_reason and self.resume_trigger):
+        if self.work_tag == "deferred" and not ((self.defer_reason or retained('defer_reason')) and (self.resume_trigger or retained('resume_trigger'))):
             raise ValueError("Deferral requires a reason and resumption trigger.")
-        if self.status == "closed" and not (self.answer and self.answer.strip() and self.rationale and self.rationale.strip() and self.authority_refs):
+        if self.status == "closed" and not ((self.answer and self.answer.strip() or retained('answer')) and (self.rationale and self.rationale.strip() or retained('rationale')) and (self.authority_refs or retained('authority_refs'))):
             raise ValueError("Closing requires answer, rationale and authority.")
-        if self.status == "deprecated" and not (self.deprecation_kind and self.deprecation_reason):
+        if self.status == "deprecated" and not ((self.deprecation_kind or retained('deprecation_kind')) and (self.deprecation_reason or retained('deprecation_reason'))):
             raise ValueError("Deprecation requires a subtype and reason.")
         if self.occurred_at is not None and self.occurred_at.utcoffset() is None:
             raise ValueError("Occurred time requires a timezone.")

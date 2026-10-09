@@ -114,7 +114,7 @@ decision-tracker decision link --project PROJECT --binding BINDING --credential-
 decision-tracker decision planning-links --project PROJECT --binding BINDING --credential-principal agents --key KEY --json
 ```
 
-Replace uppercase placeholders with read values. `decision link` needs write access and schema 3. `change apply` accepts the same `decision.link` operation. Required operation data: `expected_policy_revision`; anchor fields: `planning_document` and `planning_section`. Optional `expected_resolution_id`, `expected_document_sha256` and `expected_projection_sha256` pin prior observations. Ledger and record preconditions remain mandatory. Save Link separately from any other mutation of that decision. The browser pins resolution and observed hashes automatically; CLI flags can do the same. Retry uncertain outcomes with exactly the original values and request ID.
+Replace uppercase placeholders with read values. `decision link` needs write access and schema 3 or 4. `change apply` accepts the same `decision.link` operation. Required operation data: `expected_policy_revision`; anchor fields: `planning_document` and `planning_section`. Optional `expected_resolution_id`, `expected_document_sha256` and `expected_projection_sha256` pin prior observations. Ledger and record preconditions remain mandatory. Save Link separately from any other mutation of that decision. The browser pins resolution and observed hashes automatically; CLI flags can do the same. Retry uncertain outcomes with exactly the original values and request ID.
 
 Anchor requirement defaults to true. Only owner-local `project policy set` can change it or register planning roots; see [operations](operations.md#planning-link-policy). If disabled, a blank anchor records `omitted` and displays `recorded`, not `linked`; a supplied invalid anchor still fails. The receipt attests planning incorporation without identifying a section. Reopen resets this current-cycle record too. Policy conflicts require review rather than silently accepting a different requirement.
 
@@ -166,7 +166,7 @@ Reported approval requires decide permission, who approved, and 1–32 nonblank 
 
 Selecting a proposal on the structured path requires its `selected_option` ID and `expected_option_revision`. The answer must match the proposal description (or title when description is empty). A resolution edit can preserve an unchanged legacy mismatch. Other changes to the same decision cannot share a resolution batch. Structured approval cannot be combined with top-level `occurred_at`. Legacy explicit-reference requests remain supported without invented approval dates.
 
-Approval events count with the decision toward the 128 KiB aggregate limit. Events are immutable and linked across resolution edits and reopen/close cycles. Detail/as-of returns `latest_resolution_approval`; GET `.../decisions/{key}/approvals` returns paginated summaries, and GET `.../approvals/{event_id}` returns the full event with revision-pinned chunks for long text. Existing project identity and read permission requirements apply. GET `/api/v1/schema` advertises `approval_events_v1`, `planning_links_v1` and ledger schemas 1, 2 and 3.
+Approval events count with the decision toward the 128 KiB aggregate limit. Events are immutable and linked across resolution edits and reopen/close cycles. Detail/as-of returns `latest_resolution_approval`; GET `.../decisions/{key}/approvals` returns paginated summaries, and GET `.../approvals/{event_id}` returns the full event with revision-pinned chunks for long text. Existing project identity and read permission requirements apply. GET `/api/v1/schema` advertises `approval_events_v1`, `planning_links_v1` and ledger schemas 1–4.
 
 CLI `decision close` and `change apply` forward this object through existing JSON inputs. Bearer agents must report genuine external approval evidence and possess decide permission; this feature grants no new access.
 
@@ -176,9 +176,15 @@ The browser retains the exact request after an uncertain response, retries it on
 
 <p align="center">Maintained by Polymath Global</p>
 
+## Browser navigation and Library
+
+Decisions and Projects share one project selector and connection-status button in the top-right heading area. Changing project on Projects keeps administration open; switching pages retains the selected project. On narrow screens the controls wrap within the page. Library has no project selector: its staging area chooses an existing or new destination.
+
+Library uses a Group dropdown, default All decisions, with persistent individual checks and Check all for the displayed set. Add to staging includes hidden checked items. View contains Edit and Delete. Publication copies the final set as next-numbered closed/protected project decisions through the existing create/close/protect operations. Browser Publish records current operator approval; agents must supply genuine reported approval. See [Saved decisions](saved-decisions.md) for API/CLI formats, separate permissions, exact retries and portable transfer.
+
 ## Prepared projects and administration
 
-Projects & data has one project table and compact New project / Add existing dialogs. Name generates an editable ID. Project selection keeps this page open; Results and the horizontal Decisions menu return to decision work. Disabled selections show their state without exposing stale actions. Project controls occupy the side pane on this page. Both control panes use translucent buttons over the faint Polymath watermark.
+Projects has one project table and compact New project / Add existing dialogs. Name generates an editable ID. Project selection keeps this page open; Results and the horizontal Decisions menu return to decision work. Disabled selections show their state without exposing stale actions. Project controls occupy the side pane on this page. Both control panes use translucent buttons over the faint Polymath watermark.
 
 Backups and Exports open separate bounded managers. Select one file, then use the shared Download/Check buttons (Check is backup-only). Created dates and times occupy separate unbroken lines. Rows offers 10/25/50/100, default 25, saved as a browser layout preference. Previous/Next replaces the page; page/size/refresh clears selection. Verify replaces one readable project summary. Check validates an isolated copy and does not restore active data. A lost export/backup response is an unknown outcome, not permission for an automatic duplicate operation.
 
@@ -199,3 +205,9 @@ Closed records reject ordinary content and work-state changes in the browser, CL
 `decision edit-resolution` remains recognized for compatibility but is withdrawn for new writes (`INVALID_TRANSITION`, HTTP 422). Reopen, use `decision edit` on the open record, then Close. Exact historical committed requests still replay their original receipt after permission and payload checks; no history is rewritten. Reusing a request ID with different content still fails.
 
 A batch cannot reopen and mutate or reclose the same closed-at-start decision. Retain a stale browser draft after remote closure; review current state and obtain authorized reopening instead of automatically advancing revisions. Disabled pane controls keep the fixed grid. Outside the pane, unavailable child mutation controls are hidden; Protect/Amend is beside Approval and Decide/Reopen stays beside Question. The browser action is labeled Decide; the CLI command remains `decision close`, the API operation remains `decision.close`, and the resolved status remains `closed`.
+
+## Legacy origins and inactive candidates
+
+See [Legacy import and recovery](legacy-import.md) for the supported routes and existing CLI extensions. Authenticated `/api/v1/schema` advertises `legacy_history_v1`, `inactive_candidate_recovery_v1`, ledger schemas 1–4, and the normative contract URL/hash. `/api/v1/schema?contract=legacy-import-v1` returns that packaged contract. Discovery and normal JSON reads remain within 64 KiB; payload reads use base64 byte chunks, with explicit length/hash.
+
+Legacy import requests use `decision-tracker.legacy-import/v1`, an explicit reviewed `target_ledger_uuid`, current `contract_sha256`, source manifest identity, and request ID. Successful candidate receipts bind the returned candidate ID, ledger UUID and logical digest. The closed response schemas retain the normal `request_id`, project identity, revision and completeness envelope. V4 native import/export preserves all origin tables; source payload and projection E1 strings retain numeric token spelling. Ordinary fields and native history remain ordinary native values.

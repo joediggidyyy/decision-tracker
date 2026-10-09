@@ -1,4 +1,4 @@
-// Projects & data shares the application shell; catalog drafts stay in memory.
+// Projects shares the application shell; catalog drafts stay in memory.
 import {sendRetained,definitive} from './save-request.js';
 import {installFileManager} from './file-manager.js';
 export function projectSlug(name,used=[]){
@@ -21,7 +21,7 @@ export function installProjects({$,state,node,button,api,projects,selectProject,
  function field(parent,label,name,attributes={}){const l=node('label',label),input=node('input');input.name=name;Object.assign(input,attributes);l.append(input);parent.append(l);return input;}
  function dirty(){return draft&&draft.initial!==new URLSearchParams(new FormData($('project-form'))).toString();}
  function close(){const invoker=draft?.invoker;draft=null;$('project-editor').close();invoker?.focus();}
- async function navigate(fn){if(manager.isBusy())return false;if(draft){if(draft.saving||draft.pending){error($('project-form-error'),Error('Resolve the pending save before leaving.'));return false;}if(dirty()){leave=fn;$('project-dirty').showModal();return false;}close();}manager.close();await fn();return true;}
+ async function navigate(fn){if(manager.isBusy())return false;if(draft){if(draft.saving||draft.pending){error($('project-form-error'),Error('Resolve the pending save before leaving.'));return false;}if(dirty()){leave=fn;$('project-dirty').showModal();return false;}close();}manager.close();return (await fn())!==false;}
  $('project-cancel').onclick=()=>navigate(async()=>{});
  $('project-editor').oncancel=e=>{e.preventDefault();navigate(async()=>{});};
  $('project-dirty-keep').onclick=()=>{leave=null;$('project-dirty').close();};

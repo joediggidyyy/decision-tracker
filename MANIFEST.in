@@ -1,0 +1,21 @@
+include AGENTS.md README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md LICENSE NOTICE pyproject.toml requirements-dev.lock
+include .calamum/project.json
+recursive-include docs *.md *.json
+recursive-include skills *.md
+recursive-include catalog *.json
+recursive-include tools *.py *.cjs
+recursive-include tests *.py *.cjs
+recursive-include src/decision_tracker *.py
+recursive-include src/decision_tracker/static *
+recursive-include src/decision_tracker/schemas *.json
+prune .local
+prune .venv
+prune .git
+prune .calamum/generated
+prune build
+prune dist
+prune deployment
+prune data
+prune backups
+prune exports
+global-exclude __pycache__ *.py[cod] *.sqlite *.sqlite-* *.db *.db-* *.pem *.key *.pfx *.p12 .env .env.* secrets.bin deployment.json token-journal*.json

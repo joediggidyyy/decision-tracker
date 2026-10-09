@@ -47,7 +47,7 @@ Bootstrap, focused, integration and observed-browser definitions are registered.
 For application regression:
 
 ```powershell
-python tools/prove.py --definition dt-integration --budget-seconds 300
+python tools/prove.py --definition dt-integration --budget-seconds 480
 ```
 
 The browser lane requires actual observations; see tools/browser_host.py. Do not register placeholder passing definitions for planned
@@ -56,6 +56,10 @@ capabilities. Preserve failed evidence and investigate failures before rerunning
 Use explicit staging and review diffs. Never commit credentials, real project
 data, environment folders or generated evidence. Do not push or publish without
 owner authorization. Dependency changes must retain exact versions and evidence.
+
+## Packaging preparation
+
+Follow [Packaging](docs/packaging.md). Native `dt-package` qualifies a fresh runtime-only installation and checks wheel/source archive contents. Keep build artifacts under ignored `.local` or `dist`; do not bundle developer environments or deployment data. Run focused checks while editing and an integrated checkpoint when preparing a new application build. Retain archive hashes and source correspondence. A local candidate is not a published release.
 
 ## Tracking and closeout
 

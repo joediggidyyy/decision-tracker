@@ -1,14 +1,14 @@
 // Shared, operation-specific forms. Domain permissions remain server-owned.
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 export const titles={'decision.create':'New decision','decision.edit':'Edit decision','decision.close':'Decide','decision.edit-resolution':'Edit decision','decision.reopen':'Reopen decision','decision.lock':'Protect baseline','decision.amend':'Amend baseline','decision.deprecate':'Deprecate decision','decision.defer':'Defer','decision.resume':'Resume','decision.set-work':'Status','decision.challenge':'Challenge','decision.resolve-challenge':'Resolve challenge','option.add':'Add option','option.edit':'Edit option','option.retire':'Retire option','reference.add':'Add reference','reference.edit':'Edit reference','reference.retire':'Retire reference','link.add':'Add relationship','link.unlink':'Unlink'};
-export function installActionForm(container,op,d,child,{decide,findDecisions}){
+export function installActionForm(container,op,d,child,{decide,findDecisions,saved=false,idPrefix='action-'}){
  const fields={},readers={};let reasonDirty=false;
  const optional=el('details');optional.append(el('summary','Optional details'));
  function group(title){const g=el('fieldset');g.append(el('legend',title));container.append(g);return g;}
  function field(name,label,value='',{required=false,choices=null,type='textarea',parent=container,max=8192,hint=''}={}){
   const wrap=el('label',label+(required?'':' (optional)')),n=el(choices?'select':type==='textarea'?'textarea':'input');
   if(choices)for(const [v,t] of choices)n.add(new Option(t,v));else if(type!=='textarea')n.type=type;
-  n.id='action-'+name;n.name=name;n.value=value??'';n.required=required;n.maxLength=max;wrap.htmlFor=n.id;wrap.append(n);parent.append(wrap);fields[name]=n;
+  n.id=idPrefix+name;n.name=name;n.value=value??'';n.required=required;n.maxLength=max;wrap.htmlFor=n.id;wrap.append(n);parent.append(wrap);fields[name]=n;
   if(hint){const p=el('p',hint);p.className='field-hint';p.id=n.id+'-hint';n.setAttribute('aria-describedby',p.id);parent.append(p);}return n;
  }
  function sources(name,label,values,parent,required=false){
@@ -23,10 +23,10 @@ export function installActionForm(container,op,d,child,{decide,findDecisions}){
  if(child)container.append(el('p',child.title||child.label||`${child.source_key} → ${child.target_key}`,'target-summary'));
  if(create||edit){const g=group('Question');short('title','Title',create?'':d.title,{required:true,parent:g});field('question','Question',create?'':d.question,{required:true,parent:g});short('owner_role','Owner',create?'':d.owner_role,{parent:g});
   if(create||d.status==='open'){field('answer','Draft answer',create?'':d.answer,{parent:optional,max:32768});field('rationale','Why this draft answer?',create?'':d.rationale,{parent:optional,max:32768,hint:'These notes do not close the decision.'});}
-  if(edit)group('Evidence');
+  if(edit&&!saved)group('Evidence');
  }
  // Evidence is structured; never require the operator to write JSON.
- if(edit){const evidence=container.lastElementChild;evidence.replaceChildren(el('legend','Evidence'));
+ if(edit&&!saved){const evidence=container.lastElementChild;evidence.replaceChildren(el('legend','Evidence'));
   for(const key of ['implementation','verification','acceptance']){const saved=d.evidence_state?.[key],g=el('fieldset');g.append(el('legend',key[0].toUpperCase()+key.slice(1)));evidence.append(g);
    const enabled=field(key+'_enabled','Include entry','',{type:'checkbox',parent:g});enabled.checked=!!saved;
    const body=el('div');g.append(body);const status=short(key+'_status','Status',saved?.status,{required:true,parent:body}),role=short(key+'_role','Responsible role',saved?.responsible_role,{parent:body}),refs=sources(key+'_source','Evidence source',saved?.evidence_refs,body);
@@ -55,7 +55,7 @@ export function installActionForm(container,op,d,child,{decide,findDecisions}){
  const authority=group('Approval source');authority.append(el('p','Identify the message, document or note authorizing this action. A link, file path or descriptive note is accepted. For your own decision, describe what you authorize. Your account and save time are recorded automatically.'));
  const refs=sources('authority','Approval source',[],authority);
  const baseAuthority=['decision.reopen','decision.lock','decision.amend','decision.deprecate'].includes(op);
- function syncAuthority(){const rejected=fields.disposition?.value==='rejected';const required=baseAuthority||rejected;authority.hidden=false;refs.required(required);refs.disable(false);(required?container:optional).append(authority);if(fields.option_reason){fields.option_reason.required=rejected;fields.option_reason.closest('label').firstChild.textContent=rejected?'Why rejected?':'Option note (optional)';}if(fields.disposition)fields.disposition.querySelector('option[value="rejected"]').disabled=!decide;}
+ function syncAuthority(){const rejected=fields.disposition?.value==='rejected';const required=baseAuthority||rejected;authority.hidden=saved;refs.required(required);refs.disable(saved);if(!saved)(required?container:optional).append(authority);if(fields.option_reason){fields.option_reason.required=rejected;fields.option_reason.closest('label').firstChild.textContent=rejected?'Why rejected?':'Option note (optional)';}if(fields.disposition)fields.disposition.querySelector('option[value="rejected"]').disabled=!decide;}
  fields.disposition?.addEventListener('change',syncAuthority);syncAuthority();container.append(optional);
  const dataKeys={ 'decision.create':['title','question','owner_role','answer','rationale'],'decision.edit':['title','question','owner_role','answer','rationale'],'decision.reopen':['impact'],'decision.lock':['baseline'],'decision.amend':['title','question','impact','baseline_disposition'],'decision.deprecate':['kind','replacement_key'],'decision.defer':['resume_trigger'],'decision.set-work':['work_tag'],'link.add':['target_key','type']};
  const keys=dataKeys[op]||(op.startsWith('option.')&&!op.endsWith('retire')?['title','description','benefit','cost','disposition','option_reason']:op.startsWith('reference.')&&!op.endsWith('retire')?['label','locator','kind','version','sha256','availability','authenticity','limitations']:[]);

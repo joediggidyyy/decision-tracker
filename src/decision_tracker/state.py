@@ -135,12 +135,14 @@ class Mutator:
                         require(option["decision_key"]==key and option["disposition"]!="retired","INVALID_TRANSITION","Choose a current option of this decision.")
                         option["disposition"]="selected";option["revision"]+=1;store.save(self.db,"alternatives",option)
                 obj.update(data)
+                store.validate_decision(self.db,obj,changed_fields=data.keys())
             elif action == "close":
                 fields(data, {"answer","rationale","selected_option"})
                 require(obj["status"] == "open", "INVALID_TRANSITION", "Only open decisions can close.")
                 obj.update(status="closed",work_tag=None,contested=False,defer_reason=None,resume_trigger=None,
                            answer=data.get("answer",obj["answer"]),rationale=data.get("rationale",obj["rationale"]),
                            authority_refs=self.request.authority_refs)
+                store.validate_decision(self.db,obj,strict=True)
                 if data.get("selected_option"):
                     option = store.get(self.db,"alternatives",data["selected_option"])
                     require(option["decision_key"]==key and option["disposition"]!="retired", "INVALID_TRANSITION", "Choose a current option of this decision.")
