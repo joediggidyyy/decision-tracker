@@ -6,7 +6,7 @@
 
 Decision Tracker helps you and your agents collaborate on complex projects with many critical, specific decisions. Keep each decision, its reasoning and supporting evidence retrievable throughout the project lifecycle. As plans evolve, immutable snapshots preserve earlier decisions so you can revisit what was agreed and why.
 
-**Local-use alpha · Python 3.14 · Public source repository**
+**Local-use alpha · Windows 11 x64 installer · Public source repository**
 
 Capture open questions, compare alternatives, record approvals and connect related decisions. Use the browser to review and decide, and the CLI or API to give agents access to the same project context. Closed decisions require explicit reopening before edits; protected baselines require amendment. Earlier records remain available as the project changes. Decision approval, implementation and verification stay distinct, so agreeing on an approach does not imply that the work is complete.
 
@@ -28,6 +28,12 @@ Capture open questions, compare alternatives, record approvals and connect relat
 | Review what has changed | [Changelog](CHANGELOG.md) |
 
 ## Quick start
+
+For ordinary Windows 11 x64 use, choose `DecisionTracker-0.1.0a1-windows-x64-setup.exe` from the release assets. This alpha installer includes Python and runtime dependencies; no separate Python, pip or terminal setup is needed. See [Windows installation](docs/windows-installation.md) for hashes, unsigned-app prompts and repair. The release candidate is being qualified; this document does not assert a public release exists.
+
+Run Setup under your own Windows account. It creates a Start menu entry and offers a desktop shortcut. Launch Decision Tracker. On first launch, click OK to copy a temporary setup code, paste it into the browser form and choose your password. Cancel leaves setup unfinished. The code expires after 15 minutes. A fresh deployment starts with no projects or saved decisions.
+
+### Python installation alternative
 
 The managed browser launcher currently targets **Windows** with **Python 3.14**. Download this repository or clone it, then open PowerShell in the repository folder. Install the application and its runtime dependencies into your own environment:
 
@@ -115,9 +121,9 @@ Keep your environment, credentials, project databases and generated evidence out
 
 ## Status and rights
 
-Version `0.1.0.dev0` is a local-use alpha in a public source repository. Windows installation and managed CLI launch have been tested; broader platform support is not yet qualified. See the [verification record](docs/verification.md) for tested behavior and current limitations.
+Version `0.1.0a1` is a local-use alpha in a public source repository. Windows installation and managed CLI launch have been tested; broader platform support is not yet qualified. See the [verification record](docs/verification.md) for tested behavior and current limitations.
 
-Copyright 2026 Polymath Global. Licensed under the [Apache License 2.0](LICENSE); see [NOTICE](NOTICE) for attribution. Third-party components retain their own license terms. No packaged release has been selected.
+Copyright 2026 Polymath Global. Licensed under the [Apache License 2.0](LICENSE); see [NOTICE](NOTICE) for attribution. Third-party components retain their own license terms. The selected release is an unsigned Windows 11 x64 prerelease; publication and second-machine acceptance remain separate.
 
 ---
 

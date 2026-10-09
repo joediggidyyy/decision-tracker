@@ -1,5 +1,11 @@
 # Verification state
 
+## Windows installer candidate — 2026-10-09
+
+Native `dt-windows-installer` passed eight checks in `.local/proofs/24bcc24b77b143e0a603355d2231a8b8`, with source unchanged. The compiled Setup installed offline with its own Python 3.14.8; it started/reused/stopped the managed application and completed repair, damaged support-file replacement, uninstall and reinstall. Credentials, deployment identity, project UUID and Library identity survived. Database bytes remained unchanged across uninstall. Focused checks cover explicit first-setup copying/cancellation, foreign binding refusal, busy-stop refusal and recovery after interrupted binding activation. Developer pip, PyTest and Calamum were absent from the bundled runtime.
+
+A further native installer run passed eight checks in `.local/proofs/82b5c0aa19294784bbaf49ec2a22214e`, with source unchanged. It verified spaces/non-ASCII installation paths and refusal to stop a real protected browser draft. Native `dt-integration` passed 247 tests, with one intentional skip for the separately qualified compiled-Setup test, in `.local/proofs/5750a159a6c44bad9a0f91066d42a6fa`; source was unchanged. The final support encoding corrections and narrow interrupted-receipt validation receive focused installer/package checks. Final receipts and source manifests remain under `.local/proofs`; public release assets must match the final passing source. Interactive wizard acceptance, an environment with no external Python installed and the later second-machine operator test remain outstanding. No public prerelease has been published.
+
 ## Packaging preparation and current application — 2026-10-09
 
 Native `dt-integration` passed **240 tests** with source unchanged in `.local/proofs/35dc2e73f40d4700ac4656491a7dd85e`. It includes the finished Library workflows, project-selector relocation and fresh runtime-only package installation. Focused `dt-package` also passed four checks in `.local/proofs/73de1405cd214f79bef098b85592193a`: wheel/source contents, required saved modules/assets/schema and support material, excluded local state, installed asset hashes, dependency consistency and managed Windows startup/reuse/shutdown. CLI browser dispatch is stubbed in package checks; integrated Chromium workflows provide separate real-browser evidence.

@@ -10,6 +10,12 @@ Run command examples from the repository root after activating its environment:
 
 For a new user installation, follow the [Quick start](../README.md#quick-start). Installing the package creates the `decision-tracker` console script. `decision-tracker service open` is the user launch point; it starts or reuses the managed backend and opens the default browser. Without activation, invoke `.\.venv\Scripts\decision-tracker.exe service open` directly. Polymath home is optional and its link may require browser permission to open an external application. The managed launcher is currently qualified on Windows only.
 
+## Windows Setup installation
+
+For the Windows installer, use the Start menu entry. The private owner CLI is `%LOCALAPPDATA%\Programs\DecisionTracker\decision-tracker.cmd`; use it for recovery and explicit agent provisioning. No PATH change, startup task or automatic updater is installed. Optional URI registration uses the existing `service install-launcher` command and is not required to launch from Start.
+
+Setup owns its application folder and recorded deployment binding. It stops an owned service through the existing owner channel and refuses busy drafts. Uninstall retains credentials, projects, Library and an installation receipt. Reinstall restores application files and verifies the owned binding. It does not adopt a manual Python installation, move data or authorize schema migration. See [Windows installation and repair](windows-installation.md).
+
 ## Pages and reusable content
 
 Select projects in the heading on Decisions or Projects. The adjacent connection dot opens workspace updates and service controls. Library works without a project and chooses the destination in staging. A fresh installation has no saved decisions or groups; no organization seed set is bundled.

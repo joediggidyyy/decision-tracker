@@ -19,3 +19,4 @@ prune data
 prune backups
 prune exports
 global-exclude __pycache__ *.py[cod] *.sqlite *.sqlite-* *.db *.db-* *.pem *.key *.pfx *.p12 .env .env.* secrets.bin deployment.json token-journal*.json
+recursive-include packaging *.json *.iss

@@ -20,7 +20,7 @@ def source_files(root):
              "CHANGELOG.md", "AGENTS.md", ".gitignore", ".gitattributes",
              "requirements-dev.lock", ".calamum/project.json"]
     files = [root / p for p in names if (root / p).is_file()]
-    for name in ["src", "tests", "tools", "catalog", "docs", "skills"]:
+    for name in ["src", "tests", "tools", "catalog", "docs", "skills", "packaging"]:
         files.extend(p for p in (root / name).rglob("*") if p.is_file()
                      and "__pycache__" not in p.parts and not any(x.endswith(".egg-info") for x in p.parts))
     for name in ["home-preview.html","home.css","scoped-change.json"]:
@@ -92,7 +92,7 @@ def supervise(command, cwd, env, output, seconds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form", "dt-action-forms","dt-projects-data","dt-closed-records", "dt-planning-links", "dt-applications", "dt-package", "dt-legacy", "dt-migration", "dt-saved-decisions"])
+    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form", "dt-action-forms","dt-projects-data","dt-closed-records", "dt-planning-links", "dt-applications", "dt-package", "dt-legacy", "dt-migration", "dt-saved-decisions", "dt-windows-installer"])
     parser.add_argument("--budget-seconds", type=int, default=60)
     parser.add_argument("--input-manifest", help="Reviewed local frozen-input manifest for dt-migration.")
     parser.add_argument("--runtime-file", help="Names-only existing rootless Linux runtime for dt-migration.")
@@ -128,8 +128,12 @@ def main():
             if not path.is_absolute() or not path.exists():
                 raise ValueError("Browser proof runtime path is unavailable: " + key)
             env[variable] = str(path)
+    installer_runtime = root / ".local/installer-runtime.json"
+    if installer_runtime.exists():
+        env["DECISION_TRACKER_INSTALLER_RUNTIME"] = str(installer_runtime)
     env["DECISION_TRACKER_PROOF_WHEELS"] = str(root / ".local/wheels")
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["DECISION_TRACKER_PROOF_SCOPE"] = args.definition
     env["PYTHONPATH"] = str(proof / "src")
     env["CALAMUM_CONFIG_ROOT"] = str(run / "config")
     command = [str(Path(sys.executable).with_name("calamum.exe")), "test", "run",

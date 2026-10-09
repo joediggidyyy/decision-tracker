@@ -1236,6 +1236,69 @@
         "sandbox_test": [],
         "empirical_test": []
       }
+    },
+    {
+      "id": "dt-windows-installer",
+      "title": "Decision Tracker Windows Setup",
+      "summary": "Compiled offline Setup, repair, retained data, uninstall and reinstall.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "windows-installer"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "windows-setup",
+            "title": "Owned installation lifecycle",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_installed.py",
+              "tests/test_windows_installer.py",
+              "-q",
+              "--basetemp",
+              ".local/installer-test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
     }
   ]
 }

@@ -19,7 +19,7 @@ def safe_path(path):
     for p in (path,*path.parents):require(not p.is_symlink() and not p.is_junction(),'FORBIDDEN','Linked deployment paths are not allowed.',403)
     return path
 
-def load(path):
+def load(path,check_runtime=True):
     path=safe_path(path);require(path.is_file(),'SETUP_REQUIRED','Install the local launcher first.',503)
     require(path.stat().st_size<=16384,'SETUP_REQUIRED','Invalid deployment descriptor.',503)
     value=json.loads(path.read_text(encoding='utf-8'))
@@ -28,7 +28,8 @@ def load(path):
     require(set(value)=={'schema_version','deployment_id','owner_sid','python','source_root','config','bundle','auth_initialized','auth_schema_version'},'SETUP_REQUIRED','Invalid deployment descriptor fields.',503)
     for name in ('config','bundle'):
         p=safe_path(value[name]);require(p.parent==base,'FORBIDDEN','Deployment files must remain contained.',403)
-    require(Path(value['python']).is_file() and Path(value['source_root']).is_dir(),'SETUP_REQUIRED','Repair the moved application installation.',503)
+    if check_runtime:
+        require(Path(value['python']).is_file() and Path(value['source_root']).is_dir(),'SETUP_REQUIRED','Repair the moved application installation.',503)
     cfg=load_config(value['config']);safe_path(cfg.auth_store)
     require(Path(cfg.auth_store).parent==base and value['auth_initialized'] and value['auth_schema_version']==1,'SETUP_REQUIRED','Credential store initialization is required.',503)
     require(Path(cfg.auth_store).is_file(),'SETUP_REQUIRED','Preserve and repair the missing credential store.',503)
@@ -82,6 +83,7 @@ def ensure(path):
     value,cfg=load(path);bundle=read_bundle(Path(value['bundle']));started=False
     deadline=time.monotonic()+30
     with coordinator(value):
+        require(not (Path(value['path']).parent/'installation-maintenance.json').exists(),'INSTALLATION_MAINTENANCE','Setup is incomplete or the application was uninstalled. Run the matching Setup to repair it; user data is preserved.',503)
         state=probe(value,cfg,bundle['control_key'])
         while state and state['state']=='DRAINING':
             require(time.monotonic()<deadline,'SERVICE_UNAVAILABLE','Service is still stopping.',503);time.sleep(.1);state=probe(value,cfg,bundle['control_key'])

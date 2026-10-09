@@ -59,6 +59,12 @@ For every closed decision created or closed within the authorized task, incorpor
 
 Use the actual canonical document and section, current ledger/decision/policy revisions and observed content hash. Closure and linking are separate committed requests. Reopening clears current-cycle linking; after authorized reclosure, link the new cycle again. Check existing closed records in task scope for missing links without rewriting unrelated historical records. If incorporation or a required schema upgrade/planning-root registration is not authorized or cannot be completed, report each unlinked key and its exact prerequisite; retain the request and continue independent work. Do not loosen anchor policy to manufacture completion. Linking does not claim implementation, verification or owner acceptance.
 
+## Windows installer access
+
+A Setup installation includes the owner CLI at `%LOCALAPPDATA%/Programs/DecisionTracker/decision-tracker.cmd`. Use that installed command rather than requiring a developer environment. Its deployment defaults remain the same; pass `--deployment FILE` for an explicitly configured alternate deployment. Start menu launch handles first-time human setup. Agents must not read the clipboard or request setup codes.
+
+Installer repair/uninstall use the recorded current-user ownership and preserve user data. `INSTALLATION_MAINTENANCE` blocks launch during incomplete Setup or after uninstall; use matching Setup to repair. Do not delete maintenance markers, rewrite installation/deployment receipts, adopt a foreign binding or force-stop an application. This skill does not authorize installer publication, upgrades, credential administration or data migration.
+
 ## Start or reuse the local service
 
 For an installed Windows deployment, run `decision-tracker service ensure-running --json` before data access. It starts or reuses the service without opening a browser. Pass `--deployment FILE` for a nondefault deployment. Do not install a startup task or keep it alive with polling; useful requests and bounded draft leases manage the 90-minute idle policy.

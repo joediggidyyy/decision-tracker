@@ -35,3 +35,5 @@ The Polymath mark in the repository README reuses the application's existing app
 ---
 
 <p align="center">Maintained by Polymath Global</p>
+
+Windows users: [Setup, first launch and repair](windows-installation.md).

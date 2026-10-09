@@ -4,9 +4,9 @@
 
 ## Current candidate
 
-The application remains a local-use alpha, version `0.1.0.dev0`, requiring Python 3.14 or newer. Managed launch is qualified on Windows. Prepare a Python wheel and a source distribution. The wheel is not a standalone executable or a Windows installer. It installs the `decision-tracker` console command and runtime dependencies into the chosen Python environment.
+The selected limited-test prerelease is `0.1.0a1`, tagged `v0.1.0a1` when published. Its conventional Windows Setup EXE targets Windows 11 x64 and installs for the current user. It includes pinned Python 3.14.8 and vendored runtime dependencies. The build is unsigned; signing and broader distribution remain separate. Wheel and source assets remain available for Python users and contributors. The wheel itself is not a standalone installer.
 
-No public release, package-index upload or repository push is implied by a local build. Keep the current version until a release version is selected. Source migration execution and broader platform qualification remain separate.
+Build and qualify locally before preparing a draft GitHub prerelease. Publication, second-machine operator acceptance and source migration remain separate actions. Do not rename older `dev0` artifacts or claim a published release from a local build.
 
 ## Contents
 
@@ -16,9 +16,14 @@ A new deployment starts with no projects, saved decisions or groups. Organizatio
 
 ## Build and qualify locally
 
+Pinned portable inputs live in `packaging/windows-inputs.json`. Obtain the specified official Python archive and Inno Setup compiler, verify the archive hashes and compiler publisher signature, and retain the receipt. Store local input paths in ignored `.local/installer-runtime.json` with `python_archive`, `compiler`, `compiler_sha256` and `wheelhouse`. The wheelhouse must contain the exact runtime dependency versions with Windows x64/Python 3.14 compatibility. Never put local paths, credentials or downloaded compiler binaries into source.
+
+`tools/build_windows.py --output NEW_FOLDER --runtime-file FILE` builds offline from those inputs. For release qualification, use the compiled-Setup native lane below; it invokes this same builder in a source-corresponding copy. Keep the resulting EXE, wheel, source archive, `SHA256SUMS.txt`, bundle manifest, build receipt and proof. Use these exact tested assets for release; do not rebuild a replacement after qualification.
+
 Use the repository development environment and native Calamum. Obtain its recorded local prerequisites as described in [Contributing](../CONTRIBUTING.md). From the repository root:
 
 ```powershell
+.\.venv\Scripts\python.exe tools/prove.py --definition dt-windows-installer --budget-seconds 360
 .\.venv\Scripts\python.exe tools/prove.py --definition dt-package --budget-seconds 240
 .\.venv\Scripts\python.exe tools/prove.py --definition dt-integration --budget-seconds 480
 ```
@@ -28,6 +33,8 @@ The package proof builds both archives in an isolated proof copy. It checks requ
 Keep the proof directory, source manifest, stdout/stderr, package receipt and archive SHA256 values. Final candidates must match the qualified source. Retrieve the retained wheel/source archives from that proof, rather than rebuilding an unverified replacement. Label them alpha candidates. Do not clean retained failures or change live deployments as part of building.
 
 ## Install and first boot
+
+Use [Windows Setup and repair](windows-installation.md) for the EXE workflow. The following is the Python alternative.
 
 In a new environment, install the retained wheel with pip. Online pip resolves its pinned runtime dependencies; offline installation also needs compatible wheels for all runtime dependencies. A source archive alone is not an offline dependency bundle. Run `pip check`, then the installed CLI help. Follow [Quick start](../README.md#quick-start) to initialize the current-user launcher, privately generate a setup code and choose a password. Protocol registration is optional and explicit. Keep the installed environment in place because the launcher records its interpreter.
 
@@ -44,3 +51,7 @@ Reuse the existing deployment rather than creating duplicate credentials or proj
 Provide the version, archive hashes, install/launch steps, platform limits and this documentation bundle. For a fault, retain the error code, request ID, exact pending request and nonsecret proof/service status. Report whether an operation is uncommitted, committed or uncertain; retry uncertain requests exactly. Never include passwords, tokens, setup codes or private records in public reports. Security reports follow [Security](../SECURITY.md).
 
 Read [Verification](verification.md) for actual test evidence. Passing isolated checks is separate from owner acceptance, a published release and production qualification.
+
+## GitHub prerelease preparation
+
+Select a verified source commit and map each retained asset hash to its proof/source manifest. Check all distribution contents and third-party notices. Prepare release notes with Windows 11 x64 limits, unsigned-app guidance, retained-data uninstall behavior and pending second-machine acceptance. Prepare a draft prerelease with tag `v0.1.0a1` and the tested EXE, wheel, source archive and checksums. Do not upload local build logs, credentials, deployment state or business planning. Keep publication authority distinct from local preparation.

@@ -4,6 +4,12 @@
 
 Changes to the local application are recorded here. This is a development history, not a packaged release announcement.
 
+## 0.1.0a1 - Windows installer candidate
+
+- Add current-user Windows 11 x64 Setup with pinned Python 3.14.8 and offline runtime dependencies. Add Start menu launch, optional desktop shortcut and graphical first-time setup.
+- Keep application files separate from credentials, projects and Library. Repair owned bindings safely; retain data on uninstall and reinstall. Refuse foreign bindings and busy drafts. Preserve interruption evidence for repair.
+- Add native compiled-installer qualification and Windows installation/support guidance. Publication and second-machine acceptance remain separate.
+
 ## Unreleased — packaging preparation
 
 - Align browser, Library, recovery and agent guidance with completed behavior. Add a packaging/support guide and explicit source-distribution contents; qualify archive boundaries alongside fresh wheel installation. Keep version 0.1.0.dev0 and publication separate.
