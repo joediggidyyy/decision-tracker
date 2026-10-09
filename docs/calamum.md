@@ -61,6 +61,8 @@ Credential and lifecycle verification uses `dt-auth-focus`; actual account inter
 
 ## Action-form browser proof
 
+`tools/prove.py --definition dt-deprecation-focus --budget-seconds 240` qualifies shared deprecation approval, immutable history/replay/recovery, CLI reads and the actual browser source-removal and tooltip observations. `dt-integration --budget-seconds 480` includes these assertions through its existing tests scope. Retained failed attempts remain evidence; confirm proof-copy/source hashes before claiming qualification.
+
 `tools/prove.py --definition dt-action-forms --budget-seconds 240` runs the focused browser and resolution checks through native Calamum. `dt-integration` includes these checks. The browser test uses disposable local data, a synthetic password and an ephemeral loopback port.
 
 Provide Playwright through `NODE_PATH`, with browser executable overrides `PROOF_BROWSER_EXECUTABLE` and `PROOF_FULL_BROWSER`. Alternatively, keep these machine-local paths in ignored `.local/browser-runtime.json`, using keys `node_modules`, `headless_executable` and `browser_executable`. The proof supervisor validates and loads that file. No browser runtime path belongs in portable source. The full Chromium executable supports a disposable test extension that sets and reads actual browser zoom; CSS scaling is not used as a substitute.

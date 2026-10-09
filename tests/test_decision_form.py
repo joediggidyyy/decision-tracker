@@ -9,8 +9,8 @@ from decision_tracker.credentials import Credentials
 def test_proposal_defaults():
     node=shutil.which('node');assert node
     path=Path(__file__).parents[1]/'src/decision_tracker/static/decision-form.js'
-    script="""import fs from 'node:fs';import assert from 'node:assert/strict';
-const {defaults,normalize}=await import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync(process.argv[1],'utf8')).toString('base64'));
+    script="""import {pathToFileURL} from 'node:url';import assert from 'node:assert/strict';
+const {defaults,normalize}=await import(pathToFileURL(process.argv[1]).href);
 const p={title:'Local storage',description:'Use the local drive',benefit:'Reliable locking',cost:'Separate backups'};
 assert.deepEqual(defaults(p),{answer:p.description,rationale:'Expected benefit: Reliable locking\\n\\nCost or tradeoff: Separate backups',reason:'Recorded decision using proposal: Local storage.'});
 assert.equal(defaults({title:'Manual',description:' ',benefit:'',cost:''}).rationale,'');

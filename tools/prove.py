@@ -92,7 +92,7 @@ def supervise(command, cwd, env, output, seconds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form", "dt-action-forms","dt-projects-data","dt-closed-records", "dt-planning-links", "dt-applications", "dt-package", "dt-legacy", "dt-migration", "dt-saved-decisions", "dt-windows-installer"])
+    parser.add_argument("--definition", default="dt-bootstrap", choices=["dt-bootstrap", "dt-deprecation-focus", "dt-focus", "dt-integration", "dt-browser", "dt-live-focus", "dt-agent-workflow", "dt-auth-focus", "dt-account-browser", "dt-approval-focus", "dt-decision-form", "dt-action-forms","dt-projects-data","dt-closed-records", "dt-planning-links", "dt-applications", "dt-package", "dt-legacy", "dt-migration", "dt-saved-decisions", "dt-windows-installer"])
     parser.add_argument("--budget-seconds", type=int, default=60)
     parser.add_argument("--input-manifest", help="Reviewed local frozen-input manifest for dt-migration.")
     parser.add_argument("--runtime-file", help="Names-only existing rootless Linux runtime for dt-migration.")

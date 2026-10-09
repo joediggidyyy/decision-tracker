@@ -170,6 +170,14 @@ Approval events count with the decision toward the 128 KiB aggregate limit. Even
 
 CLI `decision close` and `change apply` forward this object through existing JSON inputs. Bearer agents must report genuine external approval evidence and possess decide permission; this feature grants no new access.
 
+`decision.deprecate` accepts the same `data.approval` object. The browser uses the shared Approval controls: current approval derives the signed-in person's identity and time; external approval records the reported approver and honest date precision. Supply the deprecation `kind`, any required `replacement_key`, and the actual transaction `reason`. Structured deprecation rejects top-level `occurred_at` and nonempty `authority_refs`; put its supporting references in `approval.sources`. Save it separately from other changes to that decision. Existing reference-only CLI/API requests remain valid under their existing permissions.
+
+Deprecation events use `decision-tracker.deprecation-approval/v1`, `kind: deprecate`, `deprecation_kind`, `deprecation_reason` and `replacement_key`. They include the common recorder, occurrence and source evidence; they contain no resolution answer, rationale or selected proposal, and never supersede a resolution approval. Their generated reference is `dt-deprecation-approval:<event UUID>`. New reference-only deprecations also record an event with unknown approver/date. Historical deprecations without an event stay unchanged.
+
+Detail/as-of exposes `latest_deprecation_approval` separately from `latest_resolution_approval`. History exposes a deprecation summary only on the deprecation revision. Existing approval collection/detail routes accept `kind=resolution` or `kind=deprecate`; omission lists both. Summaries include `kind` and `schema_version`. Cursors bind to the kind filter. CLI `decision get --key KEY --approval-kind deprecate` reads that collection; add `--id EVENT_UUID` for an event or `--cursor`/`--limit` for pages. Ordinary `decision get` remains unchanged. Discovery advertises `deprecation_approval_v1` and its input/event contract.
+
+This adds no SQL schema version. The capable runtime supports existing ledger schemas 2–4 and their checked native exports/backups. Older binaries are not qualified for histories containing the new event kind, even when their SQL schema number matches. Retain a capable binary for recovery after these writes; an older backup would discard later transactions and is not a rollback substitute. Schema-1 writes still require explicit upgrade.
+
 The browser retains the exact request after an uncertain response, retries it once, then offers Retry original save. Each changes request is bounded at 15 seconds. Definitive rejection permits correction with a new request ID. A failed refresh after a successful save is reported as a saved decision.
 
 ---

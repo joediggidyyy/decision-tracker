@@ -1,0 +1,6 @@
+{
+  "source_commit": "3b3f6ca5ad07746f8c7cdacad23fb32e5a6ae48a",
+  "source_path": "src/decision_tracker/approval_history.py",
+  "sha256": "7048bebd33042440e29e4b18ab9d57b933ac634c6268c07e76f28012180c7c23",
+  "scope": "Unmodified older approval-history validator; not a whole older binary qualification"
+}

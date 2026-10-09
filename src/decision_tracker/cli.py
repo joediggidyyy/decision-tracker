@@ -44,6 +44,7 @@ def common(parser,suppress=True):
     parser.add_argument('--planning-root',dest='planning_roots',action='append',default=default)
     for name in ('source-namespace','source-id','source-version','payload','legacy-kind'):
         parser.add_argument('--'+name,default=default)
+    parser.add_argument('--approval-kind',choices=('resolution','deprecate'),default=default)
     parser.add_argument('--origin',choices=('native','legacy'),default=default)
     parser.add_argument('--relations',action='store_true',default=argparse.SUPPRESS if suppress else False)
 
@@ -362,7 +363,10 @@ def execute(args):
         require(args.key,"VALIDATION_ERROR","Supply --key.")
         endpoint=path+"/decisions/"+args.key
         params={}
-        if a=="list":endpoint+="/"+{"option":"options","reference":"references","link":"links"}[g];params={"limit":args.limit}
+        if g=='decision' and a=='get' and args.approval_kind:
+            endpoint+='/approvals'+('/'+str(__import__('uuid').UUID(args.id)) if args.id else '')
+            params={'kind':args.approval_kind,**({} if args.id else {'limit':args.limit})}
+        elif a=="list":endpoint+="/"+{"option":"options","reference":"references","link":"links"}[g];params={"limit":args.limit}
         elif a!="get":endpoint+="/"+("fields/"+(args.field or "") if a=="field" else a)
         if a in ('history','planning-links','applications'):params["limit"]=args.limit
         if args.cursor:params["cursor"]=args.cursor

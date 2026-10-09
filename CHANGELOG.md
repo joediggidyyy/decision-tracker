@@ -4,6 +4,12 @@
 
 Changes to the local application are recorded here. This is a development history, not a packaged release announcement.
 
+## Unreleased — deprecation approval and source controls
+
+- Reuse normal resolution approval for deprecation, including derived current human authority and reported external approval. Retain legacy reference requests and record distinct immutable deprecation evidence without replacing the original resolution approval.
+- Fix removed source controls remaining in form validation. Share applicable-control recovery and approval controls; add filtered API/CLI evidence reads and explicit older-runtime recovery limits.
+- Remove the bottom narrative paragraphs from control-panel help tooltips while preserving action descriptions and interaction.
+
 ## 0.1.0a1 - Windows installer candidate
 
 - Add current-user Windows 11 x64 Setup with pinned Python 3.14.8 and offline runtime dependencies. Add Start menu launch, optional desktop shortcut and graphical first-time setup.

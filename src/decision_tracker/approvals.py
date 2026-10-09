@@ -36,27 +36,79 @@ class Approval(Model):
         else:raise ValueError('Choose date and time known, date only, or date unknown.')
         return self
 
+class DeprecationEvent(Model):
+    """Closed discovery contract; resolution fields do not belong here."""
+    schema_version: Literal['decision-tracker.deprecation-approval/v1']
+    event_id: str
+    decision_key: str
+    ledger_revision: int
+    operation_ordinal: int
+    supersedes_event_id: None
+    kind: Literal['deprecate']
+    mode: Literal['authenticated_now','reported','legacy_reference']
+    recorded_by: str
+    auth_method: Literal['human_password_session','agent_bearer','legacy_token_session']
+    recorded_at: str
+    reported_approver: str | None
+    precision: Literal['exact','date','unknown']
+    occurred_at: str | None
+    occurred_date: str | None
+    utc_offset_minutes: int | None
+    timezone_label: str | None
+    sources: list[str]
+    deprecation_kind: Literal['superseded','obsolete','withdrawn','duplicate','error']
+    deprecation_reason: str
+    replacement_key: str | None
+
 def normalized(text):return (text or '').replace('\r\n','\n').strip()
+
+
+def normalize_approval(raw, request, ordinal):
+    structured=raw is not None
+    if structured and isinstance(raw,dict) and raw.get('mode')=='reported':
+        require(isinstance(raw.get('approver'),str) and raw['approver'].strip(),'APPROVER_REQUIRED','Enter who approved this decision.',fields=[{'field':f'/operations/{ordinal}/data/approval/approver'}])
+        require(isinstance(raw.get('sources'),list) and raw['sources'] and all(isinstance(x,str) and x.strip() for x in raw['sources']),'APPROVAL_SOURCE_REQUIRED','Add the message, document or note that records the approval.',fields=[{'field':f'/operations/{ordinal}/data/approval/sources'}])
+    from pydantic import ValidationError
+    from .errors import Fault
+    try:approval=Approval.model_validate(raw) if structured else None
+    except ValidationError as exc:
+        raise Fault('APPROVAL_DATE_INVALID','Choose valid approval details, or select Date unknown.',details={'fields':[{'field':f'/operations/{ordinal}/data/approval/'+('/'.join(map(str,x['loc'])) or 'precision'),'message':x['msg']} for x in exc.errors()]}) from None
+    require(not structured or request.occurred_at is None,'VALIDATION_ERROR','Use the approval date, not a second transaction date.')
+    return approval
+
+def apply_evidence(event, approval, principal, stamp, ref):
+    if approval:
+        if approval.mode=='authenticated_now':
+            require(principal.auth_method=='human_password_session','FORBIDDEN','Only a signed-in person can approve now.',403)
+            event.update(precision='exact',occurred_at=stamp,utc_offset_minutes=0,timezone_label='UTC',sources=[ref])
+        else:
+            current=datetime.fromisoformat(stamp.replace('Z','+00:00'))
+            if approval.precision=='exact':
+                require(approval.occurred_at<=current,'APPROVAL_DATE_FUTURE','The approval time cannot be in the future.')
+            if approval.precision=='date':
+                require(approval.occurred_date<=current.astimezone(timezone(timedelta(minutes=approval.utc_offset_minutes))).date(),'APPROVAL_DATE_FUTURE','The approval date cannot be in the future.')
+            event.update(reported_approver=approval.approver.strip(),precision=approval.precision,
+                         occurred_at=approval.occurred_at.astimezone(timezone.utc).isoformat() if approval.occurred_at else None,
+                         occurred_date=approval.occurred_date.isoformat() if approval.occurred_date else None,
+                         utc_offset_minutes=approval.utc_offset_minutes,timezone_label=approval.timezone_label,
+                         sources=[x.strip() for x in approval.sources]+[ref])
 
 def prepare(db, principal, request, stamp):
     """Return operation-local evidence without changing the hashed request."""
-    events={}; operations=[op for op in request.operations if op.op in ('decision.close','decision.edit-resolution')]
+    events={}; operations=[op for op in request.operations if op.op in ('decision.close','decision.edit-resolution','decision.deprecate')]
     for ordinal,op in enumerate(request.operations):
         if op not in operations:continue
         key=op.key
         require(key and not key.startswith('@'),'VALIDATION_ERROR','Record approval for an existing decision.')
         require(sum(x.key==key for x in request.operations)==1,'VALIDATION_ERROR','Save this decision separately from other changes to it.')
+        deprecation=op.op=='decision.deprecate'
+        if deprecation:
+            require(not (set(op.data)-{'kind','replacement_key','approval'}),'VALIDATION_ERROR','Unknown deprecation fields.')
+            require('approval' not in op.data or isinstance(op.data['approval'],dict),'VALIDATION_ERROR','Supply approval details or omit approval for legacy authority references.')
+            require('approval' not in op.data or not request.authority_refs,'VALIDATION_ERROR','Use approval.sources instead of authority_refs for structured deprecation.',fields=[{'field':f'/operations/{ordinal}/data/approval/sources'}])
         obj=store.get(db,'decisions',key); data=op.data;raw=data.get('approval'); structured=raw is not None
-        if structured and isinstance(raw,dict) and raw.get('mode')=='reported':
-            require(isinstance(raw.get('approver'),str) and raw['approver'].strip(),'APPROVER_REQUIRED','Enter who approved this decision.',fields=[{'field':f'/operations/{ordinal}/data/approval/approver'}])
-            require(isinstance(raw.get('sources'),list) and raw['sources'] and all(isinstance(x,str) and x.strip() for x in raw['sources']),'APPROVAL_SOURCE_REQUIRED','Add the message, document or note that records the approval.',fields=[{'field':f'/operations/{ordinal}/data/approval/sources'}])
-        from pydantic import ValidationError
-        from .errors import Fault
-        try:approval=Approval.model_validate(raw) if structured else None
-        except ValidationError as exc:
-            raise Fault('APPROVAL_DATE_INVALID','Choose valid approval details, or select Date unknown.',details={'fields':[{'field':f'/operations/{ordinal}/data/approval/'+('/'.join(map(str,x['loc'])) or 'precision'),'message':x['msg']} for x in exc.errors()]}) from None
-        require(not structured or request.occurred_at is None,'VALIDATION_ERROR','Use the approval date, not a second transaction date.')
-        event_id=str(uuid4());ref='dt-approval:'+event_id
+        approval=normalize_approval(raw,request,ordinal)
+        event_id=str(uuid4());ref=('dt-deprecation-approval:' if deprecation else 'dt-approval:')+event_id
         event={'schema_version':'decision-tracker.approval/v1','event_id':event_id,'decision_key':key,
                'ledger_revision':request.expected_revision+1,'operation_ordinal':ordinal,
                'supersedes_event_id':None,'kind':'close' if op.op=='decision.close' else 'edit_resolution',
@@ -65,23 +117,16 @@ def prepare(db, principal, request, stamp):
                'precision':'unknown','occurred_at':None,'occurred_date':None,'utc_offset_minutes':None,
                'timezone_label':None,'sources':list(request.authority_refs),'selected_option':None,
                'answer':data.get('answer',obj['answer']),'rationale':data.get('rationale',obj['rationale'])}
-        previous=db.execute('SELECT event_id FROM approval_events WHERE decision_key=? ORDER BY ledger_revision DESC,operation_ordinal DESC LIMIT 1',(key,)).fetchone()
+        previous=None if deprecation else db.execute("SELECT event_id FROM approval_events WHERE decision_key=? AND json_extract(event_json,'$.kind') IN ('close','edit_resolution') ORDER BY ledger_revision DESC,operation_ordinal DESC LIMIT 1",(key,)).fetchone()
         if previous:event['supersedes_event_id']=previous[0]
-        if approval:
-            if approval.mode=='authenticated_now':
-                require(principal.auth_method=='human_password_session','FORBIDDEN','Only a signed-in person can approve now.',403)
-                event.update(precision='exact',occurred_at=stamp,utc_offset_minutes=0,timezone_label='UTC',sources=[ref])
-            else:
-                current=datetime.fromisoformat(stamp.replace('Z','+00:00'))
-                if approval.precision=='exact':
-                    require(approval.occurred_at<=current,'APPROVAL_DATE_FUTURE','The approval time cannot be in the future.')
-                if approval.precision=='date':
-                    require(approval.occurred_date<=current.astimezone(timezone(timedelta(minutes=approval.utc_offset_minutes))).date(),'APPROVAL_DATE_FUTURE','The approval date cannot be in the future.')
-                event.update(reported_approver=approval.approver.strip(),precision=approval.precision,
-                             occurred_at=approval.occurred_at.astimezone(timezone.utc).isoformat() if approval.occurred_at else None,
-                             occurred_date=approval.occurred_date.isoformat() if approval.occurred_date else None,
-                             utc_offset_minutes=approval.utc_offset_minutes,timezone_label=approval.timezone_label,
-                             sources=[x.strip() for x in approval.sources]+[ref])
+        apply_evidence(event,approval,principal,stamp,ref)
+        if deprecation:
+            event.pop("selected_option");event.pop("answer");event.pop("rationale")
+            event.update(schema_version="decision-tracker.deprecation-approval/v1",kind="deprecate",
+                         deprecation_kind=data.get("kind"),deprecation_reason=request.reason,replacement_key=data.get("replacement_key") or None)
+            require(len(store.encode(event).encode())<=131072,"LIMIT_EXCEEDED","Approval exceeds the record size limit.",413)
+            events[ordinal]=event
+            continue
         selected=data.get('selected_option')
         if 'selected_option' not in data and op.op=='decision.edit-resolution':
             row=db.execute("SELECT id FROM alternatives WHERE decision_key=? AND disposition='selected'",(key,)).fetchone();selected=row[0] if row else None
@@ -104,9 +149,9 @@ def insert(db,event):
     db.execute('INSERT INTO approval_events VALUES(?,?,?,?,?,?,?)',(event['event_id'],event['decision_key'],event['ledger_revision'],event['operation_ordinal'],event['supersedes_event_id'],store.encode(event),store.digest(event)))
 
 def summary(event):
-    return {k:event[k] for k in ('event_id','mode','recorded_by','reported_approver','recorded_at','precision','occurred_at','occurred_date','utc_offset_minutes','ledger_revision')}
+    return {k:event[k] for k in ('schema_version','kind','event_id','mode','recorded_by','reported_approver','recorded_at','precision','occurred_at','occurred_date','utc_offset_minutes','ledger_revision')}
 
-def latest(db,key,revision):
+def latest(db,key,revision,kind="resolution"):
     if store.metadata(db)['schema_version']==1:return None
-    row=db.execute('SELECT event_json FROM approval_events WHERE decision_key=? AND ledger_revision<=? ORDER BY ledger_revision DESC,operation_ordinal DESC LIMIT 1',(key,revision)).fetchone()
+    row=db.execute("SELECT event_json FROM approval_events WHERE decision_key=? AND ledger_revision<=? AND (CASE WHEN ?='deprecate' THEN json_extract(event_json,'$.kind')='deprecate' ELSE json_extract(event_json,'$.kind') IN ('close','edit_resolution') END) ORDER BY ledger_revision DESC,operation_ordinal DESC LIMIT 1",(key,revision,kind)).fetchone()
     return summary(__import__('json').loads(row[0])) if row else None

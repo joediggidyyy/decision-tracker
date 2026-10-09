@@ -1,5 +1,17 @@
 # Verification state
 
+## Deprecation approval and tooltip delivery — 2026-10-09
+
+Native `dt-deprecation-focus` passed **61 checks** in `.local/proofs/c1a07af9595745f1ad2306103337c208`. Native integration `20261009T222425Z-dt-integration` passed **288 checks**, with one compiled-Setup check skipped for its dedicated lane, in `.local/proofs/f75dbf084af2409682f00631482344da`. Both proofs retained unchanged source correspondence. Integration includes fresh wheel/source archive boundaries and installed assets.
+
+Actual Chromium observations cover removed required sources, attached whitespace/error focus, repeated source serials, last-row preservation, disabled/foreign controls, collapsed optional details, shared current/reported approval, deprecation history and the tooltip footer cleanup. Keyboard, narrow layouts and actual 200 percent browser zoom passed. Approval evidence checks cover authenticated/reported/legacy modes, spoofing/permissions, stale revisions, exact replay, process exits before/after commit, separate resolution/deprecation reads and schemas 2/3/4 export/import/backup/isolated restore. The exact previous approval-history validator refuses the new event shape; a complete older binary is not qualified for this history.
+
+Retained failed attempts are `aac6e33a34e441b2a432dd38da3e94a6` (new test treated decoded export objects as JSON strings), `6efe48f26ab548429f2a44dc777ea6df` (expected 400 instead of the existing 422 validation response), and `21d6d1c361e347f395f4655f125e39a8` (a data-URL test loader could not resolve the newly shared modules). The loader now uses file URLs; assertions and actual workflow requirements remain. Intermediate passing proofs are retained separately.
+
+Checked project backups and isolated restore checks, a checked Library backup and a catalog backup preceded the supported guarded restart. `.local/deprecation-activation-20261009/activation-receipt.json` records the new managed instance, five served asset hashes and `deprecation_approval_v1` discovery. All four registered project UUIDs, revisions and logical history hashes were unchanged, as were catalog registrations and Library content. No live decision, schema, credential or permission mutation occurred. Qualified capable wheel/source archives are retained for recovery. Owner acceptance and public publication are not claimed.
+
+This verification note was added after qualification. Runtime, tests, native catalog, packaging inputs and portable skill still match the passing integration manifest; the retained candidate archives precede this note.
+
 ## Windows installer candidate â€” 2026-10-09
 
 Native `dt-windows-installer` passed eight checks in `.local/proofs/24bcc24b77b143e0a603355d2231a8b8`, with source unchanged. The compiled Setup installed offline with its own Python 3.14.8; it started/reused/stopped the managed application and completed repair, damaged support-file replacement, uninstall and reinstall. Credentials, deployment identity, project UUID and Library identity survived. Database bytes remained unchanged across uninstall. Focused checks cover explicit first-setup copying/cancellation, foreign binding refusal, busy-stop refusal and recovery after interrupted binding activation. Developer pip, PyTest and Calamum were absent from the bundled runtime.

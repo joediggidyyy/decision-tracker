@@ -57,11 +57,13 @@ def mount(app):
     def check(project_id:str,request:Request,data:Empty):return output(request,upgrade(objects,project_id,identity(request),principal(request)))
     @app.post('/api/v1/projects/{project_id}/schema-upgrade')
     def apply(project_id:str,request:Request,data:Upgrade):return output(request,upgrade(objects,project_id,identity(request),principal(request),data))
-    def read(project_id,request,key,event_id=None,cursor=None,limit=50):
+    def read(project_id,request,key,event_id=None,cursor=None,limit=50,kind=None):
+        require(kind in (None,'resolution','deprecate'),'VALIDATION_ERROR','Choose resolution or deprecate approval kind.')
         p=principal(request);p.need('read')
         with service.catalog.project(project_id,identity(request),p) as (db,project):
             meta=store.metadata(db);store.get(db,'decisions',key)
             rows=list(db.execute('SELECT * FROM approval_events WHERE decision_key=? ORDER BY ledger_revision,operation_ordinal',(key,))) if meta['schema_version']>=2 else []
+            if kind:rows=[r for r in rows if (json.loads(r['event_json'])['kind']=='deprecate')==(kind=='deprecate')]
             if event_id:
                 row=next((r for r in rows if r['event_id']==event_id),None)
                 if row is None:missing()
@@ -72,9 +74,9 @@ def mount(app):
                 if event.get('selected_option'):
                     option=event['selected_option'];event['selected_option']=service.compact(option,base,event['ledger_revision']-1,'alternatives.'+option['id']+'.')
                 return service.envelope(project,meta,event)
-            data,cur,complete=service.page([(f"{r['ledger_revision']:020d}:{r['operation_ordinal']:03d}",summary(json.loads(r['event_json']))) for r in rows],meta,{'kind':'approvals','key':key},cursor,limit)
+            data,cur,complete=service.page([(f"{r['ledger_revision']:020d}:{r['operation_ordinal']:03d}",summary(json.loads(r['event_json']))) for r in rows],meta,{'kind':'approvals','key':key,**({'approval_kind':kind} if kind else {})},cursor,limit)
             return service.envelope(project,meta,data,next_cursor=cur,complete=complete)
     @app.get('/api/v1/projects/{project_id}/decisions/{key}/approvals')
-    def listing(project_id:str,key:str,request:Request,cursor:str|None=None,limit:int=Query(50,ge=1,le=200)):return output(request,read(project_id,request,key,cursor=cursor,limit=limit))
+    def listing(project_id:str,key:str,request:Request,cursor:str|None=None,limit:int=Query(50,ge=1,le=200),kind:str|None=None):return output(request,read(project_id,request,key,cursor=cursor,limit=limit,kind=kind))
     @app.get('/api/v1/projects/{project_id}/decisions/{key}/approvals/{event_id}')
-    def detail(project_id:str,key:str,event_id:str,request:Request):return output(request,read(project_id,request,key,event_id))
+    def detail(project_id:str,key:str,event_id:str,request:Request,kind:str|None=None):return output(request,read(project_id,request,key,event_id,kind=kind))

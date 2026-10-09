@@ -61,6 +61,8 @@ class Service:
                 mutation.apply(op)
             mutation.validate()
             for event in events.values():
+                if event['kind']=='deprecate':
+                    event['replacement_key']=store.get(db,'decisions',event['decision_key'])['replacement_key']
                 require(len(store.encode(store.snapshot(db,event['decision_key'])).encode())+len(store.encode(event).encode())<=131072,
                         'LIMIT_EXCEEDED','Decision and approval together exceed 128 KiB.',413)
             rev=meta["ledger_revision"]+1
@@ -182,6 +184,7 @@ class Service:
             data=self.compact(snapshot,base,snaprev);data["collections"]=collections
             from .approvals import latest
             data['latest_resolution_approval']=latest(db,key,snaprev)
+            data['latest_deprecation_approval']=latest(db,key,snaprev,'deprecate')
             from .planning_links import current,policy,legacy_current
             data['planning_link']=current(db,key,snaprev)
             data['planning_link_policy_revision']=policy(db)['policy_revision']
@@ -237,6 +240,9 @@ class Service:
                 item=store.unpack(row)
                 from .approvals import latest
                 item['approval']=latest(db,key,item['ledger_revision'])
+                row_event=db.execute("SELECT event_json FROM approval_events WHERE decision_key=? AND ledger_revision=? AND json_extract(event_json,'$.kind')='deprecate'",(key,item['ledger_revision'])).fetchone() if meta['schema_version']>=2 else None
+                from .approvals import summary
+                item['deprecation_approval']=summary(json.loads(row_event[0])) if row_event else None
                 items.append((f'{item["ledger_revision"]:020d}',item))
             data,cur,complete=self.page(items,meta,{"key":key,"kind":"history"},cursor,limit)
             return self.envelope(project,meta,data,next_cursor=cur,complete=complete)
