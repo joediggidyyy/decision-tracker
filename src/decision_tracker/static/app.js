@@ -1,3 +1,5 @@
+import {onSessionExpired} from './session.js';
+import {sessionFetch} from './session.js';
 import {installProjects} from './projects.js';
 import {installSavedDecisions} from './saved-decisions.js';
 import {installActionForm,titles} from './action-form.js';
@@ -24,7 +26,7 @@ async function api(path,body,method=body===undefined?'GET':'POST',signal){
  const headers={};if(state.project)headers['X-Ledger-UUID']=state.project.ledger_uuid;
  if(body!==undefined)headers['Content-Type']='application/json';
  if(state.csrf)headers['X-CSRF-Token']=state.csrf;
- const r=await fetch(path,{method,headers,credentials:'same-origin',body:body===undefined?undefined:JSON.stringify(body),signal:signal||(body!==undefined?AbortSignal.timeout(15000):undefined)});
+ const r=await sessionFetch(path,{method,headers,credentials:'same-origin',body:body===undefined?undefined:JSON.stringify(body),signal:signal||(body!==undefined?AbortSignal.timeout(15000):undefined)});
  const value=r.status===204?{ok:true,data:{}}:await readResponse(r);if(binding&&(!state.project||state.project.project_id!==binding.id||state.project.ledger_uuid!==binding.uuid))throw new Error('Project changed. Discarding the previous response.');if(!r.ok){const e=new Error(value.error?.message||'Request failed');e.code=value.error?.code;e.details=value.error?.details;throw e;}if(binding&&(value.project_id!==binding.id||value.ledger_uuid!==binding.uuid)){const e=Error('Response project identity did not match.');e.code='LEDGER_IDENTITY_MISMATCH';throw e;}return value;
 }
 const base=()=>'/api/v1/projects/'+encodeURIComponent(state.project.project_id);
@@ -48,7 +50,7 @@ async function projects(prepared=null){
 }
 async function signedIn(data){state.csrf=data.csrf_token;state.caps=data.capabilities;$('signout').hidden=false;$('login-view').hidden=true;await projects();const saved=new URLSearchParams(location.hash.slice(1));if(saved.get('view')==='library'){show('library-view');await savedUI.open();return;}if(state.projects.some(p=>p.enabled&&p.project_id===saved.get('project'))){await selectProject(saved.get('project'));if(saved.get('view')==='projects'){show('projects-view');await admin();}else if(/^D[0-9]{6}$/.test(saved.get('decision')||''))await detail(saved.get('decision'));}else{show('projects-view');await admin();}}
 $('login-form').onsubmit=async e=>{e.preventDefault();const token=$('token').value;$('token').value='';try{await signedIn((await api('/api/v1/session',{token})).data);}catch(err){failure(err);}};
-$('signout').onclick=()=>guardedNavigate(async()=>{live.stop();try{await api('/api/v1/session',undefined,'DELETE');location.reload();}catch(e){failure(e);}});
+$('signout').onclick=()=>guardedNavigate(async()=>{live.stop();let warning='';try{await api('/api/v1/session',undefined,'DELETE',AbortSignal.timeout(5000));}catch(e){warning='The server could not confirm sign-out. Sign in again when it is available.';}account.requireSignin(warning||'Signed out. Sign in to continue.');});
 async function selectProject(id){const adminView=state.view==='projects-view';live.stop();state.listRevision=null;state.contextFingerprint=null;listGeneration++;detailGeneration++;$('results').replaceChildren();$('result-count').textContent='';$('load-more').hidden=true;$('notice').textContent='';$('error').hidden=true;state.project=state.projects.find(p=>p.project_id===id)||null;state.record=null;$('context').replaceChildren();$('detail').replaceChildren(node('p','Choose a decision.'));if(!state.project||!state.project.enabled){$('project').value='';show('projects-view');rememberView();await admin();return;}show(adminView?'projects-view':'workspace');rememberView();$('project').value=state.project.project_id;$('workspace-title').textContent=state.project.name;$('new-decision').disabled=!state.caps.includes('write');await listing();live.ensure(state.project,state.record?.key||null);if(adminView)await admin();}
 $('project').onchange=()=>guardedNavigate(()=>selectProject($('project').value));
 function renderList(r,more=false){
@@ -205,8 +207,8 @@ function guardedNavigate(fn){const move=()=>projectUI.navigate(()=>savedUI.navig
 const savedUI=installSavedDecisions({$,state,node,api,projects});
 $('saved-button').onclick=()=>{if(!state.csrf)return;guardedNavigate(async()=>{history.pushState(null,'','#view=library');show('library-view');rememberView();await savedUI.open();});};
 $('projects-button').onclick=()=>{if(!state.csrf)return;guardedNavigate(async()=>{history.pushState(null,'','#'+new URLSearchParams({project:state.project?.project_id||'',view:'projects'}));show('projects-view');await admin();});};
-$('decisions-button').onclick=()=>guardedNavigate(async()=>{history.pushState(null,'','#'+new URLSearchParams({project:state.project?.project_id||''}));show('workspace');rememberView(state.record?.key);if(state.project?.enabled){if(state.record)await detail(state.record.key);else await listing();}else $('detail').replaceChildren(node('p','Choose an enabled project.'));});
-window.addEventListener('popstate',async()=>{const previous=acceptedRoute,params=new URLSearchParams(location.hash.slice(1));const moved=await guardedNavigate(async()=>{if(params.get('view')==='library'){show('library-view');rememberView();await savedUI.open();return;}if(params.get('project')&&params.get('project')!==state.project?.project_id)await selectProject(params.get('project'));show(params.get('view')==='projects'?'projects-view':'workspace');if(state.view==='projects-view')await admin();else if(state.project?.enabled){if(params.get('decision'))await detail(params.get('decision'));else {state.record=null;await listing();rememberView();}}});if(!moved)history.pushState(null,'',previous||location.pathname);});
+$('decisions-button').onclick=()=>state.csrf&&guardedNavigate(async()=>{history.pushState(null,'','#'+new URLSearchParams({project:state.project?.project_id||''}));show('workspace');rememberView(state.record?.key);if(state.project?.enabled){if(state.record)await detail(state.record.key);else await listing();}else $('detail').replaceChildren(node('p','Choose an enabled project.'));});
+window.addEventListener('popstate',async()=>{if(!state.csrf)return;const previous=acceptedRoute,params=new URLSearchParams(location.hash.slice(1));const moved=await guardedNavigate(async()=>{if(params.get('view')==='library'){show('library-view');rememberView();await savedUI.open();return;}if(params.get('project')&&params.get('project')!==state.project?.project_id)await selectProject(params.get('project'));show(params.get('view')==='projects'?'projects-view':'workspace');if(state.view==='projects-view')await admin();else if(state.project?.enabled){if(params.get('decision'))await detail(params.get('decision'));else {state.record=null;await listing();rememberView();}}});if(!moved)history.pushState(null,'',previous||location.pathname);});
 new ResizeObserver(entries=>{document.documentElement.style.setProperty('--header-height',entries[0].target.offsetHeight+'px');}).observe(document.querySelector('.topbar'));
 api('/api/v1/session').then(r=>signedIn(r.data)).catch(()=>show('login-view'));
 
@@ -359,3 +361,5 @@ $('freshness').onclick=async()=>{
 button('Review workspace updates',()=>$('freshness').click(),$('edit-form'));
 
 const account=installAccount({$,state,api,signedIn,show,message,dirty,live,hasDraft:()=>dirty()||projectUI.dirty()||savedUI.dirty(),onReauthenticated:()=>projectUI.manager.reauthenticated()});
+
+onSessionExpired(()=>account.requireSignin());

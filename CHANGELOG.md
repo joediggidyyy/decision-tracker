@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — stale browser sessions
+
+- Automatically show Sign in after confirmed session expiration, including live connections, downloads and failed fetches. Retain open forms and pending requests for explicit review after signing in.
+- Keep Sign out usable when its bounded server request fails, with an honest server-confirmation message.
+
 [Home](README.md) · [Documentation](docs/README.md) · [Verification](docs/verification.md)
 
 Changes to the local application are recorded here. This is a development history, not a packaged release announcement.

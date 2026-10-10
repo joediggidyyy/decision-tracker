@@ -1,6 +1,7 @@
 /* Human account controls and bounded draft leases. No secrets survive page memory. */
 export function installAccount({$,state,api,signedIn,show,message,dirty,live,hasDraft=dirty,onReauthenticated=()=>{}}){
  let legacy=false,setup=false,precsrf=null,returnEditor=false,lease=null,leaseBusy=false,renewAt=0;
+ let suspended=null;
  const tabNonce=crypto.randomUUID();
  async function preauth(){
   const response=await fetch('/api/v1/session/setup',{credentials:'same-origin'});
@@ -28,7 +29,7 @@ export function installAccount({$,state,api,signedIn,show,message,dirty,live,has
    if(setup){const response=await fetch('/api/v1/session/setup',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':precsrf},body:JSON.stringify({bootstrap_code:code,new_password:password,confirmation})});
     if(!response.ok){const r=await response.json();throw Error(r.error?.message||'Setup failed.');}
     message('Password created. Sign in to continue.');await loginView();
-   }else{const data=await authenticate(password);await signedIn(data);$('account-toggle').hidden=legacy;}
+   }else{const data=await authenticate(password);if(suspended){const previous=suspended;suspended=null;state.csrf=data.csrf_token;state.caps=data.capabilities;show(previous.view);$('signout').hidden=false;for(const dialog of previous.dialogs)dialog.showModal();lease=null;await protectDraft();if(state.project)live.start(state.project,state.record?.key||null);onReauthenticated();message('Signed in. Your unsaved work is retained. Review and save explicitly.');}else await signedIn(data);$('account-toggle').hidden=legacy;}
   }catch(error){message(error.message,true);await loginView();}
  };
  function closeAccount(){
@@ -82,5 +83,15 @@ export function installAccount({$,state,api,signedIn,show,message,dirty,live,has
  };
  $('cancel-stop-service').onclick=()=>$('stop-service-confirm').hidden=true;
  loginView();api('/api/v1/account').then(()=>{$('account-toggle').hidden=false;}).catch(()=>{});
- return {authenticate,loginView};
+ function requireSignin(reason='Your session expired. Sign in again to continue.'){
+  if(!state.view||state.view==='login-view')return;
+  const dialogs=[...document.querySelectorAll('dialog[open]')];
+  // Keep forms and retained request identities in memory; never replay a save.
+  suspended=dialogs.length||hasDraft()?{view:state.view,dialogs}:null;
+  state.csrf=null;live.stop('Sign in required');
+  for(const dialog of dialogs)dialog.close();
+  $('account-form').reset();$('signout').hidden=true;$('account-toggle').hidden=true;
+  show('login-view');message(reason);loginView();$('token').focus();
+ }
+ return {authenticate,loginView,requireSignin};
 }

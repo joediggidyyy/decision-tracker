@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const source=readFileSync(process.argv[2],'utf8');
+const sessionSource=readFileSync(new URL('../src/decision_tracker/static/session.js',import.meta.url),'utf8');
+const sessionURL='data:text/javascript;base64,'+Buffer.from(sessionSource).toString('base64');
+const source=readFileSync(process.argv[2],'utf8').replace("'./session.js'",JSON.stringify(sessionURL));
 const {freshness,LiveMonitor}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const loaded={key:'D000001',decisionRevision:1,listRevision:1,contextFingerprint:'abc'};
 const latest={version:1,project_id:'alpha',ledger_uuid:'uuid',ledger_revision:1,decision_key:'D000001',decision_revision:1,selected_exists:true,context_fingerprint:'abc'};
@@ -12,9 +14,10 @@ assert.equal(freshness(true,{...latest,decision_revision:2},loaded),'red');
 assert.equal(freshness(true,{...latest,context_fingerprint:'changed'},loaded),'yellow');
 assert.equal(freshness(true,{...latest,selected_exists:false},loaded),'red');
 const encoder=new TextEncoder();
-async function observe(chunks,ok=true,status=200){
+async function observe(chunks,ok=true,status=200,sessionStatus=200){
  let accepted=false;
  globalThis.fetch=async(url,options)=>{
+  if(url==='/api/v1/session')return new Response('{}',{status:sessionStatus});
   assert.equal(url,'/api/v1/projects/alpha/events?decision_key=D000001');assert.equal(options.headers['X-Ledger-UUID'],'uuid');assert.equal(options.credentials,'same-origin');
   if(!ok)return {ok:false,status,headers:new Headers()};
   return new Response(new ReadableStream({start(controller){for(const chunk of chunks)controller.enqueue(chunk);options.signal.addEventListener('abort',()=>{try{controller.error(new Error('aborted'));}catch{}});}}),{headers:{'Content-Type':'text/event-stream'}});
@@ -31,7 +34,8 @@ assert.equal((await observe([encoder.encode('event: state\ndata: '+JSON.stringif
 assert.equal((await observe([encoder.encode('x'.repeat(17000))])).accepted,false);
 assert.equal((await observe([],false,401)).label,'Sign in required');
 assert.equal((await observe([],false,403)).label,'Unavailable');
-const missing=encoder.encode('event: unavailable\ndata: {}\n\n');assert.equal((await observe([missing])).label,'Unavailable');
+let expired=0;const {onSessionExpired}=await import(sessionURL);onSessionExpired(()=>expired++);
+const missing=encoder.encode('event: unavailable\ndata: {}\n\n');assert.equal((await observe([missing])).label,'Unavailable');assert.equal(expired,0);await observe([missing],true,200,401);assert.equal(expired,1);await observe([],false,403);assert.equal(expired,1);onSessionExpired(()=>{});
 const backwards=encoder.encode('event: state\ndata: '+JSON.stringify({...latest,ledger_revision:0})+'\n\n');assert.equal((await observe([frame,backwards])).latest.ledger_revision,1);
 const stopped=new LiveMonitor(()=>loaded,()=>{});const cancellation=new AbortController();const waiting=stopped.ready(cancellation.signal);cancellation.abort(Error('deadline'));await assert.rejects(waiting,/deadline/);assert.equal(stopped.listeners.size,0);
 const readiness=new LiveMonitor(()=>loaded,()=>{});readiness.connected=true;readiness.latest=latest;const waitSignal=new AbortController();let resolved=false;const pendingReady=readiness.ready(waitSignal.signal,2).then(()=>resolved=true);await Promise.resolve();assert.equal(resolved,false);readiness.latest={...latest,ledger_revision:2};readiness.update();await pendingReady;assert.equal(resolved,true);assert.equal(readiness.listeners.size,0);

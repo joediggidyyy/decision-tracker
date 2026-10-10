@@ -1,3 +1,4 @@
+import {sessionFetch,checkSession} from './session.js';
 /* Latest-state notifications never mutate displayed records or editor revisions. */
 export function freshness(connected,latest,loaded){
  if(!connected||!latest)return 'gray';
@@ -20,7 +21,7 @@ export class LiveMonitor{
   try{
    heartbeat();
    const q=bound.key?'?decision_key='+encodeURIComponent(bound.key):'';
-   const response=await fetch('/api/v1/projects/'+encodeURIComponent(bound.project)+'/events'+q,{headers:{'X-Ledger-UUID':bound.uuid},credentials:'same-origin',signal:controller.signal});
+   const response=await sessionFetch('/api/v1/projects/'+encodeURIComponent(bound.project)+'/events'+q,{headers:{'X-Ledger-UUID':bound.uuid},credentials:'same-origin',signal:controller.signal});
    if(!response.ok){terminal=[400,401,403,404,409,422].includes(response.status);this.label=response.status===401?'Sign in required':terminal?'Unavailable':'Disconnected';retryAfter=Math.min(60,Math.max(0,Number(response.headers.get('Retry-After'))||0))*1000;throw Error('Live connection unavailable');}
    if(!response.headers.get('content-type')?.startsWith('text/event-stream'))throw Error('Invalid live response');
    const reader=response.body.getReader(),decoder=new TextDecoder('utf-8',{fatal:true});let buffer='';
@@ -35,7 +36,7 @@ export class LiveMonitor{
      heartbeat();let type='message',data=[];
      for(const line of frame.split(/\r?\n/)){if(line.startsWith('event:'))type=line.slice(6).trim();if(line.startsWith('data:'))data.push(line.slice(5).trimStart());}
      if(type==='service-stopping'){terminal=true;this.label='Service stopped';throw Error('Service stopped');}
-     if(type==='unavailable'){terminal=true;this.label='Unavailable';throw Error('Live access changed');}
+     if(type==='unavailable'){terminal=true;this.label='Unavailable';await checkSession();throw Error('Live access changed');}
      if(type!=='state')continue;
      const state=JSON.parse(data.join('\n'));
      if(state.version!==1||state.project_id!==bound.project||state.ledger_uuid!==bound.uuid||state.decision_key!==bound.key||!Number.isSafeInteger(state.ledger_revision)||state.ledger_revision<0)throw Error('Invalid live identity');

@@ -1,3 +1,4 @@
+import {sessionFetch} from './session.js';
 // Projects shares the application shell; catalog drafts stay in memory.
 import {sendRetained,definitive} from './save-request.js';
 import {installFileManager} from './file-manager.js';
@@ -79,7 +80,7 @@ export function installProjects({$,state,node,button,api,projects,selectProject,
   const submit=$('project-confirm-save');submit.textContent=p.enabled?'Disable':'Enable';submit.disabled=false;
   const cancel=$('project-confirm-cancel');cancel.disabled=false;cancel.onclick=()=>dialog.close();dialog.oncancel=e=>{if(operation.pending)e.preventDefault();};
   submit.onclick=async()=>{submit.disabled=cancel.disabled=true;try{
-   await sendRetained(operation,body,async payload=>{const r=await fetch(binding(p)+'/state',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':state.csrf,'X-Ledger-UUID':p.ledger_uuid},body:JSON.stringify(payload),signal:AbortSignal.timeout(15000)});const value=await readResponse(r);if(!r.ok){const e=Error(value.error?.message||'Could not change project access.');e.code=value.error?.code;throw e;}return value;});
+   await sendRetained(operation,body,async payload=>{const r=await sessionFetch(binding(p)+'/state',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':state.csrf,'X-Ledger-UUID':p.ledger_uuid},body:JSON.stringify(payload),signal:AbortSignal.timeout(15000)});const value=await readResponse(r);if(!r.ok){const e=Error(value.error?.message||'Could not change project access.');e.code=value.error?.code;throw e;}return value;});
    dialog.close();message('Project access saved.');try{await projects();if(state.project?.project_id===p.project_id)await selectProject(p.project_id);else await render();}catch{message('Saved; refresh to see current data.');}
   }catch(e){error($('project-confirm-error'),e);if(definitive(e)){operation.pending=null;cancel.disabled=false;if(e.code?.includes('STALE')||e.code==='REVISION_CONFLICT'){const target=$('project-confirm-error');button('Review current state',async()=>{await projects();const row=state.projects.find(x=>x.project_id===p.project_id);if(row?.enabled===body.enabled){dialog.close();await render();return;}body.expected_catalog_revision=state.catalogRevision;body.request_id=crypto.randomUUID();target.textContent='Current state loaded. Review the project, then submit again.';},target);}}else submit.textContent='Retry';}finally{submit.disabled=false;}};
   dialog.showModal();
