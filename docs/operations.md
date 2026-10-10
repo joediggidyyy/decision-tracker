@@ -64,7 +64,7 @@ Registry mutations make separate pre-change catalog backups; `service catalog-ba
 
 ## History compatibility for runtime replacement
 
-New deprecation approval events require a runtime advertising `deprecation_approval_v1`, even when the ledger remains SQL schema 2, 3 or 4. Preserve a capable qualified runtime and checked project/catalog/Library backups before replacement. Verify the runtime capability and retained source/asset hashes; the package version or SQL schema number alone is insufficient. An older backup discards later writes and is not a substitute for forward recovery. See [the event compatibility contract](interfaces.md#decision-approval-events-schema-2).
+New deprecation approval events require a runtime advertising `deprecation_approval_v1`, even when the ledger remains SQL schema 2, 3 or 4. Preserve a capable qualified runtime and checked project/catalog/Library backups before replacement. Verify the runtime capability and retained source/asset hashes; the package version or SQL schema number alone is insufficient. An older backup discards later writes and is not a substitute for forward recovery. New `decision.set-evidence` history also requires a runtime supporting `closed_context_v1`; preserve this capability when replacing a runtime after supplemental writes. No SQL migration is required, and an older binary may still reject the new operation. See [the event compatibility contract](interfaces.md#decision-approval-events-schema-2) and [closed-record policy](interfaces.md#closed-record-mutation-policy).
 
 ## Interruptions
 
@@ -147,4 +147,4 @@ Before registration, use existing `data export`, `backup`, `verify` or `restore-
 
 ## Supporting context after approval
 
-Use Relationships and Add reference on closed or protected closed decisions to record later context. Use Evidence beside Evidence state to record implementation, verification and acceptance separately. These updates preserve approved content and approval; reported acceptance is evidence, not new approval. Existing references remain readable and closed reference corrections are appended. Substantive revisions still use Reopen or Amend. Deprecated decisions stay read-only. See [the shared interface contract](interfaces.md#closed-record-mutation-policy) for compatibility, permissions and exact retry rules.
+Use Relationships and Add reference on closed or protected closed decisions to record later context. Use Evidence in the side panel top row, beside Edit and Status, to record implementation, verification and acceptance separately. These updates preserve approved content and approval; reported acceptance is evidence, not new approval. Existing references remain readable and closed reference corrections are appended. Substantive revisions still use Reopen or Amend. Deprecated decisions stay read-only. See [the shared interface contract](interfaces.md#closed-record-mutation-policy) for compatibility, permissions and exact retry rules.

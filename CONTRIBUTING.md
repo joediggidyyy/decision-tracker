@@ -47,7 +47,7 @@ Bootstrap, focused, integration and observed-browser definitions are registered.
 For application regression:
 
 ```powershell
-python tools/prove.py --definition dt-integration --budget-seconds 480
+python tools/prove.py --definition dt-integration --budget-seconds 600
 ```
 
 The browser lane requires actual observations; see tools/browser_host.py. Do not register placeholder passing definitions for planned

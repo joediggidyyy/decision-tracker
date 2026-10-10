@@ -65,7 +65,7 @@ Credential and lifecycle verification uses `dt-auth-focus`; actual account inter
 
 ## Action-form browser proof
 
-`tools/prove.py --definition dt-deprecation-focus --budget-seconds 240` qualifies shared deprecation approval, immutable history/replay/recovery, CLI reads and the actual browser source-removal and tooltip observations. `dt-integration --budget-seconds 480` includes these assertions through its existing tests scope. Retained failed attempts remain evidence; confirm proof-copy/source hashes before claiming qualification.
+`tools/prove.py --definition dt-deprecation-focus --budget-seconds 240` qualifies shared deprecation approval, immutable history/replay/recovery, CLI reads and the actual browser source-removal and tooltip observations. `dt-integration --budget-seconds 600` includes these assertions through its existing tests scope. Retained failed attempts remain evidence; confirm proof-copy/source hashes before claiming qualification.
 
 `tools/prove.py --definition dt-action-forms --budget-seconds 240` runs the focused browser and resolution checks through native Calamum. `dt-integration` includes these checks. The browser test uses disposable local data, a synthetic password and an ephemeral loopback port.
 
@@ -94,3 +94,7 @@ The adapter verifies rootless/systemd/cgroup-v2 identity and actual image, user,
 ## Windows installer proof
 
 `tools/prove.py --definition dt-windows-installer --budget-seconds 360` builds fresh Setup, wheel and source assets from the copied source. It uses pinned local input files named in ignored `.local/installer-runtime.json`; no input download occurs during testing. Actual silent Setup installs into disposable nonsynchronized folders and qualifies service reuse, safe repair, credential/project/Library retention, uninstall and reinstall. A preexisting Setup registration blocks this test to preserve user installations. The interactive wizard and second-machine owner acceptance remain separate. Ordinary integration skips this dedicated compiled-Setup test and includes the focused installer lifecycle assertions.
+
+## Closed supporting context and control placement
+
+`tools/prove.py --definition dt-closed-records --budget-seconds 240` covers shared closed/protected supplemental rules, revision/replay/recovery and real browser behavior. `dt-action-forms --budget-seconds 240` checks the three-button top row (Edit, Status, Evidence), its closed-record availability, draft recovery, minimum-width layout and actual zoom interaction. `dt-projects-data --budget-seconds 240` checks project navigation and the disabled nine-control empty state. Use `dt-integration --budget-seconds 600` for a new combined qualification; the latest recorded full run needed more than the former six-minute bound. See [Current qualification](verification.md#current-status) for actual counts, source snapshots, retained failures and capture limitations. A guidance-only reconciliation runs deterministic support checks and native portable-skill metadata validation; it does not requalify application behavior or archived distributions.

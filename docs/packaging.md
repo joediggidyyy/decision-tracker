@@ -8,7 +8,7 @@ The selected limited-test prerelease is `0.1.0a1`, tagged `v0.1.0a1` when publis
 
 Build and qualify locally before preparing a draft GitHub prerelease. Publication, second-machine operator acceptance and source migration remain separate actions. Do not rename older `dev0` artifacts or claim a published release from a local build.
 
-The current source includes deprecation approval. Native focused/integration evidence qualifies its source, wheel and source archive. Compiled-Setup qualification below belongs to an earlier source snapshot and has not been repeated for this update. No current Setup release is claimed. Select archives by retained source manifest/hash and runtime capabilities, rather than the shared `0.1.0a1` label. The health endpoint still reports the older `0.1.0.dev0` string; use authenticated schema discovery and source/asset correspondence for capability checks.
+The current source includes deprecation approval, session recovery, closed supporting context and the Evidence action in the side panel top row. Full native integration at `77616da` qualified that snapshot and its wheel/source archive. The later UI placement at `1263409` passed focused browser verification; those older archives do not contain this placement or subsequent support updates. Compiled-Setup qualification belongs to an earlier source snapshot and has not been repeated for these updates. No current Setup release is claimed. Select archives by retained source manifest/hash and runtime capabilities, rather than the shared `0.1.0a1` label. The health endpoint still reports the older `0.1.0.dev0` string; use authenticated schema discovery and source/asset correspondence for capability checks.
 
 ## Contents
 
@@ -27,7 +27,7 @@ Use the repository development environment and native Calamum. Obtain its record
 ```powershell
 .\.venv\Scripts\python.exe tools/prove.py --definition dt-windows-installer --budget-seconds 360
 .\.venv\Scripts\python.exe tools/prove.py --definition dt-package --budget-seconds 240
-.\.venv\Scripts\python.exe tools/prove.py --definition dt-integration --budget-seconds 480
+.\.venv\Scripts\python.exe tools/prove.py --definition dt-integration --budget-seconds 600
 ```
 
 The package proof builds both archives in an isolated proof copy. It checks required files, excluded state, archive hashes, runtime dependency consistency, byte-identical installed assets and a fresh environment without Calamum or test dependencies. On Windows it starts, reuses and safely stops an isolated managed service. Browser dispatch is stubbed for the CLI open check; real browser workflows are separately exercised by integration.
@@ -48,7 +48,7 @@ Preserve the currently installed package/environment and checked backups before 
 
 Reuse the existing deployment rather than creating duplicate credentials or projects. Start with `service ensure-running`, verify service identity and inspect existing project/Library content before resuming writes. Schema upgrades remain explicit and require their existing checked-backup process. Installing a newer binary does not authorize migration or downgrade. Do not use an older binary on newer history unless compatibility has been qualified. Restore checks prepare isolated candidates; they do not overwrite active data. See [Operations](operations.md) and [Legacy recovery](legacy-import.md).
 
-New deprecation approval events require a runtime advertising `deprecation_approval_v1`, even when the ledger remains SQL schema 2, 3 or 4. Preserve a capable qualified runtime and checked project/catalog/Library backups before replacement. Verify the runtime capability and retained source/asset hashes; the package version or SQL schema number alone is insufficient. An older backup discards later writes and is not a substitute for forward recovery. See [the event compatibility contract](interfaces.md#decision-approval-events-schema-2).
+New deprecation approval events require a runtime advertising `deprecation_approval_v1`, even when the ledger remains SQL schema 2, 3 or 4. Preserve a capable qualified runtime and checked project/catalog/Library backups before replacement. Verify the runtime capability and retained source/asset hashes; the package version or SQL schema number alone is insufficient. An older backup discards later writes and is not a substitute for forward recovery. New `decision.set-evidence` history also requires a runtime supporting `closed_context_v1`; preserve this capability when replacing a runtime after supplemental writes. No SQL migration is required, and an older binary may still reject the new operation. See [the event compatibility contract](interfaces.md#decision-approval-events-schema-2) and [closed-record policy](interfaces.md#closed-record-mutation-policy).
 
 ## Support record
 

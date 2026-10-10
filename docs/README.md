@@ -8,7 +8,7 @@ Use this map to find the guide for your task. These documents describe the local
 
 | Guide | Purpose |
 |---|---|
-| [Decision workflow](decision-workflow.md) | When to record a decision, agent-owned choices and approval escalation. |
+| [Decision workflow](decision-workflow.md) | Record and approve choices; use Status, Evidence and supporting context after closure. |
 | [Saved decisions](saved-decisions.md) | Reusable content, optional tags, staging, repeated publication and portable backups. |
 | [Interfaces](interfaces.md) | Planning links, CLI and API commands, authentication, project binding and change envelopes. |
 | [Operations](operations.md) | Start and stop the service, manage credentials, back up data and recover safely. |
@@ -17,7 +17,7 @@ Use this map to find the guide for your task. These documents describe the local
 | [Agent-access skill](../skills/decision-tracker/SKILL.md) | Portable instructions for agents using the CLI or API. |
 | [Configuration example](config.example.json) | Example configuration fields; not a credential store. |
 
-For lifecycle approval and repair compatibility, read [Deprecation](decision-workflow.md#deprecation), [Approval evidence](interfaces.md#decision-approval-events-schema-2), [Runtime replacement](operations.md#history-compatibility-for-runtime-replacement) and [Current qualification](verification.md#current-status).
+For the current control pane and supporting-context rules, read [Browser controls](decision-workflow.md#browser-control-pane) and [Closed-record policy](interfaces.md#closed-record-mutation-policy). For lifecycle approval and repair compatibility, read [Deprecation](decision-workflow.md#deprecation), [Approval evidence](interfaces.md#decision-approval-events-schema-2), [Runtime replacement](operations.md#history-compatibility-for-runtime-replacement) and [Current qualification](verification.md#current-status).
 
 ## Develop and review
 

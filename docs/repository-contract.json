@@ -20,13 +20,13 @@
   "owner_acceptance": "Operator confirmed password setup, system-browser testing and Polymath home launch on 2026-10-05; this does not substitute for native automated evidence.",
   "packaging": {
     "version": "0.1.0a1",
-    "status": "Latest source/wheel/source-archive qualified locally; compiled Setup qualification predates deprecation approval and must be repeated for a matching candidate. No public release claimed.",
+    "status": "Full source/wheel/source-archive qualification at 77616da; Evidence panel placement at 1263409 has later focused native browser proof. In-repository support reconciliation does not update retained archives. Compiled Setup predates deprecation approval and closed-context histories; matching candidate qualification remains separate. No public release claimed.",
     "formats": [
       "current-user Windows Setup EXE with pinned Python/runtime dependencies",
       "Python wheel",
       "source distribution with support documents and portable skill"
     ],
-    "qualification": "Native source-corresponding dt-deprecation-focus and dt-integration for latest application/wheel/source archive; earlier dt-windows-installer evidence applies only to its retained source snapshot. Package labels and SQL schema numbers alone do not prove new-history compatibility.",
+    "qualification": "Native dt-closed-records (97 passed), dt-legacy (53 passed) and dt-integration (307 passed, one dedicated Setup skip) qualify their retained snapshots. Later dt-action-forms (5 passed) and dt-projects-data (11 passed) qualify Evidence placement and project navigation. Support validation is metadata/document evidence, not runtime or archive requalification. Schema/version labels alone do not prove capability or history compatibility.",
     "excluded": "Credentials, deployment data, project/saved databases, organization seed content, local preparations and generated evidence.",
     "guide": "docs/packaging.md"
   }

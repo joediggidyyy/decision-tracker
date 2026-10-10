@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Evidence action placement and support reconciliation
+
+- Move Evidence into the side-panel top row beside Edit and Status. Use three controls per row, including the disabled empty state; remove the duplicate action beside Evidence state.
+- Retain Status for Queued/Under investigation on open decisions and clarify its help. Evidence continues to track implementation, verification and acceptance separately.
+- Repair UTF-8 decision-list separators, removing the stray encoding artifact shown between identifiers, titles and work states.
+- Align portable agent guidance, browser workflows, session recovery, compatibility and qualification summaries with the implemented behavior. Existing archives and compiled Setup retain their earlier source snapshots.
+
 ## Unreleased — closed decision supporting context
 
 - Allow ordinary relationships and appended references on closed/protected closed decisions, preserving approved content and existing lifecycle restrictions. Related-to links can be removed from either endpoint.

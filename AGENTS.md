@@ -29,3 +29,13 @@ present before service access. It records the persistent cross-project agent
 principal and names-only connection settings. Do not recreate credentials per
 session or narrow project visibility by default. Explicit project/UUID binding
 and authorization for each requested mutation still apply.
+
+For closed-record maintenance, follow docs/interfaces.md and
+docs/decision-workflow.md. The closed_context_v1 capability permits only the
+shared supplemental allowlist; it does not unlock approved content or deprecated
+records. Keep browser availability aligned with shared CLI/API guards. The control
+pane top row is Edit, Status, Evidence; Status is an open-work action.
+Support-only edits must distinguish current guidance from retained runtime and
+archive snapshots. Check UTF-8, local links/anchors and support JSON; validate
+changed portable skill metadata through native Calamum. Do not describe blank or
+incomplete captures as visual acceptance.
