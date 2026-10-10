@@ -61,6 +61,10 @@ owner authorization. Dependency changes must retain exact versions and evidence.
 
 Follow [Packaging](docs/packaging.md). Native `dt-package` qualifies a fresh runtime-only installation and checks wheel/source archive contents. Keep build artifacts under ignored `.local` or `dist`; do not bundle developer environments or deployment data. Run focused checks while editing and an integrated checkpoint when preparing a new application build. Retain archive hashes and source correspondence. A local candidate is not a published release.
 
+## Guidance and source correspondence
+
+After guidance changes, check UTF-8, local links/anchors, support JSON and actual CLI/API behavior. Validate portable skill metadata through native Calamum when it changes. Record documentation-only changes separately from software evidence. Retained archives contain the documents from their tested source snapshot; do not describe them as updated merely because repository guidance changed. A later support/package delivery needs its own source correspondence and required package/Setup qualification.
+
 ## Tracking and closeout
 
 See [tracking boundaries](docs/tracking-boundaries.md) before staging. Keep historical home proof inputs under ignored `.local/home-integration`; they are a local test prerequisite, not public source. Before a push, inspect the staged diff, all newly transmitted history, remote identity and final native evidence. Obtain the operator's explicit push authorization when requested. Do not force-push or prune retained evidence during routine cleanup.

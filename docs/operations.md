@@ -58,9 +58,13 @@ Use `data artifact-list`, then `data artifact-download --artifact-id UUID --outp
 
 `data restore-check --artifact-id UUID` copies a verified backup to isolated scratch storage, validates identity/revision and history, and reports activated=false. It never replaces active data.
 
-`data import-validate --input EXPORT.json` retains an isolated validation candidate. `data import-new` also returns its contained relative path. Registration is a separate registry operation. To deliberately recover a ledger, stop and preserve the existing evidence, validate the candidate, disable the old registration, then register the candidate under a new project ID. There is no in-place swap. Imported receipts do not alter original transaction history. No legacy-format adapter or automatic migration is included.
+`data import-validate --input EXPORT.json` retains an isolated validation candidate. `data import-new` also returns its contained relative path. Registration is a separate registry operation. To deliberately recover a ledger, stop and preserve the existing evidence, validate the candidate, disable the old registration, then register the candidate under a new project ID. There is no in-place swap. Imported receipts do not alter original transaction history. The versioned legacy-import contract is supported; see [Legacy imports](legacy-import.md). Source conversion must follow that contract and its independently qualified mapping. No automatic migration or active-ledger replacement is included.
 
 Registry mutations make separate pre-change catalog backups; `service catalog-backup` creates an explicit one. Catalog recovery is an offline owner-managed activity, not an application repoint endpoint.
+
+## History compatibility for runtime replacement
+
+New deprecation approval events require a runtime advertising `deprecation_approval_v1`, even when the ledger remains SQL schema 2, 3 or 4. Preserve a capable qualified runtime and checked project/catalog/Library backups before replacement. Verify the runtime capability and retained source/asset hashes; the package version or SQL schema number alone is insufficient. An older backup discards later writes and is not a substitute for forward recovery. See [the event compatibility contract](interfaces.md#decision-approval-events-schema-2).
 
 ## Interruptions
 

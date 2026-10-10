@@ -10,6 +10,12 @@ A conservative in-process coordinator serializes registry and ledger operations 
 
 The UI uses external static assets, semantic controls, a full-width decision detail, Focus view, and a right panel with context above results. Both panel boundaries support dragging and keyboard resizing, with nonsecret local layout preferences. At 980 CSS pixels or narrower, the context/results panel stacks and stays visible, with one page scroll surface and no collapse toggle. Selecting a result leaves the panel visible. Desktop scrollbars appear only while interacting with overflowing regions. It never imports the business workspace folder index. Credentials, source records and application hosting stay independent of the home page.
 
+## Shared approval and immutable lifecycle evidence
+
+Resolution and deprecation share browser approval controls and server approval validation. Current approval derives the password-authenticated principal and recording time; reported approval retains genuine external approver/source/date evidence. The service enforces authorization, project UUID, revision and retry checks before writing. Removed source controls leave the registry; applicability requires attached, owned, enabled controls outside hidden sections, while collapsed optional details remain applicable.
+
+Deprecation uses a distinct `decision-tracker.deprecation-approval/v1` event containing its reason, subtype and replacement. It has no resolution answer/proposal fields and does not supersede resolution events. Latest resolution and deprecation evidence are read separately; approval list filters bind their cursors. Existing approval-event storage supports this without a SQL migration, but older runtimes may reject the new history. See [Interfaces](interfaces.md#decision-approval-events-schema-2).
+
 ## Saved content and publication
 
 Library has independent saved-decisions.sqlite storage, revisions and immutable change history. Optional groups are metadata relationships that populate staging; copied project decisions retain no Library/group binding. Browser selection and staging are tab-local. Shared preparation validates content, destination and approval before ordinary create/close/protect phases. There is no transaction across phases or projects: retained request IDs and receipts support exact replay, and partial results remain inspectable. The browser, CLI and API use these shared rules. Contradictions remain an operator/agent concern.

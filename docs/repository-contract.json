@@ -16,17 +16,17 @@
   "data_boundary": "No runtime data, secrets, backups, exports or generated evidence in tracked source.",
   "proof": "Native Calamum, bounded supervision, source manifests, retained runs and aggregates.",
   "publication": "Pushes to the public source repository require applicable explicit operator authorization. No packaged release, force push or remote-setting changes are implied.",
-  "follow_up": "QA Engine and Polymath Ledger source migration discovery and qualification follow the current planning decisions in the installed tracker. Neither source migration has executed. MCP and distribution qualification remain separate.",
+  "follow_up": "Source-specific migration discovery, mapping/size qualification and execution authority remain in the owning business workspace. MCP and public distribution remain separate.",
   "owner_acceptance": "Operator confirmed password setup, system-browser testing and Polymath home launch on 2026-10-05; this does not substitute for native automated evidence.",
   "packaging": {
     "version": "0.1.0a1",
-    "status": "Windows installer implementation and local qualification; no public release claimed",
+    "status": "Latest source/wheel/source-archive qualified locally; compiled Setup qualification predates deprecation approval and must be repeated for a matching candidate. No public release claimed.",
     "formats": [
       "current-user Windows Setup EXE with pinned Python/runtime dependencies",
       "Python wheel",
       "source distribution with support documents and portable skill"
     ],
-    "qualification": "Native dt-windows-installer, dt-package and dt-integration; source correspondence, actual Setup lifecycle, retained data, installed runtime and archives.",
+    "qualification": "Native source-corresponding dt-deprecation-focus and dt-integration for latest application/wheel/source archive; earlier dt-windows-installer evidence applies only to its retained source snapshot. Package labels and SQL schema numbers alone do not prove new-history compatibility.",
     "excluded": "Credentials, deployment data, project/saved databases, organization seed content, local preparations and generated evidence.",
     "guide": "docs/packaging.md"
   }

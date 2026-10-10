@@ -22,7 +22,7 @@ A binding contains project ID and ledger UUID only. Commands never infer project
 
 ## Changes
 
-CLI convenience commands require `--expected-revision`, `--request-id` (UUID), `--reason` and every affected existing decision revision. Use `--record-revision` for the selected decision and `--expected-decision-revisions FILE` for multiple endpoints. Lifecycle authority uses repeated `--authority-ref` arguments. Complex option/reference/evidence fields use an input JSON object.
+CLI convenience commands require `--expected-revision`, `--request-id` (UUID), `--reason` and every affected existing decision revision. Use `--record-revision` for the selected decision and `--expected-decision-revisions FILE` for multiple endpoints. Reference-only lifecycle requests use repeated `--authority-ref` arguments. Structured Close and Deprecate requests instead use `data.approval`; structured deprecation rejects nonempty top-level authority references. See [approval evidence](#decision-approval-events-schema-2). Complex option/reference/evidence fields use an input JSON object.
 
 For batches use `change apply --input FILE --project example --binding .local/example-binding.json --json`. The input is a complete envelope:
 
@@ -46,6 +46,8 @@ For batches use `change apply --input FILE --project example --binding .local/ex
 
 These uppercase placeholders deliberately fail validation until replaced. Later operations in the same batch can address `@storage`. Limit25 operations/touched decisions. `--dry-run` validates a change and rolls back; it is not a reservation. Do not use dry-run to imply a project or maintenance operation was simulated.
 
+`validate_only` is excluded from the transaction intent hash. Fresh validation rolls back and stores no committed receipt; the same unchanged intent/request ID may then commit, subject to current revisions. If that ID already committed, a matching request returns the original receipt, including when validation is requested. Validation is not a reservation. A changed intent requires a new request ID.
+
 Retry an uncertain write with the identical body and request ID. A committed matching request returns its original outcome before checking stale revisions. Changed content under an old request ID is rejected. On409 reload, reconcile explicitly, and use a new request ID. Do not auto-overwrite a conflict.
 
 ## Command families
@@ -55,13 +57,15 @@ Retry an uncertain write with the identical body and request ID. A committed mat
 | service | serve, status, catalog-backup, ensure-running, open, install-launcher, uninstall-launcher, configure-credentials, stop |
 | auth | setup-code, recover, reset-password, migrate; token create, rotate, revoke, list |
 | project | list, show, create, register, disable, enable; policy show, set |
-| decision | list, get, create, edit, edit-resolution, close, reopen, lock, amend, deprecate, defer, resume, challenge, resolve-challenge, set-work, history, as-of, field, link, planning-links |
+| decision | list, get, create, edit, close, reopen, lock, amend, deprecate, defer, resume, challenge, resolve-challenge, set-work, history, as-of, field, link, planning-links |
 | option | list, add, edit, retire |
 | reference | list, add, edit, retire |
 | link | list, add, unlink |
 | query | search, context, impact, deprecated |
 | change | apply |
-| data | export, import-validate, import-new, candidates, prepare-candidate, backup, verify, restore-check, artifact-list, artifact-download, upgrade-check, upgrade |
+| data | saved-list, saved-get, saved-create, saved-edit, saved-delete, saved-group-create, saved-group-edit, saved-group-delete, saved-stage, saved-prepare, saved-publish, saved-export, saved-import, saved-import-check, saved-backup, saved-backup-check, saved-backup-download; export, import-validate, import-new, candidates, prepare-candidate, backup, verify, restore-check, artifact-list, artifact-download, upgrade-check, upgrade |
+
+`decision edit-resolution` is recognized only for historical compatibility; new writes are rejected. The former `decision apply` and `decision applications` names remain aliases for Link and planning-link reads. [Library formats and routes](saved-decisions.md) describe the saved-content commands.
 
 Selecting an option belongs to `decision close`, using `selected_option` in input or `--selected-option`. Selection changes require decide authority. Reopen clears selection. Rejected options need reason and authority. Protected and deprecated aggregates reject ordinary editing.
 
@@ -164,9 +168,9 @@ For an earlier or external approval, use:
 
 Reported approval requires decide permission, who approved, and 1–32 nonblank sources. Exact precision requires an offset-aware `occurred_at` plus matching `utc_offset_minutes`; date precision requires `occurred_date` plus offset; unknown precision forbids date/time/offset/timezone. Future occurrence is rejected. The reported approver is not authenticated. A generated event reference is stored in addition to submitted sources, so snapshots allow 33 references while caller `authority_refs` remains bounded at 32.
 
-Selecting a proposal on the structured path requires its `selected_option` ID and `expected_option_revision`. The answer must match the proposal description (or title when description is empty). A resolution edit can preserve an unchanged legacy mismatch. Other changes to the same decision cannot share a resolution batch. Structured approval cannot be combined with top-level `occurred_at`. Legacy explicit-reference requests remain supported without invented approval dates.
+Selecting a proposal on the structured path requires its `selected_option` ID and `expected_option_revision`. The answer must match the proposal description (or title when description is empty). Historical resolution-edit receipts can preserve an unchanged legacy mismatch; new `edit-resolution` writes are withdrawn. Correct a current answer by separately reopening, editing the open decision and closing it with approval. Other changes to the same decision cannot share a resolution batch. Structured approval cannot be combined with top-level `occurred_at`. Legacy explicit-reference requests remain supported without invented approval dates.
 
-Approval events count with the decision toward the 128 KiB aggregate limit. Events are immutable and linked across resolution edits and reopen/close cycles. Detail/as-of returns `latest_resolution_approval`; GET `.../decisions/{key}/approvals` returns paginated summaries, and GET `.../approvals/{event_id}` returns the full event with revision-pinned chunks for long text. Existing project identity and read permission requirements apply. GET `/api/v1/schema` advertises `approval_events_v1`, `planning_links_v1` and ledger schemas 1–4.
+Approval events count with the decision toward the 128 KiB aggregate limit. Resolution events are immutable and linked across historical resolution edits and reopen/close cycles. Deprecation events form separate evidence and do not supersede them. Detail/as-of returns `latest_resolution_approval`; GET `.../decisions/{key}/approvals` returns paginated summaries, and GET `.../approvals/{event_id}` returns the full event with revision-pinned chunks for long text. Existing project identity and read permission requirements apply. GET `/api/v1/schema` advertises `approval_events_v1`, `planning_links_v1` and ledger schemas 1–4.
 
 CLI `decision close` and `change apply` forward this object through existing JSON inputs. Bearer agents must report genuine external approval evidence and possess decide permission; this feature grants no new access.
 

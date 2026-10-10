@@ -36,6 +36,10 @@ or job/domain scopes when those contexts actually apply. Inspect reports list/sh
 Aggregate output is under .calamum/generated/reports/generated. Unsigned local
 evidence is not an authenticated signed release.
 
+## Guidance-only updates
+
+Encoding, link/anchor, JSON and projection checks are deterministic document checks, not application proof. Portable skill metadata validation runs through a bounded native Calamum definition with retained source hash and report. Runtime qualification remains tied to its exact manifest; later guidance changes do not rewrite earlier reports or archive bytes. Before a new package delivery, qualify the matching support inputs and run the dedicated compiled-Setup lane when Setup is included. See [current verification](verification.md#current-status).
+
 ## Optional capabilities
 
 For fresh user-installation qualification, run `tools/prove.py --definition dt-package --budget-seconds 180`. It builds a wheel, installs only runtime dependencies into a new environment, verifies the installed console script and packaged assets, and exercises isolated Windows managed startup, reuse and shutdown. It reads the served sign-in page; browser dispatch is stubbed for the CLI `service open` check. No owner data or protocol registry entries are changed by this proof. It also builds a source archive and inspects both archives for required runtime/support files, licenses and excluded local data. Build artifacts and SHA256 values are retained with the proof. See [Packaging](packaging.md).

@@ -17,6 +17,8 @@ Use this map to find the guide for your task. These documents describe the local
 | [Agent-access skill](../skills/decision-tracker/SKILL.md) | Portable instructions for agents using the CLI or API. |
 | [Configuration example](config.example.json) | Example configuration fields; not a credential store. |
 
+For lifecycle approval and repair compatibility, read [Deprecation](decision-workflow.md#deprecation), [Approval evidence](interfaces.md#decision-approval-events-schema-2), [Runtime replacement](operations.md#history-compatibility-for-runtime-replacement) and [Current qualification](verification.md#current-status).
+
 ## Develop and review
 
 | Guide | Purpose |

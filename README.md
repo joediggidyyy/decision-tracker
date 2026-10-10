@@ -29,7 +29,7 @@ Capture open questions, compare alternatives, record approvals and connect relat
 
 ## Quick start
 
-For ordinary Windows 11 x64 use, choose `DecisionTracker-0.1.0a1-windows-x64-setup.exe` from the release assets. This alpha installer includes Python and runtime dependencies; no separate Python, pip or terminal setup is needed. See [Windows installation](docs/windows-installation.md) for hashes, unsigned-app prompts and repair. The release candidate is being qualified; this document does not assert a public release exists.
+For ordinary Windows 11 x64 use, choose `DecisionTracker-0.1.0a1-windows-x64-setup.exe` from the release assets. This alpha installer includes Python and runtime dependencies; no separate Python, pip or terminal setup is needed. See [Windows installation](docs/windows-installation.md) for hashes, unsigned-app prompts and repair. No public release is claimed. The retained compiled Setup predates the latest deprecation-approval update; it has not been requalified for that update. See [current qualification and recovery limits](docs/verification.md#current-status).
 
 Run Setup under your own Windows account. It creates a Start menu entry and offers a desktop shortcut. Launch Decision Tracker. On first launch, click OK to copy a temporary setup code, paste it into the browser form and choose your password. Cancel leaves setup unfinished. The code expires after 15 minutes. A fresh deployment starts with no projects or saved decisions.
 
@@ -90,6 +90,8 @@ Record choices whose durable consequences need an explicit, retrievable rational
 
 Use **Decide** beside an open question to record the answer and approval. The resulting record has status `closed`; CLI `decision close` and API `decision.close` retain their existing names. The decision is recorded without marking its implementation or verification complete.
 
+Use **Deprecate** to end use of a decision while retaining its answer and history. It uses the same current human or reported external Approval controls as Decide. Deprecation is terminal; its approval evidence stays separate from the original resolution. See [Decision workflow](docs/decision-workflow.md#deprecation) and the [interface contract](docs/interfaces.md#decision-approval-events-schema-2).
+
 Once you incorporate a closed decision into authoritative planning, use **link** beside its status. Choose a planning document from the dropdown, or use **Add document…** to browse the project's planning folders or paste a path. Its sections load automatically; select the section and link. Success leaves a soft green `linked` tag and an immutable receipt in History. Reopening starts a fresh cycle while preserving earlier receipts. Linking records where the approved decision was incorporated; it does not edit the plan or mark implementation or verification complete. The [interface guide](docs/interfaces.md#planning-links) covers CLI access, optional-anchor records and compatibility with earlier names.
 
 [Live updates](docs/live-updates.md) tell you when another participant has changed the data without moving your focus or replacing your draft.
@@ -133,4 +135,4 @@ Copyright 2026 Polymath Global. Licensed under the [Apache License 2.0](LICENSE)
 
 Decision Tracker can retain a project’s earlier decision history alongside its native decisions. Source identities, literal values, ordered events, versions and references remain immutable and retrievable. Unknown source values remain unknown; source benefit and summary text retain their attribution. New decisions and resolutions use the ordinary validation and approval rules.
 
-The existing CLI and API support complete source retrieval and maintenance of inactive import candidates. See [Legacy import and recovery](docs/legacy-import.md). The current migration pilot is still awaiting its complete request/export sizing evidence and execution release.
+The existing CLI and API support complete source retrieval and maintenance of inactive import candidates. See [Legacy import and recovery](docs/legacy-import.md). Each source migration requires independently qualified mapping, complete request/export sizing and explicit execution authority. Source-specific progress and deployment records belong in the owning business workspace.

@@ -8,6 +8,8 @@ The selected limited-test prerelease is `0.1.0a1`, tagged `v0.1.0a1` when publis
 
 Build and qualify locally before preparing a draft GitHub prerelease. Publication, second-machine operator acceptance and source migration remain separate actions. Do not rename older `dev0` artifacts or claim a published release from a local build.
 
+The current source includes deprecation approval. Native focused/integration evidence qualifies its source, wheel and source archive. Compiled-Setup qualification below belongs to an earlier source snapshot and has not been repeated for this update. No current Setup release is claimed. Select archives by retained source manifest/hash and runtime capabilities, rather than the shared `0.1.0a1` label. The health endpoint still reports the older `0.1.0.dev0` string; use authenticated schema discovery and source/asset correspondence for capability checks.
+
 ## Contents
 
 The wheel contains application modules, browser assets, the legacy schema and Apache license metadata. The source archive also contains public guides, changelog, the portable agent skill, tests and native verification tools/catalog. `MANIFEST.in` defines source support inputs and excludes local state. Docs and the skill are companion material, not installed runtime modules; extract them from the source archive when delivering a wheel-only installation.
@@ -45,6 +47,8 @@ Decisions and Projects select a project in their heading area. Library works wit
 Preserve the currently installed package/environment and checked backups before replacing runtime files. Back up registered project ledgers, the catalog and Library independently; project backups do not include Library. Credentials remain private and bound to the local account. Stop the managed service through its supported command before upgrading. Install the qualified candidate in the chosen environment, run `pip check` and CLI help, and update the launcher explicitly if the interpreter location changes.
 
 Reuse the existing deployment rather than creating duplicate credentials or projects. Start with `service ensure-running`, verify service identity and inspect existing project/Library content before resuming writes. Schema upgrades remain explicit and require their existing checked-backup process. Installing a newer binary does not authorize migration or downgrade. Do not use an older binary on newer history unless compatibility has been qualified. Restore checks prepare isolated candidates; they do not overwrite active data. See [Operations](operations.md) and [Legacy recovery](legacy-import.md).
+
+New deprecation approval events require a runtime advertising `deprecation_approval_v1`, even when the ledger remains SQL schema 2, 3 or 4. Preserve a capable qualified runtime and checked project/catalog/Library backups before replacement. Verify the runtime capability and retained source/asset hashes; the package version or SQL schema number alone is insufficient. An older backup discards later writes and is not a substitute for forward recovery. See [the event compatibility contract](interfaces.md#decision-approval-events-schema-2).
 
 ## Support record
 

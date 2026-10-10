@@ -40,6 +40,12 @@ Search existing decisions first. Cite settled requirements and focus a new entry
 
 Use **New decision** to register a question and **Decide** to record its authorized resolution. Closed decisions retain immutable history. Incorporate the resolution into authoritative planning, then use **link** with its planning anchor. Recording a decision, linking it to planning, implementing it, verifying it and accepting the result remain distinct. The [interface guide](interfaces.md) and [agent skill](../skills/decision-tracker/SKILL.md) cover supported commands and revision checks.
 
+## Deprecation
+
+Use Deprecate when an open or closed decision should no longer be used. Supply the reason and subtype; superseded and duplicate decisions require a distinct eligible replacement. Deprecation is terminal and retains the original answer, resolution approval and history.
+
+The shared Approval controls record either current approval from the signed-in person or a reported earlier/external approval with its genuine sources and date precision. Agents cannot claim authenticated human approval. Deprecation receives separate immutable evidence; it does not replace the resolution or imply implementation/verification. Read [the interface contract](interfaces.md#decision-approval-events-schema-2) before CLI/API writes or recovery.
+
 ## Reusable decisions
 
 Library stores reusable content without applying it to a project. Groups are optional tags for selecting that content. The operator reviews staging and explicitly publishes to a destination. Completed copies are closed and protected, with current approval; their implementation, verification and planning links remain separate. Reuse does not settle contradictions or update earlier copies. See [Saved decisions](saved-decisions.md).
