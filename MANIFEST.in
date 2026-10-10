@@ -5,6 +5,7 @@ recursive-include skills *.md
 recursive-include catalog *.json
 recursive-include tools *.py *.cjs
 recursive-include tests *.py *.cjs
+include tests/fixtures/pre_deprecation_approval_history.provenance.json
 recursive-include src/decision_tracker *.py
 recursive-include src/decision_tracker/static *
 recursive-include src/decision_tracker/schemas *.json
