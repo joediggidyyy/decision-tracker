@@ -787,7 +787,7 @@
     {
       "id": "dt-closed-records",
       "title": "Closed-record shared policy and compatibility",
-      "summary": "Closed-record shared policy and compatibility",
+      "summary": "Closed/protected supplemental context, frozen approval, endpoint/replay/recovery and actual Chromium controls",
       "status": "active",
       "category": "regression",
       "selector_policy": "exact-name-only",
@@ -832,6 +832,7 @@
               "tests/test_approvals.py",
               "tests/test_limits.py",
               "tests/test_cli.py",
+              "tests/test_action_browser.py",
               "-q",
               "--basetemp",
               ".local/test-tmp"

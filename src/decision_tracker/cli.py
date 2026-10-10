@@ -12,7 +12,7 @@ from .errors import Fault, require
 from .store import encode
 
 DECISIONS=["list","get","create","edit","edit-resolution","close","reopen","lock","amend","deprecate",
-           "defer","resume","challenge","resolve-challenge","set-work","history","as-of","field","link","planning-links","apply","applications"]
+           "defer","resume","challenge","resolve-challenge","set-work","set-evidence","history","as-of","field","link","planning-links","apply","applications"]
 
 def common(parser,suppress=True):
     default=argparse.SUPPRESS if suppress else None

@@ -8,7 +8,7 @@ export async function collectWorkspace(read,base,query,key,signal){
   const list=await checked(base+'/decisions?'+query);let record=null,context=null,targets={};
   if(key){stage='selected decision';const r=await checked(base+'/decisions/'+key);record=r.data;for(const field of Object.keys(record))record[field]=await expand(record[field]);
    stage='decision collections';for(const family of ['alternatives','references','links'])record[family]=await all(record.collections[family].url);
-   for(const link of record.links.filter(l=>l.active&&l.source_key===key&&['relates_to','depends_on'].includes(l.type)))targets[link.target_key]=(await checked(base+'/decisions/'+link.target_key)).data;
+   for(const link of record.links.filter(l=>l.active&&(l.source_key===key||l.type==='relates_to')&&['relates_to','depends_on'].includes(l.type))){const other=link.source_key===key?link.target_key:link.source_key;targets[other]=(await checked(base+'/decisions/'+other)).data;}
    stage='decision context';context=(await checked(base+'/decisions/'+key+'/context')).data;
   }
   return {list,record,context,targets,revision};

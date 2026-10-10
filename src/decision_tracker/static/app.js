@@ -48,7 +48,7 @@ async function projects(prepared=null){
  if(state.project)$('project').value=state.project.project_id;
  $('new-project').hidden=!state.caps.includes('registry');$('add-existing').hidden=!state.caps.includes('registry')||!state.caps.includes('maintain');
 }
-async function signedIn(data){state.csrf=data.csrf_token;state.caps=data.capabilities;$('signout').hidden=false;$('login-view').hidden=true;await projects();const saved=new URLSearchParams(location.hash.slice(1));if(saved.get('view')==='library'){show('library-view');await savedUI.open();return;}if(state.projects.some(p=>p.enabled&&p.project_id===saved.get('project'))){await selectProject(saved.get('project'));if(saved.get('view')==='projects'){show('projects-view');await admin();}else if(/^D[0-9]{6}$/.test(saved.get('decision')||''))await detail(saved.get('decision'));}else{show('projects-view');await admin();}}
+async function signedIn(data){state.csrf=data.csrf_token;state.caps=data.capabilities;state.runtime=(await api('/api/v1/schema'))['x-decision-tracker'];$('signout').hidden=false;$('login-view').hidden=true;await projects();const saved=new URLSearchParams(location.hash.slice(1));if(saved.get('view')==='library'){show('library-view');await savedUI.open();return;}if(state.projects.some(p=>p.enabled&&p.project_id===saved.get('project'))){await selectProject(saved.get('project'));if(saved.get('view')==='projects'){show('projects-view');await admin();}else if(/^D[0-9]{6}$/.test(saved.get('decision')||''))await detail(saved.get('decision'));}else{show('projects-view');await admin();}}
 $('login-form').onsubmit=async e=>{e.preventDefault();const token=$('token').value;$('token').value='';try{await signedIn((await api('/api/v1/session',{token})).data);}catch(err){failure(err);}};
 $('signout').onclick=()=>guardedNavigate(async()=>{live.stop();let warning='';try{await api('/api/v1/session',undefined,'DELETE',AbortSignal.timeout(5000));}catch(e){warning='The server could not confirm sign-out. Sign in again when it is available.';}account.requireSignin(warning||'Signed out. Sign in to continue.');});
 async function selectProject(id){const adminView=state.view==='projects-view';live.stop();state.listRevision=null;state.contextFingerprint=null;listGeneration++;detailGeneration++;$('results').replaceChildren();$('result-count').textContent='';$('load-more').hidden=true;$('notice').textContent='';$('error').hidden=true;state.project=state.projects.find(p=>p.project_id===id)||null;state.record=null;$('context').replaceChildren();$('detail').replaceChildren(node('p','Choose a decision.'));if(!state.project||!state.project.enabled){$('project').value='';show('projects-view');rememberView();await admin();return;}show(adminView?'projects-view':'workspace');rememberView();$('project').value=state.project.project_id;$('workspace-title').textContent=state.project.name;$('new-decision').disabled=!state.caps.includes('write');await listing();live.ensure(state.project,state.record?.key||null);if(adminView)await admin();}
@@ -107,13 +107,13 @@ async function detail(key,prepared=null){
 
  help.addEventListener('pointerenter',showHelp);help.addEventListener('pointerleave',()=>{if(document.activeElement!==help)hideHelp();});help.addEventListener('focus',showHelp);help.addEventListener('blur',hideHelp);help.addEventListener('keydown',e=>{if(e.key==='Escape'){hideHelp();e.stopPropagation();}});
  function control(label,full,description,op,parent,disabled=false){const cell=node('div',undefined,'compact-control'),action=button(label,()=>{hideHelp();edit(op);},cell,disabled);action.setAttribute('aria-label',full);parent.append(cell);helpEntries.set(cell,{label,full,description});}
- const writable=state.caps.includes('write')&&!d.locked&&d.status==='open',decide=state.caps.includes('decide');
+ const writable=state.caps.includes('write')&&!d.locked&&d.status==='open',supplemental=canSupplement(d),decide=state.caps.includes('decide');
  control('Edit','Edit','Change this open record.','decision.edit',primary,!writable);
  control('Status','Status','Change work status on an open record.','decision.set-work',primary,!writable||d.work_tag==='deferred');
  control(d.status==='open'&&d.work_tag==='deferred'?'res':'def',d.status==='open'&&d.work_tag==='deferred'?'Resume':'Defer','Pause or resume work on an open record.',d.work_tag==='deferred'?'decision.resume':'decision.defer',actions,!writable);
  control(d.status==='open'&&d.contested?'resolve':'chal',d.status==='open'&&d.contested?'Resolve challenge':'Challenge','Record a disagreement or its resolution on an open record.',d.contested?'decision.resolve-challenge':'decision.challenge',actions,!writable||!['deferred','under-investigation'].includes(d.work_tag));
  control('dep','Deprecate','End use of this decision; keep its history.','decision.deprecate',actions,d.status==='deprecated'||!decide);
- for(const [label,full,description,op] of [['opt','Add option','Propose a solution.','option.add'],['ref','Add reference','Attach a source.','reference.add'],['rel','Add relationship','Link open decisions.','link.add']])control(label,full,description,op,supporting,!writable);
+ for(const [label,full,description,op] of [['opt','Add option','Propose a solution.','option.add'],['ref','Add reference','Attach a source.','reference.add'],['rel','Add relationship','Link active open or closed decisions.','link.add']])control(label,full,description,op,supporting,op==='option.add'?!writable:!(writable||supplemental));
  const closure=node('div',undefined,'closure-slot');question.append(closure);
  if(d.status==='open')button('Decide',()=>edit('decision.close'),closure,!writable||!decide).className='primary';
  if(d.status==='closed'){
@@ -128,11 +128,11 @@ async function detail(key,prepared=null){
    card.append(node('strong',child.title||child.label||(child.type+' · '+child.source_key+' → '+child.target_key)));
    for(const k of (family==='alternatives'?['description','benefit','cost','disposition','reason']:family==='references'?['locator','kind','availability','authenticity','limitations']:['reason','impact','baseline_disposition']))if(child[k])card.append(node('p',k+': '+child[k],'long-text'));
    if(writable&&family!=='links'&&!child.retired&&!['retired','selected'].includes(child.disposition)){const type=family==='alternatives'?'option':'reference';const pair=node('div',undefined,'item-actions');card.append(pair);button('Edit',()=>edit(type+'.edit',child),pair);button('Retire',()=>edit(type+'.retire',child),pair);}
-   if(writable&&family==='links'&&child.active&&child.source_key===d.key&&['relates_to','depends_on'].includes(child.type)){const target=prepared?prepared.targets[child.target_key]:(await api(base()+'/decisions/'+child.target_key)).data;if(generation!==detailGeneration)return;if(target.status==='open'&&!target.locked)button('Unlink',()=>edit('link.unlink',child),card);}
+   if((writable||supplemental)&&family==='links'&&child.active&&(child.source_key===d.key||(supplemental&&child.type==='relates_to'))&&['relates_to','depends_on'].includes(child.type)){const other=child.source_key===d.key?child.target_key:child.source_key;const target=prepared?prepared.targets[other]:(await api(base()+'/decisions/'+other)).data;if(generation!==detailGeneration)return;if((writable&&target.status==='open'&&!target.locked)||(supplemental&&activeContext(target)))button('Unlink',()=>edit('link.unlink',child),card);}
    box.append(card);
   }
  }
- box.append(node('h3','Evidence state','section-title'),node('pre',JSON.stringify(d.evidence_state,null,2)));
+ const evidenceHeading=node('div',undefined,'item-actions');evidenceHeading.append(node('h3','Evidence state','section-title'));if(supplemental)button('Evidence',()=>edit('decision.set-evidence'),evidenceHeading);box.append(evidenceHeading,node('pre',JSON.stringify(d.evidence_state,null,2)));if(d.status==='closed'&&!canSupplement(d)&&state.caps.includes('write'))box.append(node('p','A runtime update supporting closed context is required to add relationships, references or evidence.','notice'));
  const historyBox=node('section');box.append(historyBox);let historyOpen=false,historyRequest=0;
  const historyButton=button('History',async()=>{
   historyOpen=!historyOpen;const request=++historyRequest;historyButton.setAttribute('aria-expanded',String(historyOpen));historyBox.replaceChildren();if(!historyOpen)return;
@@ -152,13 +152,14 @@ function edit(op,child=null){
  if(op==='decision.link'&&state.schemaVersion<3){message('Upgrade this ledger before recording a planning link.',true);return;}
  if(['decision.close','decision.edit-resolution'].includes(op)&&state.schemaVersion<2){message('This project needs a data-format upgrade before decisions can be recorded.',true);return;}
  const d=state.record||{},invoker=document.activeElement;
- if(op==='decision.edit-resolution'||(d.status!=='open'&&['decision.edit','decision.set-work','decision.defer','decision.resume','decision.challenge','decision.resolve-challenge','option.add','option.edit','option.retire','reference.add','reference.edit','reference.retire','link.add','link.unlink'].includes(op))){message('Reopen this decision before changing its content.',true);return;}
+ if(supplementalOps.has(op)&&!(op!=='decision.set-evidence'&&d.status==='open'&&!d.locked)&&!canSupplement(d)){message('This record cannot receive supplemental context with the current runtime.',true);return;}
+ if(op==='decision.edit-resolution'||(d.status!=='open'&&['decision.edit','decision.set-work','decision.defer','decision.resume','decision.challenge','decision.resolve-challenge','option.add','option.edit','option.retire','reference.edit','reference.retire'].includes(op))){message('Reopen this decision before changing its content.',true);return;}
  state.edit={op,child,revision:state.revision,decisionRevision:d.revision,key:d.key,requestId:crypto.randomUUID(),pending:null,invoker};
  $('edit-title').textContent=op==='decision.link'?'Link to planning':titles[op];$('edit-project').textContent=state.project.name+(d.key&&op!=='decision.create'?' · '+d.key:'');
  const fields=$('edit-fields');fields.replaceChildren();$('form-error').hidden=true;$('conflict').hidden=true;
  if(op==='decision.close')state.edit.resolution=installDecisionForm(fields,d,false);
  else if(op==='decision.link')state.edit.action=installPlanningLinkForm(fields,d,{api,base,onReady:ready=>{if(state.edit?.op==='decision.link'&&!state.edit.saving)$('save-edit').disabled=!ready;},onPrefilled:()=>{if(state.edit?.op==='decision.link')state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();},prefill:planningLinkPrefill.get('project')===state.project.project_id&&planningLinkPrefill.get('decision')===d.key?{document:planningLinkPrefill.get('planning-document'),section:planningLinkPrefill.get('planning-section'),sha256:planningLinkPrefill.get('planning-sha256')}:null});
- else state.edit.action=installActionForm(fields,op,d,child,{decide:state.caps.includes('decide'),findDecisions:async q=>{const items=await all(base()+'/decisions?q='+encodeURIComponent(q));return op==='link.add'?items.filter(item=>item.status==='open'&&!item.locked):items;}});
+ else state.edit.action=installActionForm(fields,op,d,child,{decide:state.caps.includes('decide'),findDecisions:async q=>{const items=await all(base()+'/decisions?q='+encodeURIComponent(q));return op==='link.add'?items.filter(item=>canSupplement(d)?activeContext(item):item.status==='open'&&!item.locked):items;}});
  $('save-edit').textContent=state.edit.action?.submit||'Save decision';$('save-edit').disabled=state.edit.action?.ready?!state.edit.action.ready():false;state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();
  if(!$('editor').open)$('editor').showModal();fields.querySelector('input:not([disabled]),textarea,select')?.focus();
 }
@@ -177,16 +178,16 @@ window.addEventListener('beforeunload',e=>{if(dirty()){e.preventDefault();e.retu
 $('edit-form').onsubmit=async event=>{
  event.preventDefault();const originView=state.view;const editState=state.edit;if(!editState)return;const save=$('save-edit');save.disabled=true;editState.saving=true;$('form-error').hidden=true;
  try{
-  const values=(editState.resolution||editState.action).read(),f=values.data,reason=values.reason,authority_refs=values.authority_refs;
+  const values=(editState.resolution||editState.action).read();if(values.unchanged){message('No evidence changes to save.');return;}const f=values.data,reason=values.reason,authority_refs=values.authority_refs;
   const revisions={};if(editState.op!=='decision.create')revisions[editState.key]=editState.decisionRevision;
-  let other=f.target_key||f.replacement_key;if(editState.op==='link.unlink')other=editState.child.target_key;
+  let other=f.target_key||f.replacement_key;if(editState.op==='link.unlink')other=editState.child.source_key===editState.key?editState.child.target_key:editState.child.source_key;
   if(other){const target=await api(base()+'/decisions/'+encodeURIComponent(other));revisions[other]=target.data.revision;}
   const operation={op:editState.op,data:f};if(editState.op!=='decision.create')operation.key=editState.key;if(editState.child)operation.id=editState.child.id;
   const payload={expected_ledger_uuid:state.project.ledger_uuid,expected_revision:editState.revision,expected_decision_revisions:revisions,request_id:editState.requestId,reason,authority_refs,operations:[operation]};
   const result=await sendRetained(editState,payload,body=>api(base()+'/changes',body));const key=result.data[0]?.key,next=editState.afterDiscard;if(state.view===originView)message(editState.resolution?(editState.op==='decision.close'?'Decision saved. This question is closed. Implementation status has not changed.':'Decision updated. Implementation status has not changed.'):'Saved at ledger revision '+result.revision);try{await refreshWorkspace({key:key||state.record?.key||null,commitSaved:true});closeEditor();next?.();}catch(e){closeEditor();if(state.view===originView)message('Saved successfully. Refresh the view to see current data.');}
  }catch(e){
   if(definitive(e)){editState.pending=null;editState.requestId=crypto.randomUUID();}const error=$('form-error');error.textContent=e.message;(editState.resolution||editState.action)?.showError(e,error);error.hidden=false;error.tabIndex=-1;error.focus();
-  if(e.code==='INVALID_TRANSITION')error.textContent+=' Your draft is preserved. Review the current record and reopen it before editing.';
+  if(e.code==='INVALID_TRANSITION')error.textContent+=supplementalOps.has(editState.op)?' Your draft is preserved. Review the current record and relationship endpoints.':' Your draft is preserved. Review the current record and reopen it before editing.';
   if(['REVISION_CONFLICT','STALE_REVISION','REQUEST_ID_REUSED','PROPOSAL_CHANGED'].includes(e.code)||e.code?.includes('STALE')){
    const c=$('conflict');c.hidden=false;c.replaceChildren(node('p','Your draft is preserved. Review the current record before rebasing this draft.'));
    button('Load current state alongside draft',async()=>{
@@ -300,9 +301,13 @@ async function refreshWorkspace({retry=false,key=state.record?.key||null,review=
  finally{clearTimeout(deadline);clearInterval(supersession);controller.abort();refreshAttempt=null;if($('live-review').open)connectionControls(content);busy.forEach(b=>{if(b.isConnected)b.disabled=false;});$('results').scrollTop=scroll.results;$('main-content').scrollTop=scroll.detail;if(focus?.isConnected&&(!$('editor').open||$('editor').contains(focus)||$('live-review').contains(focus)))focus.focus();}
 }
 async function detailCandidate(candidate,key){if(key)await detail(key,candidate);renderList(candidate.list);if(!key){state.contextFingerprint=null;live.ensure(state.project,null);}}
+const supplementalOps=new Set(['reference.add','link.add','link.unlink','decision.set-evidence']);
+function activeContext(d){return !!d&&['open','closed'].includes(d.status)&&(!d.locked||d.status==='closed');}
+function canSupplement(d){const policy=state.runtime?.mutation_policy;return state.schemaVersion>=2&&state.caps.includes('write')&&state.runtime?.capabilities?.includes('closed_context_v1')&&['reference.add','link.add','link.unlink','decision.set-evidence'].every(op=>policy?.closed_supplemental?.includes(op)&&policy?.protected_closed_supplemental?.includes(op))&&activeContext(d);}
 const ordinaryEdits=new Set(['decision.edit','option.add','option.edit','option.retire','reference.add','reference.edit','reference.retire','link.add','link.unlink','decision.set-work','decision.defer','decision.resume','decision.challenge','decision.resolve-challenge']);
 function canRebase(editState,d){
  if(!editState||!d||d.status==='deprecated')return false;
+ if(supplementalOps.has(editState.op))return canSupplement(d)||(editState.op!=='decision.set-evidence'&&state.caps.includes('write')&&d.status==='open'&&!d.locked);
  if(d.locked&&!['decision.amend','decision.deprecate','decision.link'].includes(editState.op))return false;
  if(ordinaryEdits.has(editState.op)||editState.op==='decision.close')return d.status==='open';
  if(['decision.reopen','decision.lock','decision.link'].includes(editState.op))return d.status==='closed';

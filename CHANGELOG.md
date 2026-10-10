@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — closed decision supporting context
+
+- Allow ordinary relationships and appended references on closed/protected closed decisions, preserving approved content and existing lifecycle restrictions. Related-to links can be removed from either endpoint.
+- Add dedicated delivery Evidence controls and `decision set-evidence` partial patches through the shared browser/CLI/API rules, with clear confirmation, revision/replay protection and runtime capability discovery.
+
 ## Unreleased — stale browser sessions
 
 - Automatically show Sign in after confirmed session expiration, including live connections, downloads and failed fetches. Retain open forms and pending requests for explicit review after signing in.

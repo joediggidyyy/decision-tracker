@@ -49,3 +49,7 @@ The shared Approval controls record either current approval from the signed-in p
 ## Reusable decisions
 
 Library stores reusable content without applying it to a project. Groups are optional tags for selecting that content. The operator reviews staging and explicitly publishes to a destination. Completed copies are closed and protected, with current approval; their implementation, verification and planning links remain separate. Reuse does not settle contradictions or update earlier copies. See [Saved decisions](saved-decisions.md).
+
+## Supporting context after approval
+
+Use Relationships and Add reference on closed or protected closed decisions to record later context. Use Evidence beside Evidence state to record implementation, verification and acceptance separately. These updates preserve approved content and approval; reported acceptance is evidence, not new approval. Existing references remain readable and closed reference corrections are appended. Substantive revisions still use Reopen or Amend. Deprecated decisions stay read-only. See [the shared interface contract](interfaces.md#closed-record-mutation-policy) for compatibility, permissions and exact retry rules.

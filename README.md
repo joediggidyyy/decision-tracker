@@ -8,7 +8,7 @@ Decision Tracker helps you and your agents collaborate on complex projects with 
 
 **Local-use alpha · Windows 11 x64 installer · Public source repository**
 
-Capture open questions, compare alternatives, record approvals and connect related decisions. Use the browser to review and decide, and the CLI or API to give agents access to the same project context. Closed decisions require explicit reopening before edits; protected baselines require amendment. Earlier records remain available as the project changes. Decision approval, implementation and verification stay distinct, so agreeing on an approach does not imply that the work is complete.
+Capture open questions, compare alternatives, record approvals and connect related decisions. Use the browser to review and decide, and the CLI or API to give agents access to the same project context. Closed decisions retain approved content while allowing relationships, appended references and delivery evidence. Substantive edits require explicit reopening; protected approved content requires amendment. Earlier records remain available as the project changes. Decision approval, implementation and verification stay distinct, so agreeing on an approach does not imply that the work is complete.
 
 ## Site map
 
@@ -98,7 +98,7 @@ Once you incorporate a closed decision into authoritative planning, use **link**
 
 ## Integrity and data boundaries
 
-Each project has its own SQLite decision ledger within a central project catalog. Decisions are open, closed or deprecated, with separate work, challenge and evidence states. Protected baselines require amendment, and a rejected option remains distinct from an unselected one. The application has no hard-delete or silent-overwrite operation for decisions.
+Each project has its own SQLite decision ledger within a central project catalog. Decisions are open, closed or deprecated, with separate work, challenge and evidence states. Protected approved content requires amendment; supplemental context remains available, and a rejected option remains distinct from an unselected one. The application has no hard-delete or silent-overwrite operation for decisions.
 
 Committed changes retain immutable snapshots of affected decisions. You can retrieve earlier answers, reasoning and approval records as the current decision evolves. Backups and native exports preserve ledger history; imports create candidates for review rather than replacing active data. Restore checks use isolated copies.
 

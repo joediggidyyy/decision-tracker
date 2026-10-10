@@ -249,7 +249,8 @@ def create_app(config:Config,environment=None):
         schema=app.openapi().copy()
         from .approvals import Approval, DeprecationEvent
         from .planning_links import PlanningLink
-        schema['x-decision-tracker']={'capabilities':['approval_events_v1','deprecation_approval_v1','planning_links_v1','planning_applications_v1','legacy_history_v1','inactive_candidate_recovery_v1','saved_decisions_v1'],'ledger_schemas':[1,2,3,4],
+        from .state import SUPPLEMENTAL
+        schema['x-decision-tracker']={'capabilities':['closed_context_v1','approval_events_v1','deprecation_approval_v1','planning_links_v1','planning_applications_v1','legacy_history_v1','inactive_candidate_recovery_v1','saved_decisions_v1'],'ledger_schemas':[1,2,3,4],
                                      'legacy_contract_url':'/api/v1/schema?contract=legacy-import-v1','legacy_contract_sha256':contract_digest(),
                                      'approval_input':Approval.model_json_schema(),
                                      'deprecation_approval':{'input':Approval.model_json_schema(),'event_schema':'decision-tracker.deprecation-approval/v1','event':DeprecationEvent.model_json_schema(),'kind':'deprecate','minimum_runtime':'deprecation_approval_v1-capable binary','older_binary_new_history_compatible':False},
@@ -257,7 +258,10 @@ def create_app(config:Config,environment=None):
                                      'planning_link_policy_write':'os_owner_cli_only',
                                      'application_input':PlanningLink.model_json_schema(),
                                      'application_policy_write':'os_owner_cli_only',
-                                     'mutation_policy':{'ordinary_requires':'open_unlocked','relationship_endpoints':'both_open_unlocked',
+                                     'mutation_policy':{'ordinary_requires':'open_unlocked','relationship_endpoints':'both_active_open_or_closed',
+                                                        'closed_supplemental':sorted(SUPPLEMENTAL),
+                                                        'protected_closed_supplemental':sorted(SUPPLEMENTAL),
+                                                        'closed_reference_policy':'append_only',
                                                         'reopen':'separate_committed_request','edit_resolution':'withdrawn_for_new_writes',
                                                         'closed_lifecycle':['decision.reopen','decision.lock','decision.amend','decision.deprecate'],
                                                         'historical_receipts':'exact_replay_preserved'}}

@@ -87,8 +87,12 @@ def test_project_pages_chunks_relations_asof_and_signed_cursor(ledger):
 
 def test_c3_reference_work_reopen_close_protect_amend_deprecate_link(ledger,tmp_path):
     s,p,v,r=registered(ledger);u=r['ledger_uuid']
-    for key in ('D000001','D000003','D000004'):
-        with pytest.raises(Fault):mutate(s,p,u,key,'reference.add',{'label':'Source','locator':'synthetic:source'})
+    for key in ('D000001','D000003'):
+        before=s.detail('legacy-test',u,p,key)['data']
+        mutate(s,p,u,key,'reference.add',{'label':'Source','locator':'synthetic:source'})
+        after=s.detail('legacy-test',u,p,key)['data']
+        for field in ('question','answer','rationale','locked','baseline','legacy_origin','latest_resolution_approval'):assert after.get(field)==before.get(field)
+    with pytest.raises(Fault):mutate(s,p,u,'D000004','reference.add',{'label':'Source','locator':'synthetic:source'})
     mutate(s,p,u,'D000002','reference.add',{'label':'Source','locator':'synthetic:source'})
     with pytest.raises(Fault):mutate(s,p,u,'D000002','decision.challenge')
     mutate(s,p,u,'D000002','decision.set-work',{'work_tag':'under-investigation'})
@@ -148,7 +152,7 @@ def test_imported_native_guards_approval_graph_and_strict_create(ledger):
     def create(data):return s.change('legacy-test',p,Change(expected_ledger_uuid=u,expected_revision=meta['revision'],expected_decision_revisions={},request_id=uuid4(),reason='Synthetic ordinary Create',operations=[{'op':'decision.create','data':data}]))
     with pytest.raises(ValidationError):create({'title':'Sparse native','question':None})
     with pytest.raises(Fault):create({'title':'Forged origin','question':'Valid?', 'legacy_import_id':'forged'})
-    with pytest.raises(Fault):mutate(s,p,u,'D000002','link.add',{'type':'depends_on','target_key':'D000001'},expected_decision_revisions={'D000002':1,'D000001':1})
+    with pytest.raises(Fault):mutate(s,p,u,'D000002','link.add',{'type':'depends_on','target_key':'D000004'},expected_decision_revisions={'D000002':1,'D000004':1})
     mutate(s,p,u,'D000001','decision.reopen',{'impact':'Review'})
     mutate(s,p,u,'D000001','decision.edit',{'question':'Native question'})
     with pytest.raises(Fault):mutate(s,p,u,'D000001','decision.close',{'answer':'A','rationale':'R','approval':{'mode':'authenticated_now'}})

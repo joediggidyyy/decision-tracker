@@ -74,3 +74,7 @@ def run_browser(tmp_path, script="action_browser.cjs", folder="action-browser"):
 
 def test_action_forms_browser(tmp_path):
     run_browser(tmp_path)
+
+
+def test_closed_context_browser(tmp_path):
+    run_browser(tmp_path, 'closed_context_browser.cjs', 'closed-context-browser')
