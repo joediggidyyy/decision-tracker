@@ -84,7 +84,7 @@ module.exports=async function stickyHeading(page,out,{zoom=false}={}){
    await page.locator('#focus-toggle').click();
    await page.locator('#projects-button').click();await page.locator('#projects-view').waitFor();
    assert.equal(await page.locator('#projects-heading #project-picker').count(),1);
-   assert.equal(await page.locator('#projects-heading').evaluate(n=>getComputedStyle(n).position),'static');
+   assert.equal(await page.locator('#projects-heading').evaluate(n=>getComputedStyle(n).position),await page.evaluate(()=>innerWidth>980)?'sticky':'static');
    await page.locator('#saved-button').click();await page.locator('#library-view').waitFor();assert.equal(await page.locator('#project-picker').isVisible(),false);
    await page.locator('#decisions-button').click();await page.locator('#detail[data-loaded=true]').waitFor();
    assert.equal(await heading.locator('#project-picker').count(),1);await scroll(.5);

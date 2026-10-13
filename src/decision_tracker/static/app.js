@@ -1,3 +1,4 @@
+import {measureHeader} from './header-locking.js';
 import {onSessionExpired} from './session.js';
 import {sessionFetch} from './session.js';
 import {installProjects} from './projects.js';
@@ -152,6 +153,10 @@ function edit(op,child=null){
  $('editor').classList.toggle('planning-link-editor',op==='decision.link');
  $('editor').classList.toggle('decision-editor',op==='decision.close');
  $('edit-context').querySelector('.resolution-question')?.remove();
+ const heading=$('edit-heading');
+ if(op==='decision.close')$('edit-form').insertBefore(heading,$('edit-context'));
+ else $('edit-context').prepend(heading);
+ $('editor').classList.toggle('action-header-locked',op!=='decision.close');
  if(op==='decision.link'&&state.schemaVersion<3){message('Upgrade this ledger before recording a planning link.',true);return;}
  if(['decision.close','decision.edit-resolution'].includes(op)&&state.schemaVersion<2){message('This project needs a data-format upgrade before decisions can be recorded.',true);return;}
  const d=state.record||{},invoker=document.activeElement;
@@ -374,3 +379,6 @@ button('Review workspace updates',()=>$('freshness').click(),$('edit-form'));
 const account=installAccount({$,state,api,signedIn,show,message,dirty,live,hasDraft:()=>dirty()||projectUI.dirty()||savedUI.dirty(),onReauthenticated:()=>projectUI.manager.reauthenticated()});
 
 onSessionExpired(()=>account.requireSignin());
+
+measureHeader(document.querySelector('#projects-heading'),$('main-content'),'--projects-heading-height');
+measureHeader(document.querySelector('#live-review>.dialog-heading'),$('live-review'),'--locked-heading-height');

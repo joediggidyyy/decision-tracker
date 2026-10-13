@@ -74,7 +74,7 @@ module.exports=async function decideContext(page,out,{zoom=false}={}){
   await edit(retained);
   await page.locator('#context .control-primary').getByRole('button',{name:'Edit',exact:true}).click();await editor.waitFor();
   assert.equal(await editor.evaluate(n=>n.classList.contains('decision-editor')),false);
-  assert.equal(await context.locator('.resolution-question').count(),0);assert.equal(await context.evaluate(n=>getComputedStyle(n).position),'static');await cancel();
+  assert.equal(await context.locator('.resolution-question').count(),0);assert.equal(await context.evaluate(n=>getComputedStyle(n).position),await page.evaluate(()=>innerWidth>600)?'sticky':'static');await cancel();
   fs.writeFileSync(`${out}/decide-context-${zoom?'zoom-200':'wide-mobile'}-observations.json`,JSON.stringify({observations,questionRestored:true},null,2));
  }catch(error){await capture(`decide-context-${zoom?'zoom-200':'wide-mobile'}-failure`);throw error;}
 };
