@@ -2,6 +2,8 @@
 
 ## Unreleased — Library browse, review and staging
 
+- Show a plain integer displayed-row count in the main Library column; Groups counts groups only, regardless of expanded members. Staging retains its X staged label.
+
 - Replace Library selection and Review overlay with compact Groups/Decisions rows and inline details; one open group and one open source detail. Move tags into details.
 - Add flat +/− controls to group and decision rows, ordered identity-deduplicated staging, atomic group commands, bounded local Undo/Redo and explicit undoable staged-copy replacement.
 - Keep copied staging visible beside browsing, or before the list at narrow available widths. Remove redundant Browse/Staging navigation. Use one unboxed Groups | Decisions toggle with the inactive label muted; use a two-choice in-place Settings menu with focused group and transfer popups so the heading cannot deform. Selection, Escape and click-away dismiss the menu.

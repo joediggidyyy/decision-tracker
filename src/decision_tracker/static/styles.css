@@ -211,3 +211,5 @@ dialog fieldset{min-width:0}dialog .toolbar{gap:8px}dialog button{min-height:44p
 
 /* Settings choices float in place; function dialogs contain only that function. */
 .library-settings{position:relative}.library-settings-menu{position:absolute;top:100%;right:0;z-index:10;width:210px;background:var(--panel);border:1px solid var(--border);padding:4px 8px}.library-settings-menu button{display:block;width:100%;text-align:left;white-space:normal}.library-settings-menu button:hover{background:var(--bg)}#saved-transfer-dialog .library-transfer{margin-top:8px;padding-top:8px;border-top:0}#saved-transfer-dialog{width:min(600px,calc(100vw - 28px))}
+
+.library-browse>.results-heading{margin-bottom:12px}.library-browse>.results-heading h2{margin:0}
