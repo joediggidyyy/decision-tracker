@@ -150,6 +150,8 @@ async function detail(key,prepared=null){
 }
 function edit(op,child=null){
  $('editor').classList.toggle('planning-link-editor',op==='decision.link');
+ $('editor').classList.toggle('decision-editor',op==='decision.close');
+ $('edit-context').querySelector('.resolution-question')?.remove();
  if(op==='decision.link'&&state.schemaVersion<3){message('Upgrade this ledger before recording a planning link.',true);return;}
  if(['decision.close','decision.edit-resolution'].includes(op)&&state.schemaVersion<2){message('This project needs a data-format upgrade before decisions can be recorded.',true);return;}
  const d=state.record||{},invoker=document.activeElement;
@@ -158,7 +160,7 @@ function edit(op,child=null){
  state.edit={op,child,revision:state.revision,decisionRevision:d.revision,key:d.key,requestId:crypto.randomUUID(),pending:null,invoker};
  $('edit-title').textContent=op==='decision.link'?'Link to planning':titles[op];$('edit-project').textContent=state.project.name+(d.key&&op!=='decision.create'?' · '+d.key:'');
  const fields=$('edit-fields');fields.replaceChildren();$('form-error').hidden=true;$('conflict').hidden=true;
- if(op==='decision.close')state.edit.resolution=installDecisionForm(fields,d,false);
+ if(op==='decision.close')state.edit.resolution=installDecisionForm(fields,d,false,$('edit-context'));
  else if(op==='decision.link')state.edit.action=installPlanningLinkForm(fields,d,{api,base,onReady:ready=>{if(state.edit?.op==='decision.link'&&!state.edit.saving)$('save-edit').disabled=!ready;},onPrefilled:()=>{if(state.edit?.op==='decision.link')state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();},prefill:planningLinkPrefill.get('project')===state.project.project_id&&planningLinkPrefill.get('decision')===d.key?{document:planningLinkPrefill.get('planning-document'),section:planningLinkPrefill.get('planning-section'),sha256:planningLinkPrefill.get('planning-sha256')}:null});
  else state.edit.action=installActionForm(fields,op,d,child,{decide:state.caps.includes('decide'),findDecisions:async q=>{const items=await all(base()+'/decisions?q='+encodeURIComponent(q));return op==='link.add'?items.filter(item=>canSupplement(d)?activeContext(item):item.status==='open'&&!item.locked):items;}});
  $('save-edit').textContent=state.edit.action?.submit||'Save decision';$('save-edit').disabled=state.edit.action?.ready?!state.edit.action.ready():false;state.edit.initial=new URLSearchParams(new FormData($('edit-form'))).toString();
@@ -213,6 +215,7 @@ $('decisions-button').onclick=()=>state.csrf&&guardedNavigate(async()=>{history.
 window.addEventListener('popstate',async()=>{if(!state.csrf)return;const previous=acceptedRoute,params=new URLSearchParams(location.hash.slice(1));const moved=await guardedNavigate(async()=>{if(params.get('view')==='library'){show('library-view');rememberView();await savedUI.open();return;}if(params.get('project')&&params.get('project')!==state.project?.project_id)await selectProject(params.get('project'));show(params.get('view')==='projects'?'projects-view':'workspace');if(state.view==='projects-view')await admin();else if(state.project?.enabled){if(params.get('decision'))await detail(params.get('decision'));else {state.record=null;await listing();rememberView();}}});if(!moved)history.pushState(null,'',previous||location.pathname);});
 new ResizeObserver(entries=>{document.documentElement.style.setProperty('--header-height',entries[0].target.offsetHeight+'px');}).observe(document.querySelector('.topbar'));
 new ResizeObserver(entries=>{document.documentElement.style.setProperty('--decision-heading-height',entries[0].target.getBoundingClientRect().height+'px');}).observe(document.querySelector('#workspace>.workspace-heading'));
+new ResizeObserver(entries=>{$('editor').style.setProperty('--decision-context-height',entries[0].target.getBoundingClientRect().height+'px');}).observe($('edit-context'));
 document.querySelector('.skip-link').addEventListener('click',event=>{event.preventDefault();const main=$('main-content');main.focus();main.scrollIntoView({block:'start'});});
 api('/api/v1/session').then(r=>signedIn(r.data)).catch(()=>show('login-view'));
 

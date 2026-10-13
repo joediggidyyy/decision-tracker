@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — Decide dialog context
+
+- Remove the introductory resolution explanation and the choice-switching explanation from Decide.
+- Keep project name, decision ID and question visible while the dialog scrolls above 600 pixels. Preserve normal scrolling at mobile widths. Bound unusually long pinned questions so the form remains reachable.
+
 ## Unreleased — sticky Decisions heading
 
 - Keep the existing project heading, selector and connection indicator visible while the decision section scrolls. Search and record content continue to scroll independently; no new visible controls or decoration are added.

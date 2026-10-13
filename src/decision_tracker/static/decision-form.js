@@ -4,10 +4,11 @@ import {activeControl} from './form-controls.js';
 export const normalize=s=>(s||'').replaceAll('\r\n','\n').trim();
 export function defaults(p,editing=false){return {answer:p.description?.trim()?p.description:p.title,rationale:[p.benefit?.trim()?'Expected benefit: '+p.benefit:'',p.cost?.trim()?'Cost or tradeoff: '+p.cost:''].filter(Boolean).join('\n\n'),reason:(editing?'Updated':'Recorded')+' decision using proposal: '+p.title+'.'};}
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
-export function installDecisionForm(container,d,editing=false){
+export function installDecisionForm(container,d,editing=false,questionContainer=container){
  const notice=el('p');notice.setAttribute('role','status');
- container.append(el('h3',d.question),el('p',editing?'Update the recorded answer. Saving keeps this decision closed; it does not perform the work.':'Choose a proposal or write your answer. Saving closes this question; it does not perform the work.'));
- const choices=el('fieldset');choices.append(el('legend','Which proposed solution do you choose?'),el('p','Switching choices replaces the Decision, Why this choice and Change note fields. Choose a proposal to fill them, or Write a different answer to clear them.'));container.append(choices);
+ const question=el('h3',d.question);question.className='resolution-question';questionContainer.append(question);
+ if(editing)container.append(el('p','Update the recorded answer. Saving keeps this decision closed; it does not perform the work.'));
+ const choices=el('fieldset');choices.append(el('legend','Which proposed solution do you choose?'));container.append(choices);
  const proposals=(d.alternatives||[]).filter(p=>p.disposition!=='retired').sort((a,b)=>a.position-b.position||a.id.localeCompare(b.id));
  let selected=editing?proposals.find(p=>p.disposition==='selected')?.id||'':(d.answer||d.rationale?'':null);
  const radios=[];

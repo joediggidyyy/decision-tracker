@@ -90,7 +90,7 @@ The [portable agent skill](skills/decision-tracker/SKILL.md) explains explicit p
 
 Record choices whose durable consequences need an explicit, retrievable rationale, including engineering choices owned by agents within delegated scope. Registration and approval escalation are separate: seek human judgment when a choice exceeds delegation or changes settled requirements. The [decision workflow](docs/decision-workflow.md) gives the threshold and examples.
 
-Use **Decide** beside an open question to record the answer and approval. The resulting record has status `closed`; CLI `decision close` and API `decision.close` retain their existing names. The decision is recorded without marking its implementation or verification complete.
+Use **Decide** beside an open question to record the answer and approval. Above 600 pixels, the dialog keeps its project name, decision ID and question visible while the form scrolls; mobile widths use normal scrolling. Very long pinned questions can scroll within their context region so form controls remain reachable. The resulting record has status `closed`; CLI `decision close` and API `decision.close` retain their existing names. The decision is recorded without marking its implementation or verification complete.
 
 Use **Deprecate** to end use of a decision while retaining its answer and history. It uses the same current human or reported external Approval controls as Decide. Deprecation is terminal; its approval evidence stays separate from the original resolution. See [Decision workflow](docs/decision-workflow.md#deprecation) and the [interface contract](docs/interfaces.md#decision-approval-events-schema-2).
 
