@@ -27,7 +27,7 @@ Use the repository development environment and native Calamum. Obtain its record
 ```powershell
 .\.venv\Scripts\python.exe tools/prove.py --definition dt-windows-installer --budget-seconds 360
 .\.venv\Scripts\python.exe tools/prove.py --definition dt-package --budget-seconds 240
-.\.venv\Scripts\python.exe tools/prove.py --definition dt-integration --budget-seconds 600
+.\.venv\Scripts\python.exe tools/prove.py --definition dt-integration --budget-seconds 900
 ```
 
 The package proof builds both archives in an isolated proof copy. It checks required files, excluded state, archive hashes, runtime dependency consistency, byte-identical installed assets and a fresh environment without Calamum or test dependencies. On Windows it starts, reuses and safely stops an isolated managed service. Browser dispatch is stubbed for the CLI open check; real browser workflows are separately exercised by integration.

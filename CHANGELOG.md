@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — sticky Decisions heading
+
+- Keep the existing project heading, selector and connection indicator visible while the decision section scrolls. Search and record content continue to scroll independently; no new visible controls or decoration are added.
+- Preserve wrapped headings and keyboard scroll clearance at compact widths and actual browser zoom. Make Skip to content focus the main region without changing the selected decision or application route.
+
 ## Unreleased — Library browse, review and staging
 
 - Show a plain integer displayed-row count in the main Library column; Groups counts groups only, regardless of expanded members. Staging retains its X staged label.
