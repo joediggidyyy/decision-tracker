@@ -43,7 +43,7 @@ export function installAccount({$,state,api,signedIn,show,message,dirty,live,has
   try{const result=await api('/api/v1/account');$('account-message').textContent=result.data.other_sessions+' other active session(s). Agent access is unaffected.';}
   catch(error){$('account-message').textContent='Sign in below to manage your account or return to your draft.';}
  }
- $('account-toggle').onclick=openAccount;$('editor-account').onclick=openAccount;
+ $('account-toggle').onclick=openAccount;
  $('close-account').onclick=closeAccount;$('account-dialog').oncancel=event=>{event.preventDefault();closeAccount();};
  async function rotated(){const result=await api('/api/v1/session');state.csrf=result.data.csrf_token;lease=null;await protectDraft();}
  $('account-form').onsubmit=async event=>{

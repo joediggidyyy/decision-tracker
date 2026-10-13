@@ -256,7 +256,10 @@ class SavedDecisions:
             total = max(db.execute('SELECT count(*) FROM saved_decisions').fetchone()[0], db.execute('SELECT count(*) FROM saved_groups').fetchone()[0])
             # Summaries stay small even when saved content is large.
             rows = [json.loads(r[0]) for r in records]
-            summaries = [{'id': x['id'], 'title': x['content']['title'], 'group_ids': x['group_ids']} for x in rows]
+            summaries = [{'id': x['id'], 'title': x['content']['title'], 'group_ids': x['group_ids'],
+                          'question': x['content']['question'],
+                          'question_preview': x['content']['question'][:240],
+                          'question_truncated': len(x['content']['question']) > 240} for x in rows]
             size = limit
             while True:
                 result = {'ok': True, 'revision': revision, 'data': summaries[:size], 'groups': groups[:size],

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Library browse, review and staging
+
+- Replace Library selection and Review overlay with compact Groups/Decisions rows and inline details; one open group and one open source detail. Move tags into details.
+- Add flat +/− controls to group and decision rows, ordered identity-deduplicated staging, atomic group commands, bounded local Undo/Redo and explicit undoable staged-copy replacement.
+- Keep copied staging visible beside browsing, or before the list at narrow available widths. Remove redundant Browse/Staging navigation. Use one unboxed Groups | Decisions toggle with the inactive label muted; use a two-choice in-place Settings menu with focused group and transfer popups so the heading cannot deform. Selection, Escape and click-away dismiss the menu.
+- Add complete bounded questions to revision-pinned saved summaries for literal search, retaining compatible preview fields and response-size paging. Preserve existing publication approval, exact retries, partial receipts and native permissions.
+
 ## Unreleased — Evidence action placement and support reconciliation
 
 - Move Evidence into the side-panel top row beside Edit and Status. Use three controls per row, including the disabled empty state; remove the duplicate action beside Evidence state.

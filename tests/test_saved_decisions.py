@@ -247,3 +247,34 @@ def test_group_metadata_pages_remain_bounded_and_complete(ledger):
     assert {x['id'] for x in items}==set(ids) and len(items)==7
     assert {x['id'] for x in groups}=={x['id'] for x in tags} and len(groups)==500
     assert all(len(x['group_ids'])==500 for x in items)
+
+
+def test_saved_summary_preview_is_bounded_literal_and_full_content_is_retained(ledger):
+    service,p,u=ledger;saved=SavedDecisions(service.root)
+    value=content('Preview boundary')
+    value['question']='Which choice? '+('界🙂 ' * 1000)
+    id=save(saved,p,content=value)['data']['id']
+    summary=saved.listing(p)['data'][0]
+    assert summary['question_preview']==value['question'][:240]
+    assert summary['question']==value['question']
+    assert summary['question_truncated'] is True
+    assert saved.get(p,id)['data']['content']['question']==value['question']
+    assert len(store.encode(saved.listing(p)).encode())<=60000
+    short=save(saved,p,content=content('Short question'))['data']['id']
+    summary=next(x for x in saved.listing(p)['data'] if x['id']==short)
+    assert summary['question_preview']==content('Short question')['question']
+    assert summary['question_truncated'] is False
+
+
+def test_complete_question_summary_pages_shrink_without_losing_records(ledger):
+    service,p,u=ledger;saved=SavedDecisions(service.root)
+    value=content('Complete question');value['question']='🙂'*8192
+    ids=[str(uuid4()) for _ in range(9)]
+    save(saved,p,action='import',bundle=Bundle(decisions=[{'id':id,'content':value} for id in ids]))
+    offset=0;observed=[];pages=0
+    while offset is not None:
+        result=saved.listing(p,offset=offset,expected_revision=1)
+        assert len(store.encode(result).encode())<=60000
+        assert all(row['question']==value['question'] for row in result['data'])
+        observed.extend(row['id'] for row in result['data']);offset=result['next_offset'];pages+=1
+    assert pages>1 and len(observed)==len(ids) and set(observed)==set(ids)

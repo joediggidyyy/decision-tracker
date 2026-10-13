@@ -2,6 +2,10 @@
 
 ## Current status
 
+Library now implements inline Groups/Decisions browsing, flat row staging controls and bounded local Undo/Redo. Source and copied staging details expand within their rows. The latest native qualification and safe activation evidence are recorded in the owning canonical presentation plan and retained `.local/proofs`. Previous Review-overlay proofs and older archives remain historical evidence. Operator visual acceptance and matching compiled Setup qualification remain separate.
+
+The intermediate native integration run `20261013T001613Z-dt-integration` retained 307 passed, one project-edit conflict-comparison timeout and one dedicated compiled-Setup skip in `.local/proofs/9828aa916fa0448eb88097218facb20c`. Its source was unchanged. Focused `dt-action-forms` subsequently passed in `.local/proofs/f45cfcbe587f4e9f828f8876bd135047`; the failure did not reproduce. Final current-source checks remain separately identified in the presentation delivery evidence.
+
 Recent runtime changes were qualified in separate native snapshots. The closed-context implementation is commit `77616da`; the later Evidence-panel placement is commit `1263409`. In-repository support reconciliation changes documentation and agent guidance only. It does not rewrite the original proof manifests or update their retained archives.
 
 | Scope | Actual result | Retained proof |
