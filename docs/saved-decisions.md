@@ -22,6 +22,8 @@ Publication creates the project's next available D numbers, then records approva
 
 You may publish the same content again. Contradictory answers are also allowed. The operator and agent interpret the decisions. Group tags and saved identities stop at staging: project records have no group behavior or connection back to the saved item. Later edits, tag changes or deletion of a saved item leave earlier project copies unchanged. Existing project editing, closing and deprecation remain available.
 
+The Library heading has no total saved count. The left search row shows the exact filtered group or decision count; Staging shows its independent staged count.
+
 ## Permissions and limits
 
 Saved reads, selection and export require `read`; publication preparation requires `read`, `write` and `decide`. Saved content, tags and import require `write`. Saved backups and their checks/downloads require `maintain`. Creating a destination project uses the existing `registry` capability. Publication requires the existing project's `write` and `decide` permissions and explicit project ID/ledger UUID. This feature adds no owner role or extra approval step.

@@ -54,6 +54,26 @@ def run_browser(tmp_path, script="action_browser.cjs", folder="action-browser"):
         p=Principal('fixture',frozenset({'*'}),frozenset({'read','write','decide','maintain','registry'}))
         r=Artifacts(app.state.service).import_native(p,request(),True)['data']
         app.state.service.catalog.mutate(p,ProjectChange(kind='register',project_id='legacy-test',name='Synthetic legacy',candidate_id=r['candidate_id'],expected_candidate_digest=r['logical_digest'],expected_catalog_revision=0,request_id=uuid4()))
+    if folder=='project-details-browser':
+        import json
+        from uuid import uuid4
+        from decision_tracker.auth import Principal
+        from decision_tracker.models import Change,ProjectChange
+        from decision_tracker.planning_links import PolicyChange,set_policy
+        from decision_tracker.approval_api import Upgrade,upgrade
+        s=app.state.service;p=Principal('fixture',frozenset({'*'}),frozenset({'read','write','decide','maintain','registry'}))
+        u=s.catalog.mutate(p,ProjectChange(project_id='alpha',name='Project metadata and source context',expected_catalog_revision=0,request_id=uuid4()))['data']['ledger_uuid']
+        s.catalog.mutate(p,ProjectChange(project_id='beta',name='Second project',expected_catalog_revision=1,request_id=uuid4()))
+        for batch in range(3):
+            s.change('alpha',p,Change(expected_ledger_uuid=u,expected_revision=batch,request_id=uuid4(),reason='Synthetic project overview',operations=[{'op':'decision.create','data':{'title':str(i),'question':'Which approach?'}} for i in range(batch*25,(batch+1)*25)]))
+        s.change('alpha',p,Change(expected_ledger_uuid=u,expected_revision=3,expected_decision_revisions={'D000002':1},request_id=uuid4(),reason='Synthetic closure',authority_refs=['Synthetic approval'],operations=[{'op':'decision.close','key':'D000002','data':{'answer':'Chosen','rationale':'Reviewed'}}]))
+        s.change('alpha',p,Change(expected_ledger_uuid=u,expected_revision=4,expected_decision_revisions={'D000001':1,'D000002':2},request_id=uuid4(),reason='Synthetic deprecation',authority_refs=['Synthetic approval'],operations=[{'op':'decision.deprecate','key':'D000001','data':{'kind':'superseded','replacement_key':'D000002'}}]))
+        upgrade(app.state.artifacts,'alpha',u,p,Upgrade(expected_revision=5,request_id=uuid4()))
+        roots=[]
+        for name in ['first','second']:
+            path=tmp_path/name;path.mkdir();roots.append(str(path))
+            (path/'plan.json').write_text(json.dumps({'schema_version':'codesentinel.canonical-document/v1','document_id':name,'metadata':[{'label':'Version','value':'1.0'}],'sections':[{'id':'scope','heading':'Scope','blocks':[{'id':'scope-p1','type':'paragraph','text':'Synthetic source'}]}]}),encoding='utf-8')
+        set_policy(s,'alpha',u,p,PolicyChange(expected_policy_revision=0,request_id=uuid4(),reason='Synthetic source roots',planning_roots=roots))
     server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='warning'))
     thread=threading.Thread(target=server.run,daemon=True);thread.start()
     try:
@@ -64,7 +84,12 @@ def run_browser(tmp_path, script="action_browser.cjs", folder="action-browser"):
         root=Path(__file__).parents[1]
         output=root/'.local'/folder;output.mkdir(parents=True,exist_ok=True)
         extra=[str(tmp_path/'planning'/'plan.json')] if folder=='planning-link-browser' else []
-        result=subprocess.run([shutil.which('node'),str(root/'tests'/script),f'http://127.0.0.1:{port}',str(output),*extra],capture_output=True,text=True,encoding="utf-8",timeout=180,env=os.environ.copy())
+        try:
+            result=subprocess.run([shutil.which('node'),str(root/'tests'/script),f'http://127.0.0.1:{port}',str(output),*extra],capture_output=True,text=True,encoding="utf-8",timeout=180,env=os.environ.copy())
+        except subprocess.TimeoutExpired as exc:
+            for capture in (exc.stdout,exc.stderr):
+                if capture: print(capture.decode('utf-8',errors='replace') if isinstance(capture,bytes) else capture)
+            raise
         print(result.stdout)
         assert result.returncode==0,result.stdout+result.stderr
     finally:

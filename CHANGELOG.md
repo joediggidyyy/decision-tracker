@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased — Projects identity and overview
+
+- Show selected project identity and registration metadata without Details. ID values copy on activation, with hover feedback, Copy tooltips and manual-copy recovery.
+- Group data actions beside the selected name and separate access controls. Add exact revision-bound decision counts, latest activity and guarded View decisions.
+- List authorized source documents as inactive links until DocDoc integration. Summary and source failures remain independent, with right-aligned Retry.
+
+## Unreleased — full page Decisions and Projects layout
+
+- Match Library's flat presentation with independent scrolling and per-page resize preferences. Decisions preserves record-left/browse-right orientation; Projects keeps browse-left/selected-data-right.
+- Place counts beside search. Retain loaded decision counts with `+` for additional pages; Projects counts filtered visible enabled and disabled registrations.
+- Keep full decision action labels with Edit, Status and Evidence first. Add compact Back navigation that retains filters, pagination, selection and scroll; preserve dirty drafts and browser history.
+- Keep disabled-project administration separate from the active operational binding. Retain confirmed access changes, prepared-candidate registration and data-manager recovery; reject late results for changed context.
+- Reconcile Library: move the filtered count beside search, remove its heading total and the three introductory/staging/publication passages, and remove the solid header rectangle.
+- Wrap long compact project headings across the full width. Use the page's matching viewport background to keep sticky context readable without a separate panel fill.
+
 ## Unreleased — Decide dialog context
 
 - Remove the introductory resolution explanation and the choice-switching explanation from Decide.

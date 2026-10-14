@@ -188,6 +188,11 @@ The browser retains the exact request after an uncertain response, retries it on
 
 <p align="center">Maintained by Polymath Global</p>
 
+
+### Project summary
+
+Authorized GET `/api/v1/projects/{project}/summary` requires `read` and `X-Ledger-UUID`. It returns the normal project/ledger/revision envelope with `data.counts` (`open`, `closed`, `deprecated`) and nullable `latest_activity_at` / `latest_activity_key` and `last_write_at`. Counts cover the complete current decision collection, independent of list pagination. Latest activity uses record update timestamps, with key ascending for ties. Empty ledgers return zero counts and null activity. The read does not change ledger revision; disabled, unauthorized and mismatched identities retain shared guards.
+
 ## Browser navigation and Library
 
 Decisions and Projects share one project selector and connection-status button in the top-right heading area. Changing project on Projects keeps administration open; switching pages retains the selected project. On narrow screens the controls wrap within the page. Library has no project selector: its staging area chooses an existing or new destination.
@@ -196,7 +201,7 @@ Library defaults to Groups with one unboxed Groups | Decisions toggle with the i
 
 ## Prepared projects and administration
 
-Projects has one project table and compact New project / Add existing dialogs. Name generates an editable ID. Project selection keeps this page open; Results and the horizontal Decisions menu return to decision work. Disabled selections show their state without exposing stale actions. Project controls occupy the side pane on this page. Both control panes use translucent buttons over the faint Polymath watermark.
+Projects has a filtered browse list and visible selected identity/metadata. New project and Add existing retain their compact forms; Name generates an editable ID. ID values are copy targets with a Copy tooltip and manual-copy fallback. Registered is the catalog entry creation time. Updated uses `last_write_at`, the newest filesystem write time of the contained SQLite ledger and its active WAL file, if present; it is independent of registration updates and decision-event timestamps. A read-only overview gives exact decision status counts and latest activity; View decisions uses existing guarded navigation. Sources lists the authorized planning inventory with inactive, non-navigating links; DocDoc integration supplies future destinations. Disabled administrative inspection does not replace another operational binding or allow ledger reads/data actions. Backups, Exports and Verify sit beside the selected name; Enable/Disable and help are separated to the right.
 
 Backups and Exports open separate bounded managers. Select one file, then use the shared Download/Check buttons (Check is backup-only). Created dates and times occupy separate unbroken lines. Rows offers 10/25/50/100, default 25, saved as a browser layout preference. Previous/Next replaces the page; page/size/refresh clears selection. Verify replaces one readable project summary. Check validates an isolated copy and does not restore active data. A lost export/backup response is an unknown outcome, not permission for an automatic duplicate operation.
 

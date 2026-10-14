@@ -1,11 +1,13 @@
 """Project-aware application service: the sole decision writer."""
 import base64
 import json
+from datetime import datetime, timezone
 from uuid import uuid4
 from . import store
 from .catalog import Catalog
 from .state import Mutator
 from .models import now
+from .config import contained
 from .errors import require, missing, stale, Fault
 
 class Service:
@@ -126,6 +128,28 @@ class Service:
             output.append(item);size+=item_size;index+=1
         next_cursor=self._cursor(meta["ledger_uuid"],meta["ledger_revision"],query,items[index-1][0]) if index<len(items) and index else None
         return output,next_cursor,index==len(items)
+
+    def project_summary(self, project_id, uuid, principal):
+        principal.need("read")
+        with self.catalog.project(project_id, uuid, principal) as (db, project):
+            meta = store.metadata(db, uuid)
+            counts = dict.fromkeys(("open", "closed", "deprecated"), 0)
+            for row in db.execute("SELECT status,COUNT(*) AS total FROM decisions GROUP BY status"):
+                counts[row["status"]] = row["total"]
+            latest = db.execute("SELECT key,updated_at FROM decisions ORDER BY updated_at DESC,key ASC LIMIT 1").fetchone()
+            path = contained(self.root, project['db_path'])
+            modified = path.stat().st_mtime
+            wal = contained(self.root, project['db_path'] + '-wal')
+            try:
+                modified = max(modified, wal.stat().st_mtime)
+            except FileNotFoundError:
+                pass
+            return self.envelope(project, meta, {
+                "counts": counts,
+                "latest_activity_at": latest["updated_at"] if latest else None,
+                "latest_activity_key": latest["key"] if latest else None,
+                "last_write_at": datetime.fromtimestamp(modified, timezone.utc).isoformat().replace('+00:00', 'Z'),
+            })
 
     def list_decisions(self,project_id,uuid,principal,q="",status=None,work=None,owner=None,cursor=None,limit=50):
         principal.need("read")

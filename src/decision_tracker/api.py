@@ -286,6 +286,10 @@ def create_app(config:Config,environment=None):
         result["data"]=match
         return output(request,result)
 
+    @app.get("/api/v1/projects/{project_id}/summary")
+    def project_summary(project_id:str,request:Request):
+        return output(request,service.project_summary(project_id,identity(request),principal(request)))
+
     @app.post("/api/v1/projects/{project_id}/state")
     def project_state(project_id:str,request:Request,data:ProjectState):
         p=principal(request)

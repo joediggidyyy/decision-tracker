@@ -49,6 +49,10 @@ module.exports=async function(page,out,kind,{zoom=false}={}){
     await page.setViewportSize({width,height:1000});await settle();
     const wide=await page.locator('#library-view').evaluate(e=>innerWidth>980&&e.clientWidth>960);
     assert.equal(await page.locator('.library-header-locked').count(),wide?1:0);
+    const placement=await page.locator('#saved-main-count').evaluate(count=>{const search=document.querySelector('#saved-search'),browse=document.querySelector('#saved-browse-region'),c=count.getBoundingClientRect(),s=search.getBoundingClientRect();return {inBrowse:browse.contains(count)&&browse.contains(search),sameRow:Math.abs(c.top-s.top)<=2,rightOfSearch:c.left>=s.right,headerBackground:document.querySelector('.library-header-locked')?getComputedStyle(document.querySelector('.library-header-locked')).backgroundColor:null};});
+    assert.equal(placement.inBrowse,true);assert.equal(placement.sameRow,true);assert.equal(placement.rightOfSearch,true);
+    if(wide)assert.equal(placement.headerBackground,'rgba(0, 0, 0, 0)');
+    observations.push({label:`library-placement-${width}`,...placement});
     if(wide){await check('#main-content','.library-header-locked',true,`library-${width}`);const header=await page.locator('.library-header-locked').boundingBox();const stage=await page.locator('#library-staging').boundingBox();if(stage)assert.ok(stage.y>=header.y+header.height);}
     else assert.equal(await page.locator('.library-filters #saved-view-toggle').count(),1);
    }
