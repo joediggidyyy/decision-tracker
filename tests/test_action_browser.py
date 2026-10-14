@@ -74,6 +74,33 @@ def run_browser(tmp_path, script="action_browser.cjs", folder="action-browser"):
             path=tmp_path/name;path.mkdir();roots.append(str(path))
             (path/'plan.json').write_text(json.dumps({'schema_version':'codesentinel.canonical-document/v1','document_id':name,'metadata':[{'label':'Version','value':'1.0'}],'sections':[{'id':'scope','heading':'Scope','blocks':[{'id':'scope-p1','type':'paragraph','text':'Synthetic source'}]}]}),encoding='utf-8')
         set_policy(s,'alpha',u,p,PolicyChange(expected_policy_revision=0,request_id=uuid4(),reason='Synthetic source roots',planning_roots=roots))
+    if folder=='record-display-browser':
+        from uuid import uuid4
+        from dataclasses import replace
+        from decision_tracker.auth import Principal
+        from decision_tracker.models import Change,ProjectChange
+        from decision_tracker.approval_api import Upgrade,upgrade
+        s=app.state.service;p=Principal('fixture',frozenset({'*'}),frozenset({'read','write','decide','maintain','registry'}))
+        u=s.catalog.mutate(p,ProjectChange(project_id='alpha',name='Decision display review',expected_catalog_revision=0,request_id=uuid4()))['data']['ledger_uuid']
+        def change(ops,principal=p):
+            revision=s.list_decisions('alpha',u,p)['revision']
+            affected={op['key'] for op in ops if op.get('key','').startswith('D')}|{op['data']['target_key'] for op in ops if op.get('data',{}).get('target_key')}
+            keys={key:s.detail('alpha',u,p,key)['data']['revision'] for key in affected}
+            return s.change('alpha',principal,Change(expected_ledger_uuid=u,expected_revision=revision,expected_decision_revisions=keys,request_id=uuid4(),reason='Synthetic display fixture',authority_refs=[] if any(op['op']=='decision.deprecate' and 'approval' in op.get('data',{}) for op in ops) else ['Synthetic authority'],operations=ops))
+        change([{'op':'decision.create','data':{'title':title,'question':'Which approach preserves café, Δ and <literal> text?\n\nKeep this paragraph.','answer':'Draft answer — retained.','rationale':'First reason.\n\nSecond reason.'}} for title in ['Working decision','Reported approval','Protected decision','Empty supporting sections','Deprecated decision','Long record']])
+        upgrade(app.state.artifacts,'alpha',u,p,Upgrade(expected_revision=1,request_id=uuid4()))
+        change([{'op':'decision.edit','key':'D000001','data':{'evidence_state':{'implementation':{'status':'In progress, not accepted','responsible_role':'Engineering','evidence_refs':['docs/first.md','docs/second.md']},'verification':None,'acceptance':{'status':'Awaiting owner','evidence_refs':[]}}}},
+                {'op':'option.add','key':'D000001','data':{'title':'Local choice','description':'Use local files.\n\nRetain original bytes.','benefit':'Predictable custody','cost':'Backup required'}},
+                {'op':'reference.add','key':'D000001','data':{'label':'Design source','locator':'docs/'+('long-path/'*12)+'design.md','availability':'unknown','authenticity':'unverified','limitations':'Review pending'}},
+                {'op':'link.add','key':'D000001','data':{'target_key':'D000002','type':'relates_to'}},
+                {'op':'link.add','key':'D000004','data':{'target_key':'D000001','type':'relates_to'}}])
+        approval={'mode':'reported','approver':'Owner','precision':'date','occurred_date':'2020-01-02','utc_offset_minutes':-300,'sources':['Synthetic meeting note']}
+        change([{'op':'decision.close','key':'D000002','data':{'answer':'Approved approach','rationale':'Reviewed','approval':approval}}])
+        human=replace(p,auth_method='human_password_session')
+        change([{'op':'decision.close','key':'D000003','data':{'answer':'Protected approach','rationale':'Reviewed','approval':{'mode':'authenticated_now'}}}],human)
+        change([{'op':'decision.lock','key':'D000003','data':{'baseline':'Display fixture baseline'}}])
+        change([{'op':'decision.deprecate','key':'D000005','data':{'kind':'obsolete','approval':approval}}])
+        change([{'op':'decision.edit','key':'D000006','data':{'answer':('Long paragraph café Δ — exact text.\n\n'*450),'rationale':'End of long record.'}}])
     server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='warning'))
     thread=threading.Thread(target=server.run,daemon=True);thread.start()
     try:

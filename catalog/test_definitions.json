@@ -699,6 +699,7 @@
               "{python}",
               "-m",
               "pytest",
+              "tests/test_record_display_browser.py",
               "tests/test_action_browser.py",
               "tests/test_decision_form.py",
               "-q",

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — decision record presentation
+
+- Align record headings and spacing; use flat supporting metadata and compact empty sections.
+- Show approval attribution and evidence as labeled data without altering stored records or raw history.
+- Add guarded project-local relationship navigation with retained drafts and unavailable-target recovery.
+
 ## Unreleased — Projects identity and overview
 
 - Show selected project identity and registration metadata without Details. ID values copy on activation, with hover feedback, Copy tooltips and manual-copy recovery.

@@ -1,3 +1,4 @@
+import {recordSection,approvalMetadata,evidenceDisplay,supportingEntry} from './record-display.js';
 import {installPageLayouts,placeControlHelp} from './page-layout.js';
 import {measureHeader} from './header-locking.js';
 import {onSessionExpired} from './session.js';
@@ -93,15 +94,16 @@ async function detail(key,prepared=null){
  identity.append(badges);
  if(state.schemaVersion<2)box.append(node('p','This project needs a verified data-format upgrade before the new decision form can be used. Existing decisions remain readable.','notice'));
  const fieldText=k=>{const origin=d.legacy_origin?.fields.find(f=>f.field===k);if(d[k]!==null&&d[k]!==undefined)return d[k];return origin?.known_state==='explicit_source_unknown'?'Unknown in source.':origin?.known_state==='not_projected'?'Not projected.':'Not recorded.';};
- const question=node('section',undefined,'question-section'),heading=node('div',undefined,'question-heading');heading.append(node('h3','Question','section-title'));question.append(heading,node('p',fieldText('question'),'long-text'));box.append(question);
- for(const [label,k] of [['Answer','answer'],['Rationale','rationale']])box.append(node('h3',label),node('p',fieldText(k),'long-text'));
+ const question=node('section',undefined,'question-section record-section'),heading=node('div',undefined,'question-heading');heading.append(node('h3','Question','section-title'));question.append(heading,node('p',fieldText('question'),'long-text'));box.append(question);
+ for(const [label,k] of [['Answer','answer'],['Rationale','rationale']]){const {section}=recordSection(label);section.append(node('p',fieldText(k),'long-text'));box.append(section);}
  installLegacyHistory({box,record:d,base,api,node,button,current:()=>generation===detailGeneration});
- const approval=d.latest_resolution_approval,approvalRegion=node('section',undefined,'approval-section'),approvalHeading=node('div',undefined,'approval-heading');
+ const approval=d.latest_resolution_approval,approvalRegion=node('section',undefined,'approval-section record-section'),approvalHeading=node('div',undefined,'approval-heading');
  approvalHeading.append(node('h3','Approval','section-title'));approvalRegion.append(approvalHeading);
- if(approval){approvalRegion.append(node('p',approval.mode==='authenticated_now'?'Approved in this application by '+approval.recorded_by:approval.mode==='reported'?'Approved by (reported): '+approval.reported_approver:'Approval recorded from legacy references; approver and date are unknown.'),node('p','Decision date: '+(approval.occurred_at||approval.occurred_date||'Unknown')),node('p','Recorded by '+approval.recorded_by+' at '+approval.recorded_at));}
- else approvalRegion.append(node('p',d.status==='open'?'Not recorded.':'Structured approval is unavailable. Approver and date are unknown.','muted'));
+ if(approval)approvalRegion.append(approvalMetadata(approval));
+ else if(d.status==='open')approvalRegion.append(node('p','Not recorded.','muted'));
+ else approvalRegion.append(approvalMetadata(null));
  box.append(approvalRegion);
- if(d.latest_deprecation_approval){const a=d.latest_deprecation_approval,region=node('section',undefined,'approval-section');region.append(node('h3','Deprecation approval','section-title'),node('p',a.mode==='authenticated_now'?'Approved in this application by '+a.recorded_by:a.mode==='reported'?'Approved by (reported): '+a.reported_approver:'Approval recorded from legacy references; approver and date are unknown.'),node('p','Approval date: '+(a.occurred_at||a.occurred_date||'Unknown')),node('p','Recorded by '+a.recorded_by+' at '+a.recorded_at));box.append(region);}
+ if(d.latest_deprecation_approval){const {section}=recordSection('Deprecation approval','approval-section');section.append(approvalMetadata(d.latest_deprecation_approval,'Approval date'));box.append(section);}
 
  const controls=$('context');controls.replaceChildren();
  const primary=node('div',undefined,'control-grid control-primary'),actions=node('div',undefined,'control-grid control-secondary'),supporting=node('div',undefined,'control-grid control-supporting');controls.append(primary,actions,supporting);
@@ -127,17 +129,15 @@ async function detail(key,prepared=null){
   button(d.locked?'Amend':'Protect',()=>edit(d.locked?'decision.amend':'decision.lock'),approvalHeading,!decide).setAttribute('aria-label',d.locked?'Amend baseline':'Protect baseline');
  }
  for(const [family,label] of [['alternatives','Options'],['references','References'],['links','Relationships']]){
-  box.append(node('h3',label,'section-title'));const children=prepared?d[family]:await all(d.collections[family].url);if(generation!==detailGeneration)return;d[family]=children;
-  if(!children.length)box.append(node('p','None recorded.','muted'));
-  for(const child of children){for(const k of Object.keys(child))child[k]=await expand(child[k]);const card=node('article',undefined,'child-card');
-   card.append(node('strong',child.title||child.label||(child.type+' · '+child.source_key+' → '+child.target_key)));
-   for(const k of (family==='alternatives'?['description','benefit','cost','disposition','reason']:family==='references'?['locator','kind','availability','authenticity','limitations']:['reason','impact','baseline_disposition']))if(child[k])card.append(node('p',k+': '+child[k],'long-text'));
+  const {section,heading}=recordSection(label);box.append(section);const children=prepared?d[family]:await all(d.collections[family].url);if(generation!==detailGeneration)return;d[family]=children;
+  if(!children.length)heading.append(node('span','None recorded','muted record-empty'));
+  for(const child of children){for(const k of Object.keys(child))child[k]=await expand(child[k]);const card=supportingEntry(family,child,key=>{if(key===d.key)return node('span',key);const link=node('a',key,'record-decision-link');link.href='#'+new URLSearchParams({project:state.project.project_id,decision:key});link.onclick=event=>{if(event.button||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();if(generation===detailGeneration)navigateRelated(key,link);};return link;});
    if(writable&&family!=='links'&&!child.retired&&!['retired','selected'].includes(child.disposition)){const type=family==='alternatives'?'option':'reference';const pair=node('div',undefined,'item-actions');card.append(pair);button('Edit',()=>edit(type+'.edit',child),pair);button('Retire',()=>edit(type+'.retire',child),pair);}
    if((writable||supplemental)&&family==='links'&&child.active&&(child.source_key===d.key||(supplemental&&child.type==='relates_to'))&&['relates_to','depends_on'].includes(child.type)){const other=child.source_key===d.key?child.target_key:child.source_key;const target=prepared?prepared.targets[other]:(await api(base()+'/decisions/'+other)).data;if(generation!==detailGeneration)return;if((writable&&target.status==='open'&&!target.locked)||(supplemental&&activeContext(target)))button('Unlink',()=>edit('link.unlink',child),card);}
-   box.append(card);
+   section.append(card);
   }
  }
- box.append(node('h3','Evidence state','section-title'),node('pre',JSON.stringify(d.evidence_state,null,2)));if(d.status==='closed'&&!canSupplement(d)&&state.caps.includes('write'))box.append(node('p','A runtime update supporting closed context is required to add relationships, references or evidence.','notice'));
+ const {section:evidenceRegion}=recordSection('Evidence state');evidenceRegion.append(evidenceDisplay(d.evidence_state));box.append(evidenceRegion);if(d.status==='closed'&&!canSupplement(d)&&state.caps.includes('write'))box.append(node('p','A runtime update supporting closed context is required to add relationships, references or evidence.','notice'));
  const historyBox=node('section');box.append(historyBox);let historyOpen=false,historyRequest=0;
  const historyButton=button('History',async()=>{
   historyOpen=!historyOpen;const request=++historyRequest;historyButton.setAttribute('aria-expanded',String(historyOpen));historyBox.replaceChildren();if(!historyOpen)return;
@@ -216,6 +216,32 @@ $('edit-form').onsubmit=async event=>{
 async function admin(){await projectUI.render();}
 const projectUI=installProjects({$,state,node,button,api,projects,selectProject,show,detail,listing,message,readResponse,viewDecisions:()=>$('decisions-button').click()});
 function guardedNavigate(fn){const move=()=>projectUI.navigate(()=>savedUI.navigate(fn));if(state.edit?.saving||state.edit?.pending)return Promise.resolve(false);if(dirty()){state.edit.afterDiscard=()=>move().catch(failure);$('dirty-dialog').showModal();return Promise.resolve(false);}if(state.edit)closeEditor();return move().catch(e=>{failure(e);return false;});}
+let relationshipAttempt=null;
+function navigateRelated(key,link){
+ if(relationshipAttempt)return;
+ return guardedNavigate(async()=>{
+  if(relationshipAttempt||!link.isConnected||!state.project?.enabled)return false;
+  const captured=refreshIdentity(),controller=new AbortController();relationshipAttempt=controller;
+  const deadline=setTimeout(()=>controller.abort(),20000),supersession=setInterval(()=>{if(!stillCurrent(captured))controller.abort();},50);
+  link.setAttribute('aria-disabled','true');
+  try{
+   let candidate;
+   for(let attempt=0;attempt<2;attempt++){
+    try{candidate=await collectWorkspace((path,signal)=>api(path,undefined,'GET',signal),base(),captured.query,key,controller.signal);break;}
+    catch(error){if(attempt||!['REFRESH_CHANGED','CURSOR_STALE','STALE_REVISION'].includes(error.code))throw error;}
+   }
+   controller.signal.throwIfAborted();if(!stillCurrent(captured))return false;
+   layout.remember();history.pushState(null,'','#'+new URLSearchParams({project:captured.id,decision:key}));
+   await detail(key,candidate);$('record-identity').focus();return true;
+  }catch(error){
+   if(!stillCurrent(captured)||!link.isConnected)return false;
+   if(['NOT_FOUND','FORBIDDEN','PROJECT_DISABLED','LEDGER_IDENTITY_MISMATCH'].includes(error.code)){
+    link.replaceWith(node('span',key));message('Related decision unavailable.',true);
+   }else if(error.code!=='UNAUTHORIZED')message('Could not open related decision. Try the link again.',true);
+   return false;
+  }finally{clearTimeout(deadline);clearInterval(supersession);controller.abort();if(relationshipAttempt===controller)relationshipAttempt=null;link.removeAttribute('aria-disabled');}
+ });
+}
 const savedUI=installSavedDecisions({$,state,node,api,projects});
 $('saved-button').onclick=()=>{if(!state.csrf)return;guardedNavigate(async()=>{history.pushState(null,'','#view=library');show('library-view');rememberView();await savedUI.open();});};
 $('projects-button').onclick=()=>{if(!state.csrf)return;guardedNavigate(async()=>{history.pushState(null,'','#'+new URLSearchParams({project:state.project?.project_id||'',view:'projects'}));show('projects-view');await admin();});};

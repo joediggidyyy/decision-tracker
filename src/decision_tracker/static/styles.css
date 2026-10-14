@@ -289,6 +289,34 @@ body{background-attachment:fixed}
 #workspace.tracker-page>.workspace-heading{background:radial-gradient(circle 850px at 100% 0,rgba(77,163,255,.13),transparent 72%),var(--bg);background-attachment:fixed;backdrop-filter:none}
 @media(min-width:981px){#workspace.tracker-page{width:auto;margin-left:max(24px,calc((100% - 1380px)/2));margin-right:min(48px,max(24px,calc((100% - 1380px)/2)))}}
 /* Selected-project context: visible identity and metadata, with grouped operations. */
+/* Record display: consistent sections and flat metadata within the existing pane. */
+#workspace #record-body{container-type:inline-size;container-name:decision-record}
+#workspace #detail>.record-section{margin:0 0 24px}
+#workspace #detail .record-section h3,#workspace #detail .legacy-history>h3{font-size:1rem;font-weight:600;line-height:1.4;color:var(--accent);margin:0}
+#workspace #detail .record-section-heading{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+#workspace #detail .record-section-heading,#workspace #detail .approval-heading{margin:0 0 8px}
+#workspace #detail .record-section>p{margin:0;line-height:1.55;font-size:1rem}
+#workspace #detail .question-section{row-gap:8px}
+#workspace #detail .question-heading h3{margin:0}
+#workspace #detail .question-section>p{margin:0}
+#workspace #detail .record-empty{font-size:.88rem}
+#workspace #detail .record-metadata{margin:0}
+#workspace #detail .record-metadata-row{display:grid;grid-template-columns:9.5rem minmax(0,1fr);gap:12px;align-items:baseline;margin:0 0 8px}
+#workspace #detail .record-metadata-row:last-child{margin-bottom:0}
+#workspace #detail .record-metadata dt{font-size:.88rem;color:var(--muted);white-space:nowrap;overflow-wrap:normal;word-break:normal}
+#workspace #detail .record-metadata dd{margin:0;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+#workspace #detail .record-evidence-value>.record-metadata{margin-top:8px}
+#workspace #detail .record-evidence-sources{margin:0;padding-left:18px;white-space:pre-wrap}
+#workspace #detail .child-card{padding:12px 0;margin:0;border-bottom:1px solid var(--border)}
+#workspace #detail .child-card:first-of-type{padding-top:0}
+#workspace #detail .record-entry-title{font-size:1rem;font-weight:600;margin:0 0 8px;overflow-wrap:anywhere}
+#workspace #detail .record-decision-link{color:inherit;text-decoration:underline;text-underline-offset:3px}
+#workspace #detail .record-decision-link:hover,#workspace #detail .record-decision-link:focus-visible{color:var(--accent-2)}
+#workspace #detail .record-decision-link[aria-disabled=true]{opacity:.7;cursor:wait}
+#workspace #detail .record-source-inactive{color:var(--muted);text-decoration:underline;text-underline-offset:4px;cursor:default}
+@container decision-record (max-width:479px){
+ #workspace #detail .record-metadata-row{grid-template-columns:minmax(0,1fr);gap:4px;margin-bottom:12px}
+}
 #projects-view .project-context-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 #projects-view .project-context-row h2{flex:1;min-width:min(200px,100%);margin:0}
 #projects-view #project-data-actions{margin:0;gap:12px;flex:none}
