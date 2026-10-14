@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — workspace banner and watermarks
+
+- Remove the banner logo and Local workspace subtitle; retain the existing font treatment for Polymath Workspace.
+- Put Projects first and use it as the default landing page while retaining explicit decision links.
+- Apply the home-page watermark on the left for Decisions and right for Projects and Library.
+
 ## Unreleased — decision record presentation
 
 - Align record headings and spacing; use flat supporting metadata and compact empty sections.
