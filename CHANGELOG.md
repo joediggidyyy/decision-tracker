@@ -3,7 +3,7 @@
 ## Unreleased — Projects identity and overview
 
 - Show selected project identity and registration metadata without Details. ID values copy on activation, with hover feedback, Copy tooltips and manual-copy recovery.
-- Group data actions beside the selected name and separate access controls. Add exact revision-bound decision counts, latest activity and guarded View decisions.
+- Group data actions beside the selected name and separate access controls. Add exact revision-bound decision counts and guarded View decisions.
 - List authorized source documents as inactive links until DocDoc integration. Summary and source failures remain independent, with right-aligned Retry.
 
 ## Unreleased — full page Decisions and Projects layout

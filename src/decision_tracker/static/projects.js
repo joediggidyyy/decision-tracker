@@ -117,7 +117,7 @@ export function installProjects({$,state,node,button,api,projects,selectProject,
    if(kind==='summary'){
     const r=await api(binding(p)+'/summary',undefined,'GET',controller.signal);if(!valid())return;
     const data=r.data,list=node('dl',undefined,'project-metadata');for(const [status,label] of [['open','Open'],['closed','Closed'],['deprecated','Deprecated']]){if(!Number.isSafeInteger(data.counts?.[status])||data.counts[status]<0)throw Error('Invalid project summary');metadataRow(list,label,String(data.counts[status]));}
-    metadataRow(list,'Latest decision activity',stamp(data.latest_activity_at));target.replaceChildren(list);target.dataset.revision=String(r.revision);$('project-updated').replaceChildren(stamp(data.last_write_at));
+    target.replaceChildren(list);target.dataset.revision=String(r.revision);$('project-updated').replaceChildren(stamp(data.last_write_at));
    }else{
     let cursor=null,revision=null,roots=[],rows=[];const seen=new Set();
     do{const r=await api(binding(p)+'/planning-documents?limit=200'+(cursor?'&cursor='+encodeURIComponent(cursor):''),undefined,'GET',controller.signal);if(!valid())return;if(revision!==null&&r.revision!==revision)throw Error('Sources changed; retry');revision=r.revision;roots=r.data.roots||[];rows.push(...r.data.entries.filter(x=>x.kind==='document'));cursor=r.next_cursor;if(!cursor&&!r.complete)throw Error('Source inventory incomplete');if(cursor&&seen.has(cursor))throw Error('Source cursor repeated');if(cursor)seen.add(cursor);}while(cursor);
