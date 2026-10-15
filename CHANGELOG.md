@@ -2,7 +2,7 @@
 
 ## Unreleased — browser update pass
 
-- Move the open-record Decide action into the selected-record pane header, retaining its approval and permission guards.
+- Place inverse Decide and Reopen actions in the same selected-record pane header slot, retaining their approval, permission and protection guards.
 - Share Projects refresh across heading and popup, await coherent overview/Sources completion, retain prior data on read failure and show visible retry. Missing planning-root registration remains an explicit configuration state.
 - Give Projects an independent freshness baseline. Add guarded, bounded yellow read synchronization; preserve drafts, selected-record review, reading context and manual recovery.
 - Start Library in Decisions mode while retaining deliberate in-page mode choices.

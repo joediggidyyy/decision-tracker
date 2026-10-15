@@ -126,7 +126,7 @@ async function detail(key,prepared=null){
  const closure=node('div',undefined,'closure-slot');question.append(closure);
  if(d.status==='open')button('Decide',()=>edit('decision.close'),$('record-actions'),!writable||!decide).className='primary';
  if(d.status==='closed'){
-  button('Reopen',()=>edit('decision.reopen'),closure,d.locked||!decide).className='primary';
+  button('Reopen',()=>edit('decision.reopen'),$('record-actions'),d.locked||!decide).className='primary';
   if(d.locked)closure.append(node('small','Amend the protected baseline to make changes.'));
   button(d.locked?'Amend':'Protect',()=>edit(d.locked?'decision.amend':'decision.lock'),approvalHeading,!decide).setAttribute('aria-label',d.locked?'Amend baseline':'Protect baseline');
  }

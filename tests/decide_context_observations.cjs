@@ -30,7 +30,7 @@ module.exports=async function decideContext(page,out,{zoom=false}={}){
   await edit(question);
   for(const width of zoom?[null]:[1440,601,600,320]){
    if(width)await page.setViewportSize({width,height:900});
-   await page.locator('#record-actions button,.closure-slot button').click();await editor.waitFor();
+   await page.locator('#record-actions button').click();await editor.waitFor();
    await editor.evaluate(n=>n.scrollTop=0);await settle();
    assert.equal(await context.locator('#edit-project').count(),1);
    assert.equal(await context.locator('.resolution-question').innerText(),question);
@@ -64,7 +64,7 @@ module.exports=async function decideContext(page,out,{zoom=false}={}){
   if(!zoom){
    // An unusually long question remains readable without trapping the rest of the form.
    await page.setViewportSize({width:1440,height:900});await edit(question.repeat(6));
-   await page.locator('#record-actions button,.closure-slot button').click();await editor.waitFor();await settle();
+   await page.locator('#record-actions button').click();await editor.waitFor();await settle();
    assert.ok(await context.evaluate(n=>n.clientHeight<=innerHeight*.45+1&&n.scrollHeight>n.clientHeight));
    await context.evaluate(n=>n.scrollTop=n.scrollHeight);assert.ok(await context.evaluate(n=>n.scrollTop>0));
    await page.locator('#edit-fields [name=answer]').focus();await settle();
