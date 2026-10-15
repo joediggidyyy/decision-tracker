@@ -101,7 +101,9 @@ def run_browser(tmp_path, script="action_browser.cjs", folder="action-browser"):
         change([{'op':'decision.lock','key':'D000003','data':{'baseline':'Display fixture baseline'}}])
         change([{'op':'decision.deprecate','key':'D000005','data':{'kind':'obsolete','approval':approval}}])
         change([{'op':'decision.edit','key':'D000006','data':{'answer':('Long paragraph café Δ — exact text.\n\n'*450),'rationale':'End of long record.'}}])
-    server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='warning'))
+    # Match managed.py: a disconnected browser's streaming request must not
+    # leave an unbounded Uvicorn graceful-shutdown wait on Windows.
+    server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='warning',timeout_graceful_shutdown=5))
     thread=threading.Thread(target=server.run,daemon=True);thread.start()
     try:
         for _ in range(100):

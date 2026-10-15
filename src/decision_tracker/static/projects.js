@@ -1,3 +1,4 @@
+import {collectProjectRegions} from './refresh.js';
 import {placeControlHelp} from './page-layout.js';
 import {sessionFetch} from './session.js';
 // Projects shares the application shell; catalog drafts stay in memory.
@@ -8,12 +9,12 @@ export function projectSlug(name,used=[]){
  if(!/^[a-z]/.test(base))base='project-'+base;base=base.slice(0,48).replace(/-$/,'');
  let value=base,n=2;while(used.includes(value)){const suffix='-'+n++;value=base.slice(0,48-suffix.length).replace(/-$/,'')+suffix;}return value;
 }
-export function installProjects({$,state,node,button,api,projects,selectProject,show,detail,listing,message,readResponse,viewDecisions}){
- let generation=0,draft=null,leave=null,administrative=undefined,accessPending=false;
- const loads=new Map();
+export function installProjects({$,state,node,button,api,projects,selectProject,show,detail,listing,message,readResponse,onFreshness=()=>{},onRefresh=()=>render(),viewDecisions}){
+ let generation=0,draft=null,leave=null,administrative=undefined,accessPending=false,verifyPending=false;
+ const loads=new Map();let accepted=null,failed=false;
  const manager=installFileManager({$,state,node,button,api});
  $('backups-button').onclick=()=>manager.open('backup');$('exports-button').onclick=()=>manager.open('export');
- $('verify-button').onclick=async()=>{const p=selected(),ticket=generation,b=$('verify-button');if(!p?.enabled||p.project_id!==state.project?.project_id||p.ledger_uuid!==state.project?.ledger_uuid)return;b.disabled=true;try{const r=await api(binding(p)+'/verify',{});if(current(p,ticket))manager.result($('data-result'),'Passed. Current project data is valid.',r.data);}catch(e){if(current(p,ticket))manager.result($('data-result'),e.message);}finally{const active=selected();b.disabled=!active?.enabled||active.project_id!==state.project?.project_id||active.ledger_uuid!==state.project?.ledger_uuid;}};
+ $('verify-button').onclick=async()=>{const p=selected(),ticket=generation,b=$('verify-button');if(!p?.enabled||p.project_id!==state.project?.project_id||p.ledger_uuid!==state.project?.ledger_uuid)return;b.disabled=true;verifyPending=true;try{const r=await api(binding(p)+'/verify',{});if(current(p,ticket))manager.result($('data-result'),'Passed. Current project data is valid.',r.data);}catch(e){if(current(p,ticket))manager.result($('data-result'),e.message);}finally{verifyPending=false;const active=selected();b.disabled=!active?.enabled||active.project_id!==state.project?.project_id||active.ledger_uuid!==state.project?.ledger_uuid;}};
  const help=$('admin-info'),tip=$('admin-help');function hideHelp(){tip.hidden=true;help.setAttribute('aria-expanded','false');}function showHelp(){tip.hidden=false;help.setAttribute('aria-expanded','true');placeControlHelp(help,tip);}help.onclick=()=>tip.hidden?showHelp():hideHelp();help.onpointerenter=showHelp;help.onpointerleave=()=>{if(document.activeElement!==help)hideHelp();};help.onfocus=showHelp;help.onblur=hideHelp;help.onkeydown=e=>{if(e.key==='Escape')hideHelp();};
  const capability=name=>state.caps.includes(name);
  const error=(target,e)=>{target.hidden=false;target.textContent=e.message||String(e);};
@@ -92,7 +93,7 @@ export function installProjects({$,state,node,button,api,projects,selectProject,
   if(administrative)return state.projects.find(p=>p.project_id===administrative.id&&p.ledger_uuid===administrative.uuid)||null;
   return state.projects.find(p=>p.project_id===state.project?.project_id&&p.ledger_uuid===state.project?.ledger_uuid)||null;
  }
- async function choose(p){return navigate(async()=>{administrative={id:p.project_id,uuid:p.ledger_uuid};if(p.enabled)await selectProject(p.project_id);await render();});}
+ async function choose(p){return navigate(async()=>{bindSelection(p);if(p.enabled)await selectProject(p.project_id);if(state.view==='projects-view'&&selected()?.project_id===p.project_id&&selected()?.ledger_uuid===p.ledger_uuid)await render();});}
  function renderBrowse(){
   const box=$('project-admin'),query=$('project-search').value.toLocaleLowerCase(),rows=state.projects.filter(p=>p.name.toLocaleLowerCase().includes(query)).sort((a,b)=>a.name.localeCompare(b.name)||a.project_id.localeCompare(b.project_id)),p=selected();box.replaceChildren();
   $('project-count').textContent=String(rows.length);
@@ -108,41 +109,50 @@ export function installProjects({$,state,node,button,api,projects,selectProject,
   else description.append(typeof value==='string'?node('span',value):value);
   return row;
  }
- async function loadRegion(kind,p,ticket,target){
-  if(!current(p,ticket)||!target.isConnected)return;
-  loads.get(kind)?.abort();const controller=new AbortController();loads.set(kind,controller);const timer=setTimeout(()=>controller.abort(),20000);target.replaceChildren(node('p','Loading…','muted'));
-  if(kind==='summary')$('project-updated').replaceChildren(node('span','—'));
-  const valid=()=>current(p,ticket)&&target.isConnected&&!controller.signal.aborted;
-  try{
-   if(kind==='summary'){
-    const r=await api(binding(p)+'/summary',undefined,'GET',controller.signal);if(!valid())return;
-    const data=r.data,list=node('dl',undefined,'project-metadata');for(const [status,label] of [['open','Open'],['closed','Closed'],['deprecated','Deprecated']]){if(!Number.isSafeInteger(data.counts?.[status])||data.counts[status]<0)throw Error('Invalid project summary');metadataRow(list,label,String(data.counts[status]));}
-    target.replaceChildren(list);target.dataset.revision=String(r.revision);$('project-updated').replaceChildren(stamp(data.last_write_at));
-   }else{
-    let cursor=null,revision=null,roots=[],rows=[];const seen=new Set();
-    do{const r=await api(binding(p)+'/planning-documents?limit=200'+(cursor?'&cursor='+encodeURIComponent(cursor):''),undefined,'GET',controller.signal);if(!valid())return;if(revision!==null&&r.revision!==revision)throw Error('Sources changed; retry');revision=r.revision;roots=r.data.roots||[];rows.push(...r.data.entries.filter(x=>x.kind==='document'));cursor=r.next_cursor;if(!cursor&&!r.complete)throw Error('Source inventory incomplete');if(cursor&&seen.has(cursor))throw Error('Source cursor repeated');if(cursor)seen.add(cursor);}while(cursor);
+ function paintRegions(candidate,summary,sources){
+  const data=candidate.summary.data,summaryList=node('dl',undefined,'project-metadata');
+  for(const [status,label] of [['open','Open'],['closed','Closed'],['deprecated','Deprecated']]){if(!Number.isSafeInteger(data.counts?.[status])||data.counts[status]<0)throw Error('Invalid project summary');metadataRow(summaryList,label,String(data.counts[status]));}
+  summary.replaceChildren(summaryList);summary.dataset.revision=String(candidate.revision);$('project-updated').replaceChildren(stamp(data.last_write_at));
+  if(candidate.sources.unconfigured){sources.replaceChildren(node('p','Planning sources not configured.','muted'),node('p','Register this project’s planning roots through CLI administration.','muted'));return;}
+  const {roots,entries:rows}=candidate.sources;
     const unique=[...new Map(rows.map(x=>[x.path.replaceAll('\\','/').toLowerCase()+'\0'+x.document_id,x])).values()],names=new Map();for(const row of unique){row.name=row.path.split(/[\\/]/).pop();names.set(row.name,(names.get(row.name)||0)+1);}
-    unique.sort((a,b)=>a.name.localeCompare(b.name)||a.path.localeCompare(b.path));const list=node('ul',undefined,'project-source-list');for(const row of unique){let label=row.name;if(names.get(row.name)>1){const normalized=row.path.replaceAll('\\','/'),root=roots.find(r=>normalized.toLowerCase().startsWith(r.path.replaceAll('\\','/').replace(/\/$/,'').toLowerCase()+'/'));label=root?root.name+'/'+normalized.slice(root.path.replaceAll('\\','/').replace(/\/$/,'').length+1):row.document_id+' · '+row.name;}const item=node('li'),link=node('a',label,'project-source-inactive');link.setAttribute('role','link');link.setAttribute('aria-disabled','true');link.tabIndex=-1;item.append(link);list.append(item);}target.replaceChildren(unique.length?list:node('p','No sources','muted'));
-   }
-  }catch(e){if(current(p,ticket)&&target.isConnected&&loads.get(kind)===controller){const stateRow=node('div',undefined,'project-load-state');stateRow.append(node('p',kind==='summary'?'Summary unavailable':'Sources unavailable','muted'));button('Retry',()=>loadRegion(kind,p,ticket,target),stateRow);target.replaceChildren(stateRow,node('p',controller.signal.aborted?'Request timed out. Retry when available.':e.message,'project-load-error'));}}
-  finally{clearTimeout(timer);if(loads.get(kind)===controller)loads.delete(kind);}
+    unique.sort((a,b)=>a.name.localeCompare(b.name)||a.path.localeCompare(b.path));const list=node('ul',undefined,'project-source-list');for(const row of unique){let label=row.name;if(names.get(row.name)>1){const normalized=row.path.replaceAll('\\','/'),root=roots.find(r=>normalized.toLowerCase().startsWith(r.path.replaceAll('\\','/').replace(/\/$/,'').toLowerCase()+'/'));label=root?root.name+'/'+normalized.slice(root.path.replaceAll('\\','/').replace(/\/$/,'').length+1):row.document_id+' · '+row.name;}const item=node('li'),link=node('a',label,'project-source-inactive');link.setAttribute('role','link');link.setAttribute('aria-disabled','true');link.tabIndex=-1;item.append(link);list.append(item);}sources.replaceChildren(unique.length?list:node('p','No sources','muted'));
  }
- async function render(){
-  generation++;for(const c of loads.values())c.abort();loads.clear();const p=selected(),ticket=generation;if(administrative&&!p)administrative=null;
+ async function render(prepared=null){
+  generation++;for(const c of loads.values())c.abort();loads.clear();accepted=null;failed=false;const p=selected(),ticket=generation;if(administrative&&!p)administrative=null;
   const identity=$('project-data-identity'),tools=$('project-data-actions');identity.replaceChildren();const header=node('div',undefined,'project-context-row'),access=node('div',undefined,'project-access-actions');header.append(node('h2',p?p.name:'Choose project','data-project'),tools,access);identity.append(header);
   if(p&&capability('registry'))button(p.enabled?'Disable':'Enable',()=>stateChange(p),access);access.append(help,tip);
   if(p){const metadata=node('dl',undefined,'project-metadata project-identity-metadata');metadataRow(metadata,'Project ID',p.project_id,{copy:true});metadataRow(metadata,'Ledger UUID',p.ledger_uuid,{copy:true,muted:true});metadataRow(metadata,'State',p.enabled?'Enabled':'Disabled');metadataRow(metadata,'Registered',stamp(p.created_at));const updated=metadataRow(metadata,'Updated',node('span','—'));updated.querySelector('dd').id='project-updated';identity.append(metadata);}
   renderBrowse();
   for(const [id,c] of [['backups-button','read'],['exports-button','read'],['verify-button','maintain']]){$(id).hidden=!capability(c);$(id).disabled=!p?.enabled||p.project_id!==state.project?.project_id||p.ledger_uuid!==state.project?.ledger_uuid;}
   const parent=$('maintenance'),previousResult=$('data-result');parent.replaceChildren();
-  if(!p)return;
+  if(!p){onFreshness();return;}
   const operational=p.enabled&&p.project_id===state.project?.project_id&&p.ledger_uuid===state.project?.ledger_uuid&&capability('read');
   const overview=node('section'),summary=node('div');summary.id='project-summary';overview.append(node('h3','Overview'),summary);parent.append(overview);
   const view=button('View decisions',()=>{if(current(p,ticket)&&p.enabled)viewDecisions();},parent,!operational);view.id='project-view-decisions';
   const sourceSection=node('section'),sources=node('div');sources.id='project-sources';sourceSection.append(node('h3','Sources'),sources);parent.append(sourceSection);
-  if(!operational){summary.append(node('p','Unavailable','muted'));sources.append(node('p','Unavailable','muted'));return;}
+  if(!operational){summary.append(node('p','Unavailable','muted'));sources.append(node('p','Unavailable','muted'));onFreshness();return;}
   const context=p.project_id+'\0'+p.ledger_uuid,result=previousResult?.dataset.context===context?previousResult:node('div');result.id='data-result';result.dataset.context=context;parent.append(result);
-  void loadRegion('summary',p,ticket,summary);void loadRegion('sources',p,ticket,sources);
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(Error('Project refresh exceeded the 20-second budget.')),20000);loads.set('regions',controller);
+  try{
+   let candidate=prepared;
+   if(!candidate){summary.append(node('p','Loading…','muted'));sources.append(node('p','Loading…','muted'));for(let attempt=0;attempt<2;attempt++)try{candidate=await collectProjectRegions((path,signal)=>api(path,undefined,'GET',signal),p,controller.signal);break;}catch(e){if(attempt||!['REFRESH_CHANGED','CURSOR_STALE','STALE_REVISION'].includes(e.code))throw e;}}
+   if(!current(p,ticket)||controller.signal.aborted)return;
+   paintRegions(candidate,summary,sources);accepted={identity:p.project_id+'\0'+p.ledger_uuid,revision:candidate.revision};
+  }catch(e){if(current(p,ticket)){failed=true;const target=e.stage==='Sources'?sources:summary;summary.replaceChildren(node('p','Summary unavailable','muted'));sources.replaceChildren(node('p','Sources unavailable','muted'));target.append(node('p',e.message,'project-load-error'));button('Retry',()=>render(),target);}}
+  finally{clearTimeout(timer);if(loads.get('regions')===controller)loads.delete('regions');onFreshness();}
  }
- return {render,navigate,dirty,manager,get selectionIdentity(){const p=selected();return p?p.project_id+'\0'+p.ledger_uuid:null;},bindSelection:p=>{administrative=p?{id:p.project_id,uuid:p.ledger_uuid}:null;}};
+ function bindSelection(p){
+  const before=selected();administrative=p?{id:p.project_id,uuid:p.ledger_uuid}:null;
+  if(before?.project_id===p?.project_id&&before?.ledger_uuid===p?.ledger_uuid)return;
+  generation++;for(const c of loads.values())c.abort();loads.clear();accepted=null;failed=false;
+  for(const id of ['backups-button','exports-button','verify-button'])$(id).disabled=true;
+  // Invalidate the old selected project's actions synchronously, before any await.
+  $('project-data-identity').querySelector('.project-access-actions')?.replaceChildren();
+  $('project-data-identity').querySelector('.project-identity-metadata')?.remove();
+  const heading=$('project-data-identity').querySelector('h2');if(heading)heading.textContent=p?.name||'Choose project';
+  $('maintenance').replaceChildren(node('p',p?'Loading…':'Choose project','muted'));renderBrowse();onFreshness();
+ }
+ function invalidate(error){failed=true;accepted=null;if(error){$('project-refresh-error')?.remove();const feedback=node('div',undefined,'project-load-state');feedback.id='project-refresh-error';feedback.setAttribute('role','alert');feedback.append(node('p',(error.stage?error.stage+': ':'')+error.message,'project-load-error'));button('Retry',onRefresh,feedback);$('project-data-identity').append(feedback);}}
+ return {render,navigate,dirty,manager,invalidate,get selected(){return selected();},get busy(){return !!draft||accessPending||manager.isBusy()||verifyPending;},get freshnessRevision(){const p=selected();return !failed&&p?.enabled&&accepted?.identity===p.project_id+'\0'+p.ledger_uuid?accepted.revision:null;},get selectionIdentity(){const p=selected();return p?p.project_id+'\0'+p.ledger_uuid:null;},bindSelection};
 }

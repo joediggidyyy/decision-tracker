@@ -15,7 +15,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
   const control=async name=>{await page.locator('#context').getByRole('button',{name,exact:true}).click();await dialog.waitFor();};
   for(const title of ['Context A','Context B']){
    await page.locator('#new-decision').click();await fill('title',title);await fill('question','Which?');await save();
-   await page.locator('.closure-slot button').click();await fill('answer','Approved answer');await fill('rationale','Approved rationale');await save();
+   await page.locator('#record-actions button,.closure-slot button').click();await fill('answer','Approved answer');await fill('rationale','Approved rationale');await save();
    await page.locator('.approval-section').getByRole('button',{name:'Protect baseline'}).click();await fill('baseline','Release');await fill('reason','Protect core');await fill('authority_0','Synthetic test authority');await save();
   }
   const projects=(await (await page.request.get(url+'/api/v1/projects')).json()).data;const project=projects.find(p=>p.project_id==='context');const base=url+'/api/v1/projects/context';

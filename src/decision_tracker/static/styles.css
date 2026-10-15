@@ -351,3 +351,6 @@ body{background-attachment:fixed}
 #projects-view .project-load-state{display:flex;align-items:center;justify-content:space-between;gap:16px}
 #projects-view .project-load-state p{margin:0}
 @media(max-width:600px){#projects-view .project-context-row h2{flex-basis:100%}#projects-view .project-metadata-row{grid-template-columns:1fr;gap:2px}#projects-view .project-access-actions{margin-left:0}}
+
+/* Selected-record primary action shares the existing pane header. */
+#record-head{display:flex;flex-wrap:wrap;align-items:start;gap:12px}#record-identity{flex:1;min-width:0}#record-actions{flex:none;max-width:100%}#record-head>#context{flex-basis:100%}#back-decisions{flex-basis:100%}

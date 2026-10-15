@@ -9,8 +9,8 @@ import {StagingHistory} from './staging-history.js';
 export function installSavedDecisions({$,state,node,api,projects}){
  const page=document.createElement('section');page.id='library-view';page.className='page library-page';page.hidden=true;
  page.innerHTML=`<div class="admin-heading"><h1>Library</h1></div>
- <div class="library-filters"><button id="saved-view-toggle" type="button" aria-label="Groups selected; switch to Decisions"><span id="saved-mode-groups">Groups</span><span aria-hidden="true"> | </span><span id="saved-mode-decisions" class="inactive">Decisions</span></button></div>
- <div class="library-workspace"><section id="saved-browse-region" class="library-browse" aria-labelledby="saved-browse-heading" tabindex="-1"><div class="results-heading library-search-row"><h2 id="saved-browse-heading" class="sr-only">Groups</h2><label><span id="saved-search-label">Search group names</span><input id="saved-search" type="search" autocomplete="off"></label><span id="saved-main-count" class="muted" aria-live="polite"></span></div><div id="saved-list"></div></section></div>
+ <div class="library-filters"><button id="saved-view-toggle" type="button" aria-label="Decisions selected; switch to Groups"><span id="saved-mode-groups" class="inactive">Groups</span><span aria-hidden="true"> | </span><span id="saved-mode-decisions">Decisions</span></button></div>
+ <div class="library-workspace"><section id="saved-browse-region" class="library-browse" aria-labelledby="saved-browse-heading" tabindex="-1"><div class="results-heading library-search-row"><h2 id="saved-browse-heading" class="sr-only">Decisions</h2><label><span id="saved-search-label">Search titles and available question previews</span><input id="saved-search" type="search" autocomplete="off"></label><span id="saved-main-count" class="muted" aria-label="Displayed decisions" aria-live="polite"></span></div><div id="saved-list"></div></section></div>
  <p id="saved-notice" role="status"></p><div id="saved-error" class="error" role="alert" hidden></div>
  <div id="saved-recovery"></div>`;
  $('main-content').insertBefore(page,$('notice'));
@@ -47,7 +47,7 @@ export function installSavedDecisions({$,state,node,api,projects}){
  installLibraryHeader(page,stage);
  const history=new StagingHistory();let staging=history.items;
  let rows=[],groups=[],revision=0,writeRevision=0,coherent=false,inventoryStale=false,editor=null,groupEdit=null,pending=null,publication=null,busy=false,generation=0,afterDiscard=null,reviewGeneration=0,reviewed=null,reviewRecoveryActive=false;
- let mode='groups',searches={groups:'',decisions:''},openGroupId=null,openLibraryDecisionId=null,openStagedId=null;
+ let mode='decisions',searches={groups:'',decisions:''},openGroupId=null,openLibraryDecisionId=null,openStagedId=null;
  const notice=text=>{$('saved-notice').textContent=text;$('saved-stage-notice').textContent=text;};
  const errorBox=()=>$(dialog.open?'saved-form-error':groupDialog.open?'saved-group-error':management.open?'saved-management-error':reviewRecoveryActive&&$('saved-inline-error')?'saved-inline-error':'saved-error');
  const recoveryBox=()=>$(dialog.open?'saved-form-recovery':groupDialog.open?'saved-group-recovery':management.open?'saved-management-recovery':reviewRecoveryActive&&$('saved-inline-recovery')?'saved-inline-recovery':publication?'saved-stage-recovery':'saved-recovery');

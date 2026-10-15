@@ -1372,6 +1372,69 @@
         "sandbox_test": [],
         "empirical_test": []
       }
+    },
+    {
+      "id": "dt-browser-update",
+      "title": "Browser update pass",
+      "summary": "Coherent Projects refresh, safe yellow scheduling and record/Library controls.",
+      "status": "active",
+      "category": "regression",
+      "selector_policy": "exact-name-only",
+      "profiles": [
+        "default",
+        "smoke"
+      ],
+      "tags": [
+        "catalog",
+        "cli",
+        "project",
+        "retained-evidence"
+      ],
+      "policy_flags": [
+        "json-first",
+        "project-aware",
+        "local-only"
+      ],
+      "evidence_requirements": [
+        "report_json",
+        "report_md",
+        "manifest_json",
+        "checksums_json"
+      ],
+      "default_lanes": [
+        "pytest"
+      ],
+      "metadata": {
+        "scope": "integrated-application"
+      },
+      "lanes": {
+        "pytest": [
+          {
+            "id": "core-behavior",
+            "title": "Core application behavior",
+            "cwd": "{working_dir}",
+            "command": [
+              "{python}",
+              "-m",
+              "pytest",
+              "tests/test_live_monitor.py",
+              "tests/test_refresh_browser.py::test_browser_update_pass",
+              "-q",
+              "--basetemp",
+              ".local/test-tmp"
+            ],
+            "expected_artifacts": [
+              "stdout"
+            ],
+            "evidence_requirements": [
+              "stdout_capture",
+              "stderr_capture"
+            ]
+          }
+        ],
+        "sandbox_test": [],
+        "empirical_test": []
+      }
     }
   ]
 }

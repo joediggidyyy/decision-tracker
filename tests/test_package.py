@@ -24,6 +24,8 @@ def test_fresh_offline_wheel_install(tmp_path):
   source_names=[n.partition('/')[2] for n in archive.getnames() if '/' in n]
   for name in ['AGENTS.md','docs/packaging.md','docs/saved-decisions.md','skills/decision-tracker/SKILL.md','LICENSE','NOTICE','MANIFEST.in']:
    assert name in source_names,name
+ for helper in (root/'tests').glob('*.mjs'):
+  assert 'tests/'+helper.name in source_names,helper.name
  for name in wheel_names+source_names:
   parts=Path(name).parts
   assert not any(p in {'.local','.venv','.git','deployment','data','backups','exports','__pycache__'} for p in parts),name

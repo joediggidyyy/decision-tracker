@@ -1,6 +1,10 @@
 # Verification state
 
-## Current status
+## Current browser update pass — 2026-10-15
+
+Decide is in the selected-record header; Projects uses coherent view-aware refresh and its own freshness baseline; yellow read synchronization is guarded and bounded; Library starts Decisions. Native integration `20261015T210813Z-dt-integration` passed (320 passed, 1 skipped in 434.75s (0:07:14)) in `.local/proofs/ca2abcd4bda9474b99ee6eff82526dcf`. The integration snapshot precedes narrow initial Library-label and source-archive test-support refinements, which passed matching dt-browser-update and dt-package proof afterward. Exact differences and composed source correspondence are retained in the canonical completion receipt. This verification note is a later guidance-only change. Focused action-form, Projects, Library and live/recovery lanes also passed. Earlier failures remain retained; recurring Windows browser-server teardown failures led to matching the helper to the existing production five-second graceful-shutdown bound, without skipping assertions. The existing local service serves matching updated browser bytes. Isolated Chromium proof and served-asset correspondence do not assert operator acceptance, a new compiled Setup or public release.
+
+### Retained earlier qualification
 
 Decide now omits the introductory resolution and choice-switching explanations. Its project name, decision ID and question remain pinned inside the dialog above 600 pixels; mobile widths retain normal scrolling. Native `dt-action-forms` passed 5 tests in `.local/proofs/fcef08b5050f44dca9f7e9fe35e7dd5d`, with unchanged source correspondence. Real browser checks cover wide/mobile breakpoint geometry, frame-edge alignment, field/legend layering, very long questions, keyboard clearance, other action forms and actual 200% zoom. Final wide, 320-pixel and zoom captures were inspected. Earlier passing runs `03287bb660404dbaae8badbe7a709746`, `59f2f29198a74c8ab6144dd1e6fa4b40` and `860ee85d1d3741acb49d4269b9445d6b` retain intermediate capture/alignment/layering evidence; their passing interactions did not alone establish final visual qualification. This scoped update has focused qualification; the full integration below qualifies its earlier source snapshot. Live deployment and operator acceptance remain separate.
 
