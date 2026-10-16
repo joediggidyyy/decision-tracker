@@ -1,5 +1,9 @@
 # Verification state
 
+## Project attention update — 2026-10-15
+
+The Projects indicator is implemented with lifecycle-aware optional summary metadata and browser-local acknowledgement. Final native integration `20261016T010317Z-dt-integration` passed (326 passed, 1 skipped in 597.46s (0:09:57)) with matching source inputs. Final focused proof `20261016T010212Z-dt-project-attention` and live/recovery proof passed. The 50-project/3750-open-record fixture read all attention summaries in 1.695 seconds, within the 20-second sweep budget. Retained failures include startup navigation and clipped-gutter defects, and a broad-run input-correspondence failure after test-capture refinements; the final broad run was repeated with unchanged inputs. Wide and compact captures were inspected. Actual 200% zoom/geometry passed, but zoom pixels were incomplete and do not establish visual acceptance. The guarded local restart, matching served assets and typed-query admission were verified without reading production records. Operator acceptance, installer and public release remain separate. This status paragraph is a postproof guidance-only update.
+
 ## Inverse lifecycle placement correction - 2026-10-15
 
 Decide (open) and Reopen (closed) share the selected-record header slot. Native `dt-action-forms` and `dt-planning-links` passed with unchanged source during each run and matching application/test inputs before this guidance update. Proofs: `.local/proofs/4641a535507243dd8136de8e06610e34` and `.local/proofs/b0e578d1eea8404aa0dbdaf4703f864e`. Browser assertions cover the shared header location, no Question-section Reopen duplicate, close/reopen transitions, protected-record disabling and planning-link reopening. The running local service serves matching app.js bytes. The broader integration below qualifies its earlier snapshot; operator visual acceptance remains separate.

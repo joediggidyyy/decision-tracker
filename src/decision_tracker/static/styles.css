@@ -354,3 +354,13 @@ body{background-attachment:fixed}
 
 /* Selected-record primary action shares the existing pane header. */
 #record-head{display:flex;flex-wrap:wrap;align-items:start;gap:12px}#record-identity{flex:1;min-width:0}#record-actions{flex:none;max-width:100%}#record-head>#context{flex-basis:100%}#back-decisions{flex-basis:100%}
+
+/* Attention occupies the existing browse inset, never a flex column. */
+.project-row{position:relative}
+.project-attention-dot{position:absolute;left:-12px;top:21px;width:6px;height:6px;border-radius:50%;background:var(--accent-2);pointer-events:none}
+.project-row[data-attention=checking] .project-attention-dot,.project-row[data-attention=unknown] .project-attention-dot{background:transparent;border:1px solid var(--muted);box-sizing:border-box}
+@media(forced-colors:active){.project-attention-dot{background:Highlight;border:1px solid CanvasText}.project-row[data-attention=checking] .project-attention-dot,.project-row[data-attention=unknown] .project-attention-dot{border-color:CanvasText}}
+
+#project-browse-body{margin-left:-12px;padding-left:12px}
+
+.tracker-page:not(.tracker-wide) #project-browse-body{padding-bottom:24px}

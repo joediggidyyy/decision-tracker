@@ -9,7 +9,7 @@ export function projectSlug(name,used=[]){
  if(!/^[a-z]/.test(base))base='project-'+base;base=base.slice(0,48).replace(/-$/,'');
  let value=base,n=2;while(used.includes(value)){const suffix='-'+n++;value=base.slice(0,48-suffix.length).replace(/-$/,'')+suffix;}return value;
 }
-export function installProjects({$,state,node,button,api,projects,selectProject,show,detail,listing,message,readResponse,onFreshness=()=>{},onRefresh=()=>render(),viewDecisions}){
+export function installProjects({$,state,node,button,api,projects,selectProject,show,detail,listing,message,readResponse,attention,onFreshness=()=>{},onRefresh=()=>render(),viewDecisions}){
  let generation=0,draft=null,leave=null,administrative=undefined,accessPending=false,verifyPending=false;
  const loads=new Map();let accepted=null,failed=false;
  const manager=installFileManager({$,state,node,button,api});
@@ -93,11 +93,12 @@ export function installProjects({$,state,node,button,api,projects,selectProject,
   if(administrative)return state.projects.find(p=>p.project_id===administrative.id&&p.ledger_uuid===administrative.uuid)||null;
   return state.projects.find(p=>p.project_id===state.project?.project_id&&p.ledger_uuid===state.project?.ledger_uuid)||null;
  }
- async function choose(p){return navigate(async()=>{bindSelection(p);if(p.enabled)await selectProject(p.project_id);if(state.view==='projects-view'&&selected()?.project_id===p.project_id&&selected()?.ledger_uuid===p.ledger_uuid)await render();});}
+ async function choose(p){return navigate(async()=>{bindSelection(p);if(p.enabled)await selectProject(p.project_id);if(state.view==='projects-view'&&selected()?.project_id===p.project_id&&selected()?.ledger_uuid===p.ledger_uuid){await render();await attention.acknowledge(p);}});}
  function renderBrowse(){
   const box=$('project-admin'),query=$('project-search').value.toLocaleLowerCase(),rows=state.projects.filter(p=>p.name.toLocaleLowerCase().includes(query)).sort((a,b)=>a.name.localeCompare(b.name)||a.project_id.localeCompare(b.project_id)),p=selected();box.replaceChildren();
   $('project-count').textContent=String(rows.length);
   for(const project of rows){const row=node('div',undefined,'project-row');row.dataset.project=project.project_id;const name=button(project.name,()=>choose(project),row);name.className='project-name';name.setAttribute('aria-pressed',String(project.project_id===p?.project_id&&project.ledger_uuid===p?.ledger_uuid));row.append(node('span',project.enabled?'Enabled':'Disabled','muted'));box.append(row);}
+  attention.paint();
   if(!rows.length)box.append(node('p',state.projects.length?'No matching projects.':'No projects.','muted'));
   $('project-data-identity').querySelector('[data-outside]')?.remove();if(p&&!rows.includes(p)){const outside=node('p','Outside current filters','muted');outside.dataset.outside='';$('project-data-identity').append(outside);}
  }

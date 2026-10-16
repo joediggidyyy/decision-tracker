@@ -129,7 +129,7 @@ class Service:
         next_cursor=self._cursor(meta["ledger_uuid"],meta["ledger_revision"],query,items[index-1][0]) if index<len(items) and index else None
         return output,next_cursor,index==len(items)
 
-    def project_summary(self, project_id, uuid, principal):
+    def project_summary(self, project_id, uuid, principal, include_attention=False):
         principal.need("read")
         with self.catalog.project(project_id, uuid, principal) as (db, project):
             meta = store.metadata(db, uuid)
@@ -144,12 +144,16 @@ class Service:
                 modified = max(modified, wal.stat().st_mtime)
             except FileNotFoundError:
                 pass
-            return self.envelope(project, meta, {
+            data = {
                 "counts": counts,
                 "latest_activity_at": latest["updated_at"] if latest else None,
                 "latest_activity_key": latest["key"] if latest else None,
                 "last_write_at": datetime.fromtimestamp(modified, timezone.utc).isoformat().replace('+00:00', 'Z'),
-            })
+            }
+            if include_attention:
+                from .project_attention import attention
+                data['attention'] = attention(db, meta['ledger_revision'])
+            return self.envelope(project, meta, data)
 
     def list_decisions(self,project_id,uuid,principal,q="",status=None,work=None,owner=None,cursor=None,limit=50):
         principal.need("read")

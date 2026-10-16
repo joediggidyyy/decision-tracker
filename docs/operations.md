@@ -148,3 +148,7 @@ Before registration, use existing `data export`, `backup`, `verify` or `restore-
 ## Supporting context after approval
 
 Use Relationships and Add reference on closed or protected closed decisions to record later context. Use Evidence in the side panel top row, beside Edit and Status, to record implementation, verification and acceptance separately. These updates preserve approved content and approval; reported acceptance is evidence, not new approval. Existing references remain readable and closed reference corrections are appended. Substantive revisions still use Reopen or Amend. Deprecated decisions stay read-only. See [the shared interface contract](interfaces.md#closed-record-mutation-policy) for compatibility, permissions and exact retry rules.
+
+## Project attention recovery
+
+A hollow project-list marker means attention is being checked or is unavailable. Use Projects Refresh to retry; normal navigation and record work remain available. No extra backend or monitor is started. If the browser reports that acknowledgements will not persist, allow site storage for this local origin or continue with per-document acknowledgement; clearing site storage also resets acknowledgements. A different browser, origin or account has independent state.

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — project attention
+
+- Add a steady Projects-list dot for unviewed open intervals, with browser-local acknowledgement on project click or successful Decisions visit. Preserve list alignment and distinguish unavailable metadata.
+- Add opt-in lifecycle summary metadata and bounded optional reads; no ledger migration, polling or shared-device acknowledgement.
+
 ## Unreleased — browser update pass
 
 - Place inverse Decide and Reopen actions in the same selected-record pane header slot, retaining their approval, permission and protection guards.

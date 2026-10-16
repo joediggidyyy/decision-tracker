@@ -22,6 +22,14 @@ Navigation or new interaction cancels automatic work without replacing the displ
 
 The rounded half-shaded focus square remains fixed below the header, toggling the context/results panel. The former main-detail Results and Focus buttons are removed. Keyboard controls, tooltip and pressed state express the same action. The icon is 18px at 60% resting opacity within a 44px target and returns to full emphasis on hover/focus. At 980px or narrower it disappears; the stacked panel stays visible and has no collapse toggle.
 
+## Projects attention
+
+The steady project-list dot is separate from connection freshness. It indicates a currently open interval newer than this browser account's acknowledgement cursor. Clicking that project or successfully visiting Decisions acknowledges the exact observed revision; background refresh never acknowledges work. With no saved cursor, existing open work is unviewed. Closing or deprecating unseen work removes its contribution while older acknowledged open decisions can remain.
+
+Projects entry and explicit Refresh use a separate optional summary queue: at most two concurrent reads, five seconds per request and 20 seconds for a sweep, with no automatic retry. Selected-project yellow refresh may update only that row. Unselected projects have no new event stream or polling; remote changes appear on the next Projects visit or manual Refresh. This optional read cannot block the existing coherent overview/Sources refresh. Unknown attention has a hollow marker and Refresh guidance. Disabled projects are not read.
+
+Acknowledgements persist only in localStorage under this origin, principal and ledger UUID; names, decision content and credentials are not stored. Other tabs receive storage events. Cleared/invalid storage or a confirmed lower ledger revision conservatively restores unseen state. When storage is unavailable, per-document memory keeps navigation usable and a small notice explains the persistence limit.
+
 ## Evidence and limits
 
 Native Calamum tests cover post-commit ordering, replay/dry-run suppression, notifier failure, identity checks, context fingerprints, connection limits, latest-state coalescing, session idle expiry, real HTTP events, project disable and missed-wakeup recovery. Actual browser observations cover quiet red notification, yellow/green explicit refresh, fixed icon position, keyboard toggle, gray disconnect and retained-draft comparison/rebase/save.

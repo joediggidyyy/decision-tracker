@@ -191,6 +191,8 @@ The browser retains the exact request after an uncertain response, retries it on
 
 ### Project summary
 
+Optional `?include_attention=true` adds `data.attention` with `version: 1`, `open_count` and nullable `latest_open_revision`. This is the latest start revision of any currently open interval, computed from immutable snapshots and actual imported native seeds at the same envelope revision. Seeded open work starts at zero; ordinary edits do not advance it. Zero open records has a null latest revision. Missing/inconsistent lifecycle history fails this optional read rather than inventing a cursor. The default summary is unchanged. Browser acknowledgement is a local account/ledger-UUID revision cursor, not an API write or shared read receipt. The schema discovery extension documents this opt-in contract.
+
 Authorized GET `/api/v1/projects/{project}/summary` requires `read` and `X-Ledger-UUID`. It returns the normal project/ledger/revision envelope with `data.counts` (`open`, `closed`, `deprecated`) and nullable `latest_activity_at` / `latest_activity_key` and `last_write_at`. Counts cover the complete current decision collection, independent of list pagination. Latest activity uses record update timestamps, with key ascending for ties. Empty ledgers return zero counts and null activity. The read does not change ledger revision; disabled, unauthorized and mismatched identities retain shared guards.
 
 ## Browser navigation and Library

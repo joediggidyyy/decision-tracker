@@ -251,6 +251,7 @@ def create_app(config:Config,environment=None):
         from .planning_links import PlanningLink
         from .state import SUPPLEMENTAL
         schema['x-decision-tracker']={'capabilities':['closed_context_v1','approval_events_v1','deprecation_approval_v1','planning_links_v1','planning_applications_v1','legacy_history_v1','inactive_candidate_recovery_v1','saved_decisions_v1'],'ledger_schemas':[1,2,3,4],
+                                     'project_attention':{'version':1,'summary_query':'include_attention=true','acknowledgement':'browser_local','fields':['open_count','latest_open_revision']},
                                      'legacy_contract_url':'/api/v1/schema?contract=legacy-import-v1','legacy_contract_sha256':contract_digest(),
                                      'approval_input':Approval.model_json_schema(),
                                      'deprecation_approval':{'input':Approval.model_json_schema(),'event_schema':'decision-tracker.deprecation-approval/v1','event':DeprecationEvent.model_json_schema(),'kind':'deprecate','minimum_runtime':'deprecation_approval_v1-capable binary','older_binary_new_history_compatible':False},
@@ -287,8 +288,8 @@ def create_app(config:Config,environment=None):
         return output(request,result)
 
     @app.get("/api/v1/projects/{project_id}/summary")
-    def project_summary(project_id:str,request:Request):
-        return output(request,service.project_summary(project_id,identity(request),principal(request)))
+    def project_summary(project_id:str,request:Request,include_attention:bool=False):
+        return output(request,service.project_summary(project_id,identity(request),principal(request),include_attention))
 
     @app.post("/api/v1/projects/{project_id}/state")
     def project_state(project_id:str,request:Request,data:ProjectState):
