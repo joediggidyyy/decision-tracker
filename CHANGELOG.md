@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased — project attention
+## Unreleased — project open-decision indicator
 
-- Add a steady Projects-list dot for unviewed open intervals, with browser-local acknowledgement on project click or successful Decisions visit. Preserve list alignment and distinguish unavailable metadata.
-- Add opt-in lifecycle summary metadata and bounded optional reads; no ledger migration, polling or shared-device acknowledgement.
+- List Decisions before Groups in the Library toggle, matching the default view.
+
+- Show the Projects-list dot whenever the project has open decisions; hide it at zero. Clicking or viewing a project never clears it.
+- Remove acknowledgement persistence, lifecycle-history analysis and the extra summary query contract. Reuse existing summary counts and retain the fixed gutter.
 
 ## Unreleased — browser update pass
 

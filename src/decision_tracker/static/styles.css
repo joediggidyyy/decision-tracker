@@ -358,8 +358,7 @@ body{background-attachment:fixed}
 /* Attention occupies the existing browse inset, never a flex column. */
 .project-row{position:relative}
 .project-attention-dot{position:absolute;left:-12px;top:21px;width:6px;height:6px;border-radius:50%;background:var(--accent-2);pointer-events:none}
-.project-row[data-attention=checking] .project-attention-dot,.project-row[data-attention=unknown] .project-attention-dot{background:transparent;border:1px solid var(--muted);box-sizing:border-box}
-@media(forced-colors:active){.project-attention-dot{background:Highlight;border:1px solid CanvasText}.project-row[data-attention=checking] .project-attention-dot,.project-row[data-attention=unknown] .project-attention-dot{border-color:CanvasText}}
+@media(forced-colors:active){.project-attention-dot{background:Highlight;border:1px solid CanvasText}}
 
 #project-browse-body{margin-left:-12px;padding-left:12px}
 

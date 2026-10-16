@@ -1438,8 +1438,8 @@
     },
     {
       "id": "dt-project-attention",
-      "title": "Project attention lifecycle and browser acknowledgement",
-      "summary": "Opt-in lifecycle metadata, local acknowledgement and fixed-position Projects indicators.",
+      "title": "Projects open-decision indicator",
+      "summary": "Existing summary open count drives the fixed-position dot, independent of navigation or storage.",
       "status": "active",
       "category": "regression",
       "selector_policy": "exact-name-only",

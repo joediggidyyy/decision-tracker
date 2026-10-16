@@ -93,7 +93,7 @@ export function installProjects({$,state,node,button,api,projects,selectProject,
   if(administrative)return state.projects.find(p=>p.project_id===administrative.id&&p.ledger_uuid===administrative.uuid)||null;
   return state.projects.find(p=>p.project_id===state.project?.project_id&&p.ledger_uuid===state.project?.ledger_uuid)||null;
  }
- async function choose(p){return navigate(async()=>{bindSelection(p);if(p.enabled)await selectProject(p.project_id);if(state.view==='projects-view'&&selected()?.project_id===p.project_id&&selected()?.ledger_uuid===p.ledger_uuid){await render();await attention.acknowledge(p);}});}
+ async function choose(p){return navigate(async()=>{bindSelection(p);if(p.enabled)await selectProject(p.project_id);if(state.view==='projects-view'&&selected()?.project_id===p.project_id&&selected()?.ledger_uuid===p.ledger_uuid){await render();}});}
  function renderBrowse(){
   const box=$('project-admin'),query=$('project-search').value.toLocaleLowerCase(),rows=state.projects.filter(p=>p.name.toLocaleLowerCase().includes(query)).sort((a,b)=>a.name.localeCompare(b.name)||a.project_id.localeCompare(b.project_id)),p=selected();box.replaceChildren();
   $('project-count').textContent=String(rows.length);

@@ -9,7 +9,7 @@ import {StagingHistory} from './staging-history.js';
 export function installSavedDecisions({$,state,node,api,projects}){
  const page=document.createElement('section');page.id='library-view';page.className='page library-page';page.hidden=true;
  page.innerHTML=`<div class="admin-heading"><h1>Library</h1></div>
- <div class="library-filters"><button id="saved-view-toggle" type="button" aria-label="Decisions selected; switch to Groups"><span id="saved-mode-groups" class="inactive">Groups</span><span aria-hidden="true"> | </span><span id="saved-mode-decisions">Decisions</span></button></div>
+ <div class="library-filters"><button id="saved-view-toggle" type="button" aria-label="Decisions selected; switch to Groups"><span id="saved-mode-decisions">Decisions</span><span aria-hidden="true"> | </span><span id="saved-mode-groups" class="inactive">Groups</span></button></div>
  <div class="library-workspace"><section id="saved-browse-region" class="library-browse" aria-labelledby="saved-browse-heading" tabindex="-1"><div class="results-heading library-search-row"><h2 id="saved-browse-heading" class="sr-only">Decisions</h2><label><span id="saved-search-label">Search titles and available question previews</span><input id="saved-search" type="search" autocomplete="off"></label><span id="saved-main-count" class="muted" aria-label="Displayed decisions" aria-live="polite"></span></div><div id="saved-list"></div></section></div>
  <p id="saved-notice" role="status"></p><div id="saved-error" class="error" role="alert" hidden></div>
  <div id="saved-recovery"></div>`;

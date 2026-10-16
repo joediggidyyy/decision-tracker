@@ -1,5 +1,13 @@
 # Verification state
 
+## Final simple indicator and Library order — 2026-10-15
+
+The indicator keeps its last displayed count during refresh and uses only open > 0. Library lists Decisions | Groups. Matching native 20261016T023543Z-dt-project-attention (5 passed in 19.46s), 20261016T023546Z-dt-saved-decisions (14 passed in 31.70s) passed with unchanged inputs. The current capture shows the open-project dot in its fixed gutter. Earlier Projects/live and broader proof below qualify their retained snapshots. This paragraph is a later guidance-only update.
+
+## Simple open-count dot — 2026-10-15
+
+The current rule is open decisions > 0 means dot; zero means no dot. Navigation does not clear it. The acknowledgement/history helper and special summary option are removed; existing summary counts are reused. Matching native 20261016T022653Z-dt-project-attention (5 passed in 33.42s), 20261016T022743Z-dt-projects-data (16 passed in 69.86s (0:01:09)), 20261016T022743Z-dt-live-focus (16 passed in 172.69s (0:02:52)) passed with unchanged inputs. Prior broad integration and zoom-capture limits below remain tied to their earlier snapshots. This note is a postproof guidance-only change.
+
 ## Project attention update — 2026-10-15
 
 The Projects indicator is implemented with lifecycle-aware optional summary metadata and browser-local acknowledgement. Final native integration `20261016T010317Z-dt-integration` passed (326 passed, 1 skipped in 597.46s (0:09:57)) with matching source inputs. Final focused proof `20261016T010212Z-dt-project-attention` and live/recovery proof passed. The 50-project/3750-open-record fixture read all attention summaries in 1.695 seconds, within the 20-second sweep budget. Retained failures include startup navigation and clipped-gutter defects, and a broad-run input-correspondence failure after test-capture refinements; the final broad run was repeated with unchanged inputs. Wide and compact captures were inspected. Actual 200% zoom/geometry passed, but zoom pixels were incomplete and do not establish visual acceptance. The guarded local restart, matching served assets and typed-query admission were verified without reading production records. Operator acceptance, installer and public release remain separate. This status paragraph is a postproof guidance-only update.

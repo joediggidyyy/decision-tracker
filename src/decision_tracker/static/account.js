@@ -29,7 +29,7 @@ export function installAccount({$,state,api,signedIn,show,message,dirty,live,has
    if(setup){const response=await fetch('/api/v1/session/setup',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':precsrf},body:JSON.stringify({bootstrap_code:code,new_password:password,confirmation})});
     if(!response.ok){const r=await response.json();throw Error(r.error?.message||'Setup failed.');}
     message('Password created. Sign in to continue.');await loginView();
-   }else{const data=await authenticate(password);if(suspended){const previous=suspended;suspended=null;state.principal=data.principal;state.csrf=data.csrf_token;state.caps=data.capabilities;show(previous.view);$('signout').hidden=false;for(const dialog of previous.dialogs)dialog.showModal();lease=null;await protectDraft();if(state.project)live.start(state.project,state.record?.key||null);onReauthenticated();message('Signed in. Your unsaved work is retained. Review and save explicitly.');}else await signedIn(data);$('account-toggle').hidden=legacy;}
+   }else{const data=await authenticate(password);if(suspended){const previous=suspended;suspended=null;state.csrf=data.csrf_token;state.caps=data.capabilities;show(previous.view);$('signout').hidden=false;for(const dialog of previous.dialogs)dialog.showModal();lease=null;await protectDraft();if(state.project)live.start(state.project,state.record?.key||null);onReauthenticated();message('Signed in. Your unsaved work is retained. Review and save explicitly.');}else await signedIn(data);$('account-toggle').hidden=legacy;}
   }catch(error){message(error.message,true);await loginView();}
  };
  function closeAccount(){
@@ -56,7 +56,7 @@ export function installAccount({$,state,api,signedIn,show,message,dirty,live,has
   catch(error){$('account-error').textContent=error.message;$('account-error').hidden=false;}
  };
  $('account-signin').onclick=async()=>{
-  try{const data=await authenticate($('current-password').value);state.principal=data.principal;state.csrf=data.csrf_token;state.caps=data.capabilities;$('current-password').value='';$('account-message').textContent='Signed in. Your draft is retained.';lease=null;await protectDraft();if(state.project)live.start(state.project,state.record?.key||null);onReauthenticated();}
+  try{const data=await authenticate($('current-password').value);state.csrf=data.csrf_token;state.caps=data.capabilities;$('current-password').value='';$('account-message').textContent='Signed in. Your draft is retained.';lease=null;await protectDraft();if(state.project)live.start(state.project,state.record?.key||null);onReauthenticated();}
   catch(error){$('account-error').textContent=error.message;$('account-error').hidden=false;}
  };
  async function protectDraft(){
