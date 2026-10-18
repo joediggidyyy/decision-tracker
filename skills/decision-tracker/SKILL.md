@@ -21,6 +21,41 @@ Registration and approval escalation are separate. Resolve agent-owned choices o
 
 Routine mechanics can remain in execution documentation when they implement an already defined contract without introducing a consequential choice. Formatting and private variable names usually qualify; public names or formats that create a compatibility commitment can require a decision. Search existing decisions first. Cite settled requirements and record only the new choice; do not reopen an approved requirement merely to choose its engineering representation. Use the existing decision/options/references/link operations, not a second editable register or a new CLI root. The repository's docs/decision-workflow.md gives human-facing examples; these instructions remain self-contained when installed alone.
 
+## Recover governing profile custody
+
+Before choosing a profile for a consequential record, recover the applicable custody
+rules from the actual assignment and organization/project/session instructions. A
+project ID or accessible ledger is a storage identity, not authority to place the
+decision there. Follow the governing distinction between durable product rules and
+session-specific governance or execution releases; keep broad sessions and individual
+attempts distinct where the actual policy does. Do not infer an unresolved mapping.
+
+For Polymath Workforce assignments, recover the approved custody mapping from the
+assigned organization/session authorities and the selected Workforce operating-contract
+reference when applicable. This portable access skill does not replace that policy,
+choose its profile identities or grant profile creation, moves or lifecycle changes.
+Hold only dependent placement until a material custody ambiguity is resolved.
+
+## Field purpose and proposal continuity
+
+State the actual decision concisely in Question; do not use it as a context transcript.
+Keep a candidate outcome in its proposal, the resolved outcome in Answer, and why it was
+chosen in rationale. Use proposal benefit/cost and actual rejection grounds for their
+own purposes; source locators belong in references, dependencies in supported typed
+relationships, and delivery proof in the appropriate evidence slots. Leave genuinely
+unknown or inapplicable values explicit rather than inventing completeness.
+
+Before substantive revision, test whether the question still applies. Preserve the old
+substantive proposal and its selection/approval history; add a new alternative under the
+same valid question through the authorized lifecycle. If the question is no longer valid,
+prepare explicit deprecation with the actual reason and an eligible replacement when the
+subtype requires one. Do not invent a replacement when no continuing decision is needed.
+Retire and Deprecate are different operations: inspect the supported object/operation;
+there is no generic decision-retirement shortcut. Record actual rejected proposals even
+when the rejection predates its entry, with genuine source/occurrence precision and
+recorder attribution. Unselected does not mean rejected. Editorial corrections must not
+silently change the old proposal's substantive meaning.
+
 ## Recommended proposals
 
 Whenever presenting multiple proposals for a decision, explicitly identify exactly one as **Recommended**. Explain why it is preferred for the current requirements, including its benefits and costs. Do not rely on proposal order or leave the operator to infer the recommendation.
