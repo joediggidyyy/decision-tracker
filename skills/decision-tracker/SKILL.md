@@ -1,175 +1,43 @@
 ---
 name: decision-tracker
-description: Read, propose, record and link project decisions through the Decision Tracker CLI or API, including revision conflicts, history, and recovery. Use for an existing Decision Tracker service; not for generic task tracking or direct SQLite editing.
+description: Read, propose, record and link project decisions using authenticated API reads and supported authorized operations, including revision conflicts, history and recovery. Use for an existing Decision Tracker service; not generic task tracking or direct SQLite editing.
+metadata:
+  version: "0.2.0"
+  status: "released-for-authorized-use"
 ---
 
 # Decision Tracker access
 
-## Saved drafting content
-
-Use `data saved-list/get/create/edit/delete`, `saved-group-create/edit/delete`, `saved-stage/prepare/publish`, `saved-export/import/import-check` and `saved-backup/backup-check/backup-download` for the optional reusable-content administration area. Reads require read; content/tag/import writes require write; backups require maintain. Saved changes use their own expected revision, reason and exact request ID. Project publication binds an explicit project/ledger UUID and requires write/decide. Browser Publish records current operator approval without another popup; agents report genuine approval through existing fields. Answers and rationale must be nonblank before creation. No MCP tools are advertised.
-
-Groups are optional tags that only fill staging. Staging contains copies and supports individual add/drop. Publication creates ordinary next-numbered closed/protected project decisions using existing create, close and protect operations, with no group/source bindings, transferred approvals or automatic contradiction handling. A deliberate repeat is allowed; an uncertain retry must replay the original retained requests. Later template/tag edits do not update project records. Library publication leaves ordinary project lifecycle rules intact. Deprecation uses the shared approval workflow described below; Library content carries no authority to deprecate a project record.
-
-For CLI use, stage selected saved/group IDs to a file and add an ordinary reported approval object (mode, approver, sources and precision, with dates only when known) to the preparation input, then `saved-prepare --input STAGE --output PREPARATION --project PROJECT --ledger-uuid UUID --expected-revision REV --request-id UUID --reason TEXT`. `saved-publish --input PREPARATION --project PROJECT --ledger-uuid UUID` submits existing transitions and checkpoints retained requests/receipts through create, close and protect. Preparation files use decision-tracker.saved-publication/v2. Existing creation-only preparations replay unchanged and report legacy-create-only; never claim they establish the new complete outcome. Review definitive partial failures before preparing the remaining items. Retry the same preparation after an unknown outcome. See `docs/saved-decisions.md` in the repository for full formats, transfer and repair steps. Portable bundles contain current saved content/tags; checked SQLite backups additionally retain local change history. No project migration or credential changes are implied.
-
-## When to record a decision
-
-Record a choice or unresolved question when its durable consequence needs an explicit, retrievable rationale: data meaning/fidelity; identity, schema, interface or compatibility contracts; authority, permissions, custody or retention; failure, retry, recovery or integrity guarantees; or a substantial tradeoff, dependency or commitment that later work must respect. This includes agent-owned engineering decisions within delegated scope. Admit a consequential unresolved choice before dependent implementation; retain alternatives, evidence, owner, affected scope and what must be settled.
-
-Registration and approval escalation are separate. Resolve agent-owned choices only within actual delegated authority and the existing service capability/approval contract; assigning owner_role=agent grants no authority. Escalate choices that exceed delegation, change settled requirements or need the human's judgment. Never invent human approval. Record an authorized resolution and its rationale even when no new human approval is required.
-
-Routine mechanics can remain in execution documentation when they implement an already defined contract without introducing a consequential choice. Formatting and private variable names usually qualify; public names or formats that create a compatibility commitment can require a decision. Search existing decisions first. Cite settled requirements and record only the new choice; do not reopen an approved requirement merely to choose its engineering representation. Use the existing decision/options/references/link operations, not a second editable register or a new CLI root. The repository's docs/decision-workflow.md gives human-facing examples; these instructions remain self-contained when installed alone.
-
-## Recommended proposals
-
-Whenever presenting multiple proposals for a decision, explicitly identify exactly one as **Recommended**. Explain why it is preferred for the current requirements, including its benefits and costs. Do not rely on proposal order or leave the operator to infer the recommendation.
-
-Record that recommendation in the Tracker as well as in any review presentation. The current proposal model has no dedicated recommendation field: append `(Recommended)` to the recommended proposal's title and include a concise recommendation rationale in its description. Keep the proposal's benefit and cost fields informative. Use the existing option operations; preserve proposal IDs and unrelated content. When changing the recommendation, remove the old recommended label so each decision has one current recommendation. Read current decision and proposal state before editing, and respect revision and closed-record controls.
-
-Recommended is advisory. It does not mean selected, approved, closed, implemented or accepted. Do not change proposal disposition, resolve the decision or report operator approval merely to identify a recommendation.
-
-## Planning links
-
-Link records that an authorized closed resolution has been incorporated into one designated authoritative planning section. It does not mark implementation, verification or acceptance complete. Confirm the cited planning content against the approved answer before recording this attestation; anchor/hash checks alone do not establish meaning. Do not mark every closed decision linked merely because the feature is available.
-
-Read `planning_link` (`recorded`, `linked`, `receipt`) and `planning_link_policy_revision` from `decision get`. `decision list` exposes `linked` and `planning_link_recorded`; writes return `planning_link_receipts`. Open and deprecated records cannot be linked; protected closed baselines may append planning-link evidence without changing their answer or approval. Reopen starts a fresh cycle, preserving old receipts. Reclosing the same answer requires a fresh link. Read `decision planning-links --key KEY` and follow cursors for full historical receipts.
-
-Use existing `decision link` with project/binding/credential, key, expected ledger/record revisions, request ID and reason, plus `--expected-policy-revision`, `--planning-document PATH` and `--planning-section STABLE_ID`. The structured operation is `decision.link` through `change apply`; save it separately from other mutations of that decision. Pin observations with `--expected-resolution-id`, `--expected-document-sha256` and, for Markdown input, `--expected-projection-sha256`. Preserve exact values for uncertain-outcome replay.
-
-Anchors require a local native `codesentinel.canonical-document/v1` source or its generated Markdown companion inside explicitly registered project planning roots. GET `/api/v1/projects/{project}/planning-document?locator=PATH` returns readable headings and stable section/block IDs; follow returned cursors with the same locator. Source/projection changes invalidate pagination. The service rechecks bytes before commit. Missing/unavailable anchors reject only link recording, leave the decision unlinked and preserve form work; other project work can continue.
-
-The browser uses a Planning document dropdown, with Add document for bounded folder browsing or pasted paths. Section loads from the selected source and Link waits for a section when anchors are required. GET `/api/v1/projects/{project}/planning-documents` discovers the document pool; `directory=PATH` browses immediate authorized subfolders/documents. Follow cursors with unchanged directory/policy/inventory. The pool is derived from registered roots and earlier planning-link paths, not a separate mutable registry. Selection neither uploads/moves files nor expands permission. Canonical JSON is listed; a generated Markdown companion can be selected by pasting its path. No additional CLI root is needed.
-
-`project policy show` reads the policy. Only owner-local CLI `project policy set` can register roots or change `--anchor-required true/false`, with expected policy revision, request ID and reason. No browser/HTTP policy write exists. Existing agent credentials do not grant this owner administration permission. Do not loosen the requirement to bypass a failure without the user's explicit intent. Optional policy permits omission, recorded honestly as `omitted`; supplied invalid anchors still fail. Imports preserve policy history without granting local file access.
-
-Schema 3 or 4 is required for planning-link writes. `data upgrade-check/upgrade` extend the existing backup/restore-checked flow; schema 1 first advances to 2, then 2 to 3 under a new request ID. Existing ledgers do not upgrade silently, and unrelated live-ledger upgrades require their own authorized scope. Receipts retain actor/time, closure/approval, transaction/request, document version/hash, section content digest and policy. `generator_verification: not_checked` means no canonical generator verification ran; a matching Markdown source marker is narrower evidence.
-
-Humans use the Planning document/Section/Link form or plain CLI flags; never ask them to compose JSON. Generator workflows may prefill a decision link with URL-encoded `planning-document`, `planning-section` and optional observed-file `planning-sha256` fragment fields. The selected project/decision must match, the service reloads sections, and Link remains explicit. Do not invent MCP tools, a new top-level CLI group, automatic generator execution or automatic planning incorporation.
-
-New work uses `decision link`, `decision planning-links`, structured `decision.link` and GET `.../{key}/planning-links`; discovery capability is `planning_links_v1`. Earlier `decision apply`, `decision applications`, `decision.apply` and `/applications` remain compatibility aliases. Retry uncertain outcomes with their original operation name and identical body; never rename an in-flight request. Generic `change apply` remains unchanged. Old detail/list/result keys remain compatibility views. Native schema-3 table/export keys and `decision-tracker.application/v1` receipts stay unchanged; do not rewrite historical records or hashes. After new `decision.link` writes, use a compatible current binary; older binaries may reject that operation even at schema 3.
-
-With owner-authorized optional anchors, blank input records incorporation as `omitted` and displays `recorded`; `planning_link.recorded` is true and `linked` is false. A supplied invalid anchor still fails. Do not describe an omitted-anchor record as a planning link. Reopen clears current-cycle status and retains its receipt. Linking records incorporation already completed; it does not edit planning or run the generator.
-
-Use the application service as the sole ledger writer. The installed `decision-tracker` CLI and HTTP API enforce the same rules. This skill does not grant authority to change decisions, project registrations, credentials, or data custody. Continue within the user's existing authorization; read and prepare a concrete proposal when mutation authority is missing.
-
-## Required planning link after closure
-
-For every closed decision created or closed within the authorized task, incorporate its resolution into authoritative planning and record a real planning link through `decision link` (or `decision.link`). Do not report the decision workflow complete until readback confirms `status: closed`, `linked: true` and `planning_link_recorded: true` for each affected record. These are service-derived values; never set them directly, fabricate a receipt or substitute an omitted-anchor `recorded` value for `linked`.
-
-Use the actual canonical document and section, current ledger/decision/policy revisions and observed content hash. Closure and linking are separate committed requests. Reopening clears current-cycle linking; after authorized reclosure, link the new cycle again. Check existing closed records in task scope for missing links without rewriting unrelated historical records. If incorporation or a required schema upgrade/planning-root registration is not authorized or cannot be completed, report each unlinked key and its exact prerequisite; retain the request and continue independent work. Do not loosen anchor policy to manufacture completion. Linking does not claim implementation, verification or owner acceptance.
-
-## Windows installer access
-
-A Setup installation includes the owner CLI at `%LOCALAPPDATA%/Programs/DecisionTracker/decision-tracker.cmd`. Use that installed command rather than requiring a developer environment. Its deployment defaults remain the same; pass `--deployment FILE` for an explicitly configured alternate deployment. Start menu launch handles first-time human setup. Agents must not read the clipboard or request setup codes.
-
-Installer repair/uninstall use the recorded current-user ownership and preserve user data. `INSTALLATION_MAINTENANCE` blocks launch during incomplete Setup or after uninstall; use matching Setup to repair. Do not delete maintenance markers, rewrite installation/deployment receipts, adopt a foreign binding or force-stop an application. This skill does not authorize installer publication, upgrades, credential administration or data migration.
-
-## Start or reuse the local service
-
-For an installed Windows deployment, run `decision-tracker service ensure-running --json` before data access. It starts or reuses the service without opening a browser. Pass `--deployment FILE` for a nondefault deployment. Do not install a startup task or keep it alive with polling; useful requests and bounded draft leases manage the 90-minute idle policy.
-
-Use `--credential-principal NAME` only for an explicitly provisioned stored agent credential. It verifies the deployment before transmitting the token. Alternatively use `--token-env NAME` for the authorized external credential. Never fall back to operator/password access. A missing credential is an owner provisioning input, not permission to create or expand access.
-
-On connection loss, allow at most one ensure-running attempt and one retry within a 60-second recovery budget, preserving exact payload, request ID and principal. If unavailable or uncertain, retain the request and report its state. Do not repeat a human password change automatically.
-
-Account recovery and token administration require an explicit human request for that operation. Human passwords and one-time codes are entered in the owner's private terminal/browser, never read into agent context. Recovery issuance and completion are CLI-only; agents do not use the browser to reset credentials.
-
-## Connect and identify
-
-Use the configured CLI executable (or the application repository's local environment), service origin and credential-variable **name**. The default service origin is `http://127.0.0.1:8765`. Never read, echo, place in command arguments, or store a credential value. First read any deployment-provided names-only agent-access descriptor and reuse the configured persistent agent principal and existing scope. Do not create per-session credentials or narrow established project visibility by default. Provision a separate principal only within explicit authorization; each operation still requires the intended project/UUID and capabilities. The following examples assume its environment variable is `DT_AGENT_TOKEN`; do not silently substitute the operator credential if it is absent.
-
-```text
-decision-tracker service status --token-env DT_AGENT_TOKEN --json
-decision-tracker project list --token-env DT_AGENT_TOKEN --json
-decision-tracker project show --project example --bind .local/example-binding.json --token-env DT_AGENT_TOKEN --json
-decision-tracker decision list --project example --binding .local/example-binding.json --token-env DT_AGENT_TOKEN --json
-```
-
-Replace `example` with the intended project ID. Create the ignored binding directory if needed. A binding is an exclusive-created file containing project ID and ledger UUID, not credentials. Reuse an existing matching binding. Never infer identity from the working directory, silently rebind, or register a project to bypass a mismatch. Pass `--base-url` explicitly when using a configured alternate origin.
-
-Use `decision get`, `decision history`, `query context`, and `query impact` with `--key D000001` and the same project/binding/token flags. Follow collection cursors and revision-pinned text chunks when responses indicate incomplete content. A stale cursor requires restarting the read; do not combine pages from different revisions. Impact results can be truncated.
-
-## Prepare and apply a change
-
-Read the current ledger and every affected decision revision before preparing a write. Retain the exact intended payload and a fresh UUID request ID in ignored local custody until the outcome is known. For linked changes, include both endpoints. Never derive a decision's revision from the ledger revision.
-
-For atomic batches, use `change apply --input FILE --project example --binding .local/example-binding.json --token-env DT_AGENT_TOKEN --json`. The input is a complete envelope with:
-
-- `expected_ledger_uuid`: the bound UUID.
-- `expected_revision`: the read ledger revision.
-- `expected_decision_revisions`: a map from each affected existing decision key to its read revision; empty for creating an independent decision.
-- `request_id`: a new UUID; `reason`: the actual reason; `authority_refs`: genuine supporting references, not invented approval.
-- `operations`: up to 25 operations, for example `{"op":"decision.create","data":{"title":"Storage","question":"Which storage engine?"}}`.
-
-`--dry-run` validates and rolls back a decision change. It is not a reservation or a dry run for project/maintenance operations. `validate_only` is excluded from the stored intent hash, and a fresh validation rolls back without recording a committed receipt. The same intent/request ID may subsequently commit; validation does not reserve revisions. If that ID already committed, matching requests return its receipt before validation and stale-revision checks. A deliberately revised intent requires a new ID; uncertain committed outcomes require exact replay. Convenience mutations also require `--expected-revision`, `--record-revision` for the selected record, `--request-id`, and `--reason`; their `--input` contains operation data, not the complete envelope. Multi-record commands use `--expected-decision-revisions FILE`.
-
-After success, inspect the returned committed outcome and explicitly read back relevant state. Testing or implementation completion does not authorize closing a decision. Closure, locking, amendment, deprecation, rejected options and resolution changes require the appropriate user intent and service capability. Protected approved content requires amendment; permitted supporting context uses the narrow closed-record allowlist below. There is no hard-delete or silent overwrite.
-
-## Conflicts and uncertain outcomes
-
-On a lost response, retry the **identical payload and request ID with the same principal**. Matching committed requests replay before stale-revision checks. Do not generate a new ID merely because the response was lost. Bound retries; if the service remains unavailable, retain the payload and report the unknown outcome.
-
-On a confirmed revision conflict, fetch current state, compare it with the original and intended changes, and reconcile within authorization. Use a new request ID only for a deliberately revised request. Never silently advance preconditions and overwrite another actor's work. Identity mismatch, lost authorization, or disabled project requires resolving that condition; do not switch ledgers or credentials automatically.
-
-JSON mode returns one envelope. Exit codes: 0 success, 2 invalid input, 3 revision/identity conflict, 4 authentication/permission, 5 availability/retry, 1 unexpected failure. Preserve meaningful failure evidence without credentials.
-
-## API and maintenance
-
-For direct API access, use bearer authentication supplied by the runtime, `X-Ledger-UUID` on project routes and matching `expected_ledger_uuid` in changes. Discover the authenticated schema at `/api/v1/schema`. Submit batches to `POST /api/v1/projects/{project}/changes`; set `validate_only` for validation. Do not bypass the service with SQL or database-file edits.
-
-Use the source distribution or companion support material’s `docs/interfaces.md`, `docs/operations.md` and `docs/packaging.md` for detailed maintenance contracts, or CLI help when only the package is available. Backup/verify/export are distinct from restore activation. Restore checks and imports retain isolated candidates; they never replace active data. Registration and production onboarding require their own authorized scope. Do not delete failed evidence.
-
-Live notifications are freshness hints, not durable replay or approval to overwrite. Reconcile after reconnect. The browser's explicit refresh/review controls preserve drafts. No MCP server is supplied by this version; use the CLI/API rather than inventing MCP tools.
-
-## Approval events and data-format upgrades
-
-Read GET /api/v1/schema before relying on approval_events_v1. New ledgers use schema 2; schema-1 reads still work but writes require an explicit upgrade. `data upgrade-check` is read-only; `data upgrade` requires maintain, the bound project, expected revision and a UUID request ID. The service creates and restore-checks a backup before the atomic upgrade. An implementation instruction or successful test is not permission to upgrade an unrelated live ledger. Preserve the exact request for replay and retain the backup receipt. Never downgrade after new writes.
-
-`decision.close` accepts an approval object in its existing JSON input. Agent credentials cannot use authenticated_now. With actual authorized decision intent and decide capability, report external evidence using mode reported, approver, 1–32 sources and precision exact/date/unknown. Exact requires an offset-aware occurred_at and matching numeric utc_offset_minutes; date requires occurred_date plus offset; unknown omits occurrence/offset/timezone. Never invent dates or impersonate human approval. The server keeps recording identity/time separate from reported approval. Existing reference-only requests remain valid on schema 2.
-
-A selected proposal requires expected_option_revision and matching answer text. Read the latest proposal before applying it. Resolution cannot share a batch with another mutation of that same decision. Follow latest_resolution_approval, paginated /approvals and /approvals/{event_id} for approval evidence; follow returned text chunks. PROPOSAL_CHANGED and UPGRADE_REQUIRED require reconciliation, not blind retry. These additions do not change credential scope or capabilities.
-
-When discovery advertises `deprecation_approval_v1`, `decision.deprecate` accepts the same approval object. Agents report genuine authorized approval; authenticated_now remains password-session-only. Structured deprecation uses approval.sources and rejects nonempty authority_refs or a second transaction occurred_at. Supply kind, replacement_key where needed and the actual reason, separately from other mutations of that decision. Reference-only requests remain supported. Follow latest_deprecation_approval separately from resolution approval. Use `decision get --approval-kind deprecate --key KEY` for paginated summaries and add `--id EVENT_UUID` for full evidence; the API's existing /approvals routes accept kind=deprecate or resolution. New deprecation events have their own closed schema and no answer/proposal fields. Historical records are not backfilled. No SQL migration is required for schemas 2–4, but recovery after these events requires a capable binary; older runtimes are not qualified and restoring an older backup loses later writes.
-
-### Prepared candidate discovery
-
-`data candidates` lists prepared candidates; `data prepare-candidate --candidate-id UUID` explicitly prepares an older retained import. Both require maintain and registry. `import-new` creates a preparation receipt, while `import-validate` does not. Registered identities, including disabled registrations, do not appear. Use enable for a disabled project rather than registering it again.
-
-Register using the selected `candidate_id` and `logical_digest` as `--candidate-id` and `--expected-candidate-digest`, alongside the existing project/name/catalog-revision/request-ID fields. Preparation never approves imported decisions and registration never replaces or upgrades active data. Discovery does not authorize import or registration. No arbitrary filesystem browsing is exposed.
-
-Exact-request retries apply to catalog and decision mutations. Export and backup creation have no such replay guarantee: after a lost response inspect the file list and report uncertainty; do not automatically create a duplicate.
-
-Artifact manager reads: `data artifact-list --kind backup --order newest --limit 25` (or kind export) returns one kind with Previous/Next cursors, counts and inventory identity. Use returned cursors with the same kind/order/limit/project binding. Changed inventory returns CURSOR_STALE; restart the read without combining old and new pages. Omitting filters preserves legacy mixed forward listing.
-
-## Closed-record mutation policy
-
-Closed and protected closed decisions accept supporting context through `reference.add`, `link.add`, `link.unlink` and `decision.set-evidence`, with existing write permission (or authorized propose-only dry run). Deprecated decisions reject these operations. Approved content, approval events, baseline, selected options and planning receipts remain unchanged. Reopen/Amend remains necessary for substantive edits, options and work/challenge state.
-
-Both ordinary relationship endpoints may be active open or closed, including protected closed. Supply both current record revisions. Either endpoint may unlink a `relates_to` edge; only the source may unlink `depends_on`. Lifecycle links remain transition-owned. Closed references are append-only: correction means appending a source and explaining the earlier reference in the change reason. Closed reference edit/retire stays unavailable.
-
-`decision set-evidence --input FILE` accepts operation data such as `{"evidence_state":{"verification":{"status":"Focused checks passed","evidence_refs":["retained proof receipt"],"responsible_role":"maintainer"}}}`. The structured operation is `decision.set-evidence`. Only implementation, verification and acceptance slots are allowed. Omitted slots stay unchanged; explicit null clears a slot with previous values retained in history. Supply a nonempty patch and nonblank status/sources/role when present, plus the usual UUID, revisions, request ID and reason. Reported evidence never grants approval or proves acceptance.
-
-Authenticated schema advertises `closed_context_v1` and explicit closed/protected allowlists. The browser enables reference/relationship controls and the Evidence action only with this capability. The selected record action top row is Edit, Status, Evidence; each of the three action groups has three buttons with full wrapping labels, and no duplicate Evidence button in the record. Status sets open work to Queued or Under investigation; deferred work uses Resume. Status remains unavailable on closed records. The record’s Evidence state readout currently uses structured JSON. Unavailable substantive child controls remain hidden, and the action groups remain in place. Evidence forms submit changed slots only, confirm clearing, and retain drafts through failure/session recovery for explicit re-review. No supplemental change may share a request with a lifecycle/planning change affecting the same record. No SQL migration is required; after new writes use a compatible current runtime and checked backup/restore paths. Older binaries may not recognize the new operation even at the same ledger schema.
-
-`decision edit-resolution` remains withdrawn for new writes. Reopen, edit the open decision, then Close with current approval. Exact historical committed requests still replay their original receipts after permission and payload checks; no history is rewritten. Reopening must commit separately.
-
-## Challenges during investigation
-
-Use a challenge to record investigation feedback that questions a premise, proposal or answer. When a decision is contested, read `decision history --key KEY` with the same project, binding and credential flags before continuing the investigation, proposing a resolution or applying one. Follow history cursors until complete. The ordinary record exposes the contested flag; the challenge message is recorded as the transaction reason in history. Review subsequent messages and source evidence rather than treating the flag alone as sufficient context. Address the challenge in the next investigation response. Live notifications indicate changed data; they do not automatically start an agent or convey the complete conversation. Do not resolve a challenge merely because it has been read.
-
-## Browser resolution choices
-
-Explicitly switching the resolution radio choice replaces the Decision, Why this choice and Change note fields. Selecting a proposal fills these fields from that proposal; selecting Write a different answer clears the answer and rationale and resets the generated change note. Drafts are not cached per choice and there is no additional preservation prompt. Editing a proposal answer converts it to a written answer while retaining the text being edited. Approval details remain independent of the solution choice.
-
-## Immutable legacy decision history
-
-Discovery advertises `legacy_history_v1` and `inactive_candidate_recovery_v1` when implemented. Use the packaged contract returned by authenticated `/api/v1/schema?contract=legacy-import-v1`, with its advertised SHA256. Legacy origins do not fabricate historical approval: unknowns, source benefit/summary attribution, versions, events, relations and reference-only anchors remain distinct from native decisions, approvals and planning-link receipts. Native history and source history must both be read when relevant.
-
-Use existing `decision get --source-namespace NAMESPACE --source-id SOURCE_ID` without `--key` for qualified identity/alias lookup. `decision history --key KEY --origin legacy` and `query context --origin legacy` return complete paginated source members; context without a key includes unassociated project context. Use `--relations` for source relations, or `--legacy-kind` with identities, versions, appearances, payloads, members, associations, relations, projections, source_anchors or absences for exact descriptor collections. Supply the explicit project and expected ledger UUID/binding; keep query/limit fixed while following cursors. Restart pagination if the revision changes.
-
-Use `decision as-of --origin legacy --source-version VERSION_ID --key KEY` for source-version presence and member/absence pointers. `decision field --origin legacy --payload SHA256 --key KEY` and `data export --origin legacy --payload SHA256` return base64 byte chunks with offset/limit, total encoded length and hash. Follow next_offset to null, recombine bytes, verify length/SHA256 and decode UTF-8 before interpreting E1. Payload metadata is available through `--legacy-kind payloads`; complete bytes use the chunk route. Read-only browser Source history/references show original content separately from native History.
-
-Import-new/validate remain existing data operations; never improvise a legacy JSON shape. Bind the reviewed target UUID, contract hash and source manifest; preserve the exact request file and ID for retry. Validation-only is not publication. Inactive `data export/backup/verify/restore-check` require `--candidate-id` and `--expected-candidate-digest`; restore-check also needs the backup artifact ID. Download through `data artifact-download` with the same binding. No registration, overwrite, source conversion or execution release is implied. Source-specific migration approval and independent mapping/size qualification still control.
-
-Imported sparse exceptions are immutable and field-specific. Untouched source unknowns can survive permitted operations; edits, new Close and amendment children use current native validation. Reopen still commits separately; protected records require Amend. Origin association is navigation, not approval. Reference-only source anchors are not planning-link attestations. Schema 4 is initialized for new legacy candidates; no automatic schema-3-to-4 upgrade exists. Existing formats, command roots and historical request aliases remain supported.
+Use the application service as sole ledger writer. This skill grants no mutation,
+administration, migration, credential or publication authority. Continue within the actual
+assignment; prepare a concrete proposal when mutation authority is missing.
+
+Recover the explicitly selected deployment/origin and existing principal. Never infer
+identity from cwd, silently rebind, switch to operator credentials, read credential values,
+or substitute a default port for a failed selected binding. Ordinary retrieval uses the
+authenticated API. CLI-only owner operations and authorized fallbacks remain conditional.
+
+Bind project routes to the intended project and ledger UUID. Follow material collection
+cursors and revision-pinned text to completion; restart stale pagination. Capability/schema
+discovery proves advertised support, not permission or installed source correspondence.
+
+Preserve exact requests, principal, revisions, failures and unknown outcomes. On uncertainty
+read recovery guidance before retrying; do not issue a fresh create or advance preconditions.
+Never fabricate approval, dates or planning-link receipts. A recommendation, execution,
+hash match or logged proposal is not approval, acceptance or behavioral qualification.
+
+Read only task-matching references and their stated dependencies. Examples preserve the
+owner's supported operations; they do not override the assignment's interface restrictions.
+
+| Task | Reference | Read condition |
+|---|---|---|
+| Read or search current decisions | [api-access.md](references/api-access.md) | Every API retrieval; bind origin, project and ledger UUID, then follow applicable cursors/chunks. |
+| Record a consequential question or recommend options | [decisions.md](references/decisions.md) | Before a consequential proposal or decision; includes contested investigation history. |
+| Prepare or apply an authorized change | [changes.md](references/changes.md) | Before any mutation; also load recovery.md and approval-planning.md when approval/closure/linking is involved. |
+| Read/report approval or incorporate a closure into planning | [approval-planning.md](references/approval-planning.md) | For approval evidence, lifecycle resolution or planning-link work; capability and real authority control. |
+| Start/reuse the selected service or handle a lost response/conflict | [recovery.md](references/recovery.md) | For normal selected-deployment startup/reuse or first failure under standing task authority; no fresh per-start approval. Preserve exact identity and bounded recovery, then stop/report essential failure. |
+| Use reusable Library content | [library.md](references/library.md) | Only for saved content, staging, transfer or publication; publication also requires changes.md, recovery.md and approval-planning.md. |
+| Inspect legacy source history or source bytes | [legacy-history.md](references/legacy-history.md) | Only when imported identities, versions, original bytes or inactive candidates matter; API reads start with api-access.md. |
+| Use an authorized CLI equivalent | [cli-fallback.md](references/cli-fallback.md) | Only when the assignment permits CLI access or an actual supported fallback is required; no automatic retry through another route. |
+| Administer deployment, upgrades, recovery media or candidates | [maintenance.md](references/maintenance.md) | Only for that explicitly authorized operation; inspect current owner capabilities, and load recovery.md. |
+| Operate browser resolution/evidence controls | [browser.md](references/browser.md) | Only for actual browser work; documentation is not installed-runtime or GUI qualification. |

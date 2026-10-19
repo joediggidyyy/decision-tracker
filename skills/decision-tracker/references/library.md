@@ -1,0 +1,13 @@
+# Optional Library operations
+
+Load changes.md, recovery.md and approval-planning.md before authorized project publication.
+Library preparation does not grant approval, publish by itself or link planning.
+
+## Saved drafting content
+
+Use `data saved-list/get/create/edit/delete`, `saved-group-create/edit/delete`, `saved-stage/prepare/publish`, `saved-export/import/import-check` and `saved-backup/backup-check/backup-download` for the optional reusable-content administration area. Reads require read; content/tag/import writes require write; backups require maintain. Saved changes use their own expected revision, reason and exact request ID. Project publication binds an explicit project/ledger UUID and requires write/decide. Browser Publish records current operator approval without another popup; agents report genuine approval through existing fields. Answers and rationale must be nonblank before creation. No MCP tools are advertised.
+
+Groups are optional tags that only fill staging. Staging contains copies and supports individual add/drop. Publication creates ordinary next-numbered closed/protected project decisions using existing create, close and protect operations, with no group/source bindings, transferred approvals or automatic contradiction handling. A deliberate repeat is allowed; an uncertain retry must replay the original retained requests. Later template/tag edits do not update project records. Library publication leaves ordinary project lifecycle rules intact. Deprecation uses the shared approval workflow described below; Library content carries no authority to deprecate a project record.
+
+For CLI use, stage selected saved/group IDs to a file and add an ordinary reported approval object (mode, approver, sources and precision, with dates only when known) to the preparation input, then `saved-prepare --input STAGE --output PREPARATION --project PROJECT --ledger-uuid UUID --expected-revision REV --request-id UUID --reason TEXT`. `saved-publish --input PREPARATION --project PROJECT --ledger-uuid UUID` submits existing transitions and checkpoints retained requests/receipts through create, close and protect. Preparation files use decision-tracker.saved-publication/v2. Existing creation-only preparations replay unchanged and report legacy-create-only; never claim they establish the new complete outcome. Review definitive partial failures before preparing the remaining items. Retry the same preparation after an unknown outcome. See `docs/saved-decisions.md` in the repository for full formats, transfer and repair steps. Portable bundles contain current saved content/tags; checked SQLite backups additionally retain local change history. No project migration or credential changes are implied.
+
