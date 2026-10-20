@@ -136,3 +136,23 @@ def test_corrupt_protected_bundle_refused(tmp_path):
     path=tmp_path/'secrets.bin';path.write_bytes(b'Not a DPAPI credential bundle')
     with pytest.raises(Fault) as caught:read_bundle(path)
     assert caught.value.code=='SETUP_REQUIRED'
+
+
+def test_default_path_honours_explicit_pointer(tmp_path, monkeypatch):
+    from decision_tracker.deployment import default_path
+    target = tmp_path / 'elsewhere' / 'deployment' / 'deployment.json'
+    monkeypatch.setenv('DECISION_TRACKER_DEPLOYMENT', str(target))
+    assert default_path() == target
+    monkeypatch.setenv('DECISION_TRACKER_DEPLOYMENT', '  ')
+    monkeypatch.setenv('LOCALAPPDATA', str(tmp_path / 'local'))
+    assert default_path() == tmp_path / 'local' / 'DecisionTracker' / 'deployment' / 'deployment.json'
+
+
+def test_install_launcher_never_provisions_without_init(tmp_path):
+    from argparse import Namespace
+    from decision_tracker.local_cli import execute
+    path = tmp_path / 'deployment' / 'deployment.json'
+    with pytest.raises(Fault) as caught:
+        execute(Namespace(group='service', action='install-launcher', deployment=str(path), json=True))
+    assert caught.value.code == 'SETUP_REQUIRED'
+    assert not path.parent.exists()

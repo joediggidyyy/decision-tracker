@@ -8,7 +8,11 @@ from .config import Config,load_config
 from .store import encode
 from .windows_local import protect_path,read_bundle,save_bundle,owner_sid,admin_request
 
-def default_path():return Path(os.environ.get('LOCALAPPDATA',Path.home()))/'DecisionTracker'/'deployment'/'deployment.json'
+def default_path():
+    # An explicit user-level pointer wins, so every process (packaged apps included) resolves the same deployment.
+    explicit=os.environ.get('DECISION_TRACKER_DEPLOYMENT','').strip()
+    if explicit:return Path(explicit)
+    return Path(os.environ.get('LOCALAPPDATA',Path.home()))/'DecisionTracker'/'deployment'/'deployment.json'
 def atomic_json(path,value):
     temp=path.with_name(path.name+'.'+uuid4().hex+'.new')
     with temp.open('x',encoding='utf-8') as f:f.write(encode(value));f.flush();os.fsync(f.fileno())

@@ -45,10 +45,10 @@ py -3.14 -m venv .venv
 
 This installs the application, browser assets and `decision-tracker` CLI with their runtime dependencies. Installation requires access to the Python package index unless you provide compatible offline wheels. If you want to contribute code or run tests, follow the [development setup](CONTRIBUTING.md#development-environment).
 
-Initialize the current-user deployment and register its optional `decision-tracker://open` link handler once:
+Initialize the current-user deployment and register its optional `decision-tracker://open` link handler once. `--init` is required to create a deployment; without it the command only re-registers an existing one, so a missed lookup never creates a second deployment:
 
 ```powershell
-.\.venv\Scripts\decision-tracker.exe service install-launcher --json
+.\.venv\Scripts\decision-tracker.exe service install-launcher --init --json
 ```
 
 For **first-time password setup**, run this in a private local terminal:

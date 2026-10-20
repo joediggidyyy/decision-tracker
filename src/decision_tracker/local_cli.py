@@ -28,7 +28,10 @@ def execute(args):
         return local_admin(path,'project-policy-set',project_id=args.project,ledger_uuid=uuid,request=request)
     if args.group=='service':
         if args.action=='install-launcher':
-            if not path.exists():initialize(path)
+            if not path.exists():
+                # Provisioning is explicit: never fork a second deployment because a lookup missed the real one.
+                require(getattr(args,'init',False),'SETUP_REQUIRED',f'No deployment at {path}. Check DECISION_TRACKER_DEPLOYMENT or --deployment; use --init only to create a new deployment.',503)
+                initialize(path)
             return {'ok':True,'data':install_protocol(path)}
         if args.action=='uninstall-launcher':return {'ok':True,'data':uninstall_protocol(path)}
         if args.action=='ensure-running':return {'ok':True,'data':ensure(path)}

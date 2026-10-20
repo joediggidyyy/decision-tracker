@@ -32,6 +32,7 @@ def common(parser,suppress=True):
         parser.add_argument("--"+name,default=default)
     parser.add_argument("--prompt-code",action="store_true",default=argparse.SUPPRESS if suppress else False)
     parser.add_argument("--store-local",action="store_true",default=argparse.SUPPRESS if suppress else False)
+    parser.add_argument("--init",action="store_true",default=argparse.SUPPRESS if suppress else False)
     parser.add_argument("--limit",type=int,default=argparse.SUPPRESS if suppress else 50)
     parser.add_argument("--port",type=int,default=default)
     parser.add_argument("--data-root",default=default)
